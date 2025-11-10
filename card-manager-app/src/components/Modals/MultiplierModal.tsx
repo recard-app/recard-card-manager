@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Dialog } from '@/components/ui/Dialog';
-import { Input } from '@/components/ui/Input';
+import { FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import type { CardMultiplier } from '@/types';
@@ -131,7 +132,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
       onOpenChange(false);
     } catch (err: any) {
       console.error('Error saving multiplier:', err);
-      alert('Failed to save multiplier: ' + err.message);
+      toast.error('Failed to save multiplier: ' + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -145,7 +146,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
       description={isEdit ? 'Update multiplier details' : 'Create a new multiplier for this card version'}
     >
       <form onSubmit={handleSubmit} className="multiplier-modal-form">
-        <Input
+        <FormField
           label="Name"
           value={formData.Name}
           onChange={(e) => setFormData({ ...formData, Name: e.target.value })}
@@ -156,7 +157,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
         <Select
           label="Category"
           value={formData.Category}
-          onChange={(e) => setFormData({ ...formData, Category: e.target.value, SubCategory: '' })}
+          onChange={(value) => setFormData({ ...formData, Category: value, SubCategory: '' })}
           error={errors.Category}
           options={Object.keys(CATEGORIES).map(cat => ({ value: cat, label: cat }))}
         />
@@ -165,7 +166,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
           <Select
             label="Sub Category"
             value={formData.SubCategory}
-            onChange={(e) => setFormData({ ...formData, SubCategory: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, SubCategory: value })}
             options={SUBCATEGORIES[formData.Category].map(sub => ({ value: sub, label: sub }))}
           />
         )}
@@ -182,7 +183,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
           {errors.Description && <span className="textarea-error">{errors.Description}</span>}
         </div>
 
-        <Input
+        <FormField
           label="Multiplier (x)"
           type="text"
           value={formData.Multiplier}
@@ -191,21 +192,21 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
           placeholder="e.g., 3"
         />
 
-        <Input
+        <FormField
           label="Requirements"
           value={formData.Requirements}
           onChange={(e) => setFormData({ ...formData, Requirements: e.target.value })}
           placeholder="Any requirements or conditions"
         />
 
-        <Input
+        <FormField
           label="Details (optional)"
           value={formData.Details}
           onChange={(e) => setFormData({ ...formData, Details: e.target.value })}
           placeholder="Additional details"
         />
 
-        <Input
+        <FormField
           label="Effective From"
           type="date"
           value={formData.EffectiveFrom}
@@ -213,7 +214,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
           error={errors.EffectiveFrom}
         />
 
-        <Input
+        <FormField
           label="Effective To (optional)"
           type="date"
           value={formData.EffectiveTo}

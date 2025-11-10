@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CardService } from '@/services/card.service';
 import type { CardWithStatus } from '@/types/ui-types';
-import { Card } from '@/components/ui/Card';
+// import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Plus, Search } from 'lucide-react';
@@ -91,7 +91,7 @@ export function CardsListPage() {
     <div className="cards-list-page">
       <div className="page-header">
         <h1>Credit Cards</h1>
-        <Button onClick={() => setCreateCardModalOpen(true)}>
+        <Button size="sm" onClick={() => setCreateCardModalOpen(true)}>
           <Plus size={16} />
           New Card
         </Button>

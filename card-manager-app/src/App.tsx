@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { LoginPage } from '@/pages/LoginPage';
 import { CardsListPage } from '@/pages/CardsListPage';
 import { CardDetailPage } from '@/pages/CardDetailPage';
+import { Toaster } from '@/components/shadcn/sonner';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             }
           />
         </Routes>
+        <Toaster />
       </BrowserRouter>
     </AuthProvider>
   );

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { TextareaField } from '@/components/shadcn/form-field';
 import { CardService } from '@/services/card.service';
 import type { CreditCardDetails } from '@/types';
 import { normalizeEffectiveTo } from '@/types';
@@ -112,7 +114,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
       setIsEditing(false);
       onSaved?.();
     } catch (err: any) {
-      alert('Failed to save changes: ' + (err?.message || 'Unknown error'));
+      toast.error('Failed to save changes: ' + (err?.message || 'Unknown error'));
     } finally {
       setSubmitting(false);
     }
@@ -129,7 +131,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
       setShowDeleteConfirm(false);
       onDeleted?.();
     } catch (err: any) {
-      alert('Failed to delete version: ' + (err?.message || 'Unknown error'));
+      toast.error('Failed to delete version: ' + (err?.message || 'Unknown error'));
     } finally {
       setDeleting(false);
     }
@@ -248,25 +250,25 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
         <form className="details-grid" onSubmit={(e) => e.preventDefault()}>
           <div className="detail-group">
             <h3>Basic Information</h3>
-            <Input
+            <FormField
               label="Card Name"
               value={formData.CardName}
               onChange={(e) => setFormData({ ...formData, CardName: e.target.value })}
               error={errors.CardName}
             />
-            <Input
+            <FormField
               label="Card Issuer"
               value={formData.CardIssuer}
               onChange={(e) => setFormData({ ...formData, CardIssuer: e.target.value })}
               error={errors.CardIssuer}
             />
-            <Input
+            <FormField
               label="Card Network"
               value={formData.CardNetwork}
               onChange={(e) => setFormData({ ...formData, CardNetwork: e.target.value })}
               error={errors.CardNetwork}
             />
-            <Input
+            <FormField
               label="Version Name"
               value={formData.VersionName}
               onChange={(e) => setFormData({ ...formData, VersionName: e.target.value })}
@@ -276,18 +278,18 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
 
           <div className="detail-group">
             <h3>Fees</h3>
-            <Input
+            <FormField
               label="Annual Fee"
               type="text"
               value={formData.AnnualFee}
               onChange={(e) => setFormData({ ...formData, AnnualFee: sanitizeNumericInput(e.target.value) })}
             />
-            <Input
+            <FormField
               label="Foreign Exchange Fee Description"
               value={formData.ForeignExchangeFee}
               onChange={(e) => setFormData({ ...formData, ForeignExchangeFee: e.target.value })}
             />
-            <Input
+            <FormField
               label="FX Fee Percentage"
               type="text"
               value={formData.ForeignExchangeFeePercentage}
@@ -302,10 +304,10 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
             <Select
               label="Rewards Currency"
               value={formData.RewardsCurrency}
-              onChange={(e) => setFormData({ ...formData, RewardsCurrency: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, RewardsCurrency: value })}
               options={REWARDS_CURRENCIES.map(currency => ({ value: currency, label: currency }))}
             />
-            <Input
+            <FormField
               label="Points Per Dollar"
               type="text"
               value={formData.PointsPerDollar}
@@ -315,14 +317,14 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
 
           <div className="detail-group">
             <h3>Version Information</h3>
-            <Input
+            <FormField
               label="Effective From"
               type="date"
               value={formData.EffectiveFrom}
               onChange={(e) => setFormData({ ...formData, EffectiveFrom: e.target.value })}
               error={errors.EffectiveFrom}
             />
-            <Input
+            <FormField
               label="Effective To (optional)"
               type="date"
               value={formData.EffectiveTo}
@@ -334,29 +336,26 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
 
           <div className="detail-group full-width">
             <h3>Additional Details</h3>
-            <div className="textarea-wrapper">
-              <label className="textarea-label">Card Details</label>
-              <textarea
-                className="textarea"
-                value={formData.CardDetails}
-                onChange={(e) => setFormData({ ...formData, CardDetails: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <Input
+            <TextareaField
+              label="Card Details"
+              value={formData.CardDetails}
+              onChange={(e) => setFormData({ ...formData, CardDetails: e.target.value })}
+              rows={3}
+            />
+            <FormField
               label="Card Image URL (optional)"
               value={formData.CardImage}
               onChange={(e) => setFormData({ ...formData, CardImage: e.target.value })}
               placeholder="https://example.com/card-image.png"
             />
             <div className="form-row">
-              <Input
+              <FormField
                 label="Primary Color (optional)"
                 value={formData.CardPrimaryColor}
                 onChange={(e) => setFormData({ ...formData, CardPrimaryColor: e.target.value })}
                 placeholder="#1A73E8"
               />
-              <Input
+              <FormField
                 label="Secondary Color (optional)"
                 value={formData.CardSecondaryColor}
                 onChange={(e) => setFormData({ ...formData, CardSecondaryColor: e.target.value })}
@@ -387,6 +386,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
             </p>
             <div className="modal-actions">
               <Button
+                size="sm"
                 variant="outline"
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={deleting}
@@ -394,6 +394,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
                 Cancel
               </Button>
               <Button
+                size="sm"
                 variant="outline"
                 onClick={handleDelete}
                 disabled={deleting}

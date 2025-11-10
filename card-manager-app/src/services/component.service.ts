@@ -20,7 +20,7 @@ export class ComponentService {
   /**
    * Create a new credit
    */
-  static async createCredit(creditData: Omit<CardCredit, 'id'>): Promise<string> {
+  static async createCredit(creditData: Omit<CardCredit, 'id' | 'LastUpdated'>): Promise<string> {
     const response = await apiClient.post<{ id: string }>(API_ROUTES.CREDITS.CREATE, creditData);
     return response.data.id;
   }
@@ -52,7 +52,7 @@ export class ComponentService {
   /**
    * Create a new perk
    */
-  static async createPerk(perkData: Omit<CardPerk, 'id'>): Promise<string> {
+  static async createPerk(perkData: Omit<CardPerk, 'id' | 'LastUpdated'>): Promise<string> {
     const response = await apiClient.post<{ id: string }>(API_ROUTES.PERKS.CREATE, perkData);
     return response.data.id;
   }
@@ -84,7 +84,7 @@ export class ComponentService {
   /**
    * Create a new multiplier
    */
-  static async createMultiplier(multiplierData: Omit<CardMultiplier, 'id'>): Promise<string> {
+  static async createMultiplier(multiplierData: Omit<CardMultiplier, 'id' | 'LastUpdated'>): Promise<string> {
     const response = await apiClient.post<{ id: string }>(
       API_ROUTES.MULTIPLIERS.CREATE,
       multiplierData

@@ -130,7 +130,7 @@ export function VersionsSidebar({
             </Button>
           ) : (
             <Button
-              variant="primary"
+              variant="default"
               size="sm"
               onClick={() => onActivateVersion(selectedVersionId)}
             >

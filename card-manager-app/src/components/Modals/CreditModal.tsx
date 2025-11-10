@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Dialog } from '@/components/ui/Dialog';
-import { Input } from '@/components/ui/Input';
+import { FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import type { CardCredit } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
-import { CATEGORIES, SUBCATEGORIES, TIME_PERIODS, sanitizeId } from '@/constants/form-options';
+import { CATEGORIES, SUBCATEGORIES, TIME_PERIODS } from '@/constants/form-options';
 import './CreditModal.scss';
 
 interface CreditModalProps {
@@ -133,7 +134,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
       onOpenChange(false);
     } catch (err: any) {
       console.error('Error saving credit:', err);
-      alert('Failed to save credit: ' + err.message);
+      toast.error('Failed to save credit: ' + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -147,7 +148,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
       description={isEdit ? 'Update credit details' : 'Create a new credit for this card version'}
     >
       <form onSubmit={handleSubmit} className="credit-modal-form">
-        <Input
+        <FormField
           label="Title"
           value={formData.Title}
           onChange={(e) => setFormData({ ...formData, Title: e.target.value })}
@@ -158,7 +159,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         <Select
           label="Category"
           value={formData.Category}
-          onChange={(e) => setFormData({ ...formData, Category: e.target.value, SubCategory: '' })}
+          onChange={(value) => setFormData({ ...formData, Category: value, SubCategory: '' })}
           error={errors.Category}
           options={Object.keys(CATEGORIES).map(cat => ({ value: cat, label: cat }))}
         />
@@ -167,12 +168,12 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           <Select
             label="Sub Category"
             value={formData.SubCategory}
-            onChange={(e) => setFormData({ ...formData, SubCategory: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, SubCategory: value })}
             options={SUBCATEGORIES[formData.Category].map(sub => ({ value: sub, label: sub }))}
           />
         )}
 
-        <Input
+        <FormField
           label="Value ($)"
           type="text"
           value={formData.Value}
@@ -184,32 +185,32 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         <Select
           label="Time Period"
           value={formData.TimePeriod}
-          onChange={(e) => setFormData({ ...formData, TimePeriod: e.target.value })}
+          onChange={(value) => setFormData({ ...formData, TimePeriod: value })}
           options={TIME_PERIODS.map(tp => ({ value: tp, label: tp }))}
         />
 
-        <Input
+        <FormField
           label="Description"
           value={formData.Description}
           onChange={(e) => setFormData({ ...formData, Description: e.target.value })}
           placeholder="Describe the credit"
         />
 
-        <Input
+        <FormField
           label="Requirements"
           value={formData.Requirements}
           onChange={(e) => setFormData({ ...formData, Requirements: e.target.value })}
           placeholder="Any requirements or conditions"
         />
 
-        <Input
+        <FormField
           label="Details (optional)"
           value={formData.Details}
           onChange={(e) => setFormData({ ...formData, Details: e.target.value })}
           placeholder="Additional details"
         />
 
-        <Input
+        <FormField
           label="Effective From"
           type="date"
           value={formData.EffectiveFrom}
@@ -217,7 +218,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           error={errors.EffectiveFrom}
         />
 
-        <Input
+        <FormField
           label="Effective To (optional)"
           type="date"
           value={formData.EffectiveTo}

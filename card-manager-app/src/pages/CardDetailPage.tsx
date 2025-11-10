@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { CardService } from '@/services/card.service';
 import { ComponentService } from '@/services/component.service';
 import type { CreditCardDetails, CardCredit, CardPerk, CardMultiplier } from '@/types';
 import type { VersionSummary } from '@/types/ui-types';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { VersionsSidebar } from '@/components/CardDetail/VersionsSidebar';
-import { ComponentTabs } from '@/components/CardDetail/ComponentTabs';
 import { CardDetailsForm } from '@/components/CardDetail/CardDetailsForm';
 import { ComponentsSidebar } from '@/components/CardDetail/ComponentsSidebar';
 import { CardComponents } from '@/components/CardDetail/CardComponents';
@@ -150,7 +149,7 @@ export function CardDetailPage() {
       await loadCardData(versionId); // Reload the card to update IsActive status
     } catch (err: any) {
       console.error('Error activating version:', err);
-      alert('Failed to activate version: ' + err.message);
+      toast.error('Failed to activate version: ' + err.message);
     }
   };
 
@@ -163,7 +162,7 @@ export function CardDetailPage() {
       await loadCardData(versionId); // Reload the card to update IsActive status
     } catch (err: any) {
       console.error('Error deactivating version:', err);
-      alert('Failed to deactivate version: ' + err.message);
+      toast.error('Failed to deactivate version: ' + err.message);
     }
   };
 
@@ -211,7 +210,8 @@ export function CardDetailPage() {
   };
 
   const handleDeleteComponent = async (type: 'credits' | 'perks' | 'multipliers', id: string) => {
-    if (!confirm('Are you sure you want to delete this component?')) {
+    // Using window.confirm for now - can be replaced with Alert Dialog if needed
+    if (!window.confirm('Are you sure you want to delete this component?')) {
       return;
     }
 
@@ -233,7 +233,7 @@ export function CardDetailPage() {
       }
     } catch (err: any) {
       console.error('Error deleting component:', err);
-      alert('Failed to delete component: ' + err.message);
+      toast.error('Failed to delete component: ' + err.message);
     }
   };
 

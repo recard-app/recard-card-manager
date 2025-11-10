@@ -2,6 +2,8 @@
 @use '@/styling/variables' as *;
 
 .card-details-form {
+  padding: 1rem;
+
   h2 {
     margin-bottom: 1.5rem;
     font-size: 1.5rem;
@@ -10,16 +12,18 @@
 
   .details-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
   }
 
   .detail-group {
     h3 {
-      font-size: 1rem;
+      font-size: 0.875rem;
       font-weight: 600;
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
       color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
     }
 
     &.full-width {
@@ -29,8 +33,9 @@
 
   .detail-row {
     display: flex;
-    justify-content: space-between;
-    padding: 0.75rem 0;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
     border-bottom: 1px solid var(--border-color);
 
     &:last-child {
@@ -38,13 +43,18 @@
     }
 
     .label {
-      font-weight: 500;
-      color: var(--text-secondary);
+      font-size: 0.625rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      opacity: 0.6;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     .value {
-      font-weight: 400;
-      text-align: right;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--text-primary);
     }
   }
 

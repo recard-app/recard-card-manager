@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Dialog } from '@/components/ui/Dialog';
-import { Input } from '@/components/ui/Input';
+import { FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import type { CardPerk } from '@/types';
@@ -119,7 +120,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
       onOpenChange(false);
     } catch (err: any) {
       console.error('Error saving perk:', err);
-      alert('Failed to save perk: ' + err.message);
+      toast.error('Failed to save perk: ' + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -133,7 +134,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
       description={isEdit ? 'Update perk details' : 'Create a new perk for this card version'}
     >
       <form onSubmit={handleSubmit} className="perk-modal-form">
-        <Input
+        <FormField
           label="Title"
           value={formData.Title}
           onChange={(e) => setFormData({ ...formData, Title: e.target.value })}
@@ -144,7 +145,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
         <Select
           label="Category"
           value={formData.Category}
-          onChange={(e) => setFormData({ ...formData, Category: e.target.value, SubCategory: '' })}
+          onChange={(value) => setFormData({ ...formData, Category: value, SubCategory: '' })}
           error={errors.Category}
           options={Object.keys(CATEGORIES).map(cat => ({ value: cat, label: cat }))}
         />
@@ -153,7 +154,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
           <Select
             label="Sub Category"
             value={formData.SubCategory}
-            onChange={(e) => setFormData({ ...formData, SubCategory: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, SubCategory: value })}
             options={SUBCATEGORIES[formData.Category].map(sub => ({ value: sub, label: sub }))}
           />
         )}
@@ -170,21 +171,21 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
           {errors.Description && <span className="textarea-error">{errors.Description}</span>}
         </div>
 
-        <Input
+        <FormField
           label="Requirements"
           value={formData.Requirements}
           onChange={(e) => setFormData({ ...formData, Requirements: e.target.value })}
           placeholder="Any requirements or conditions"
         />
 
-        <Input
+        <FormField
           label="Details (optional)"
           value={formData.Details}
           onChange={(e) => setFormData({ ...formData, Details: e.target.value })}
           placeholder="Additional details"
         />
 
-        <Input
+        <FormField
           label="Effective From"
           type="date"
           value={formData.EffectiveFrom}
@@ -192,7 +193,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
           error={errors.EffectiveFrom}
         />
 
-        <Input
+        <FormField
           label="Effective To (optional)"
           type="date"
           value={formData.EffectiveTo}
