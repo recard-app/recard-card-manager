@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Dialog } from '@/components/ui/Dialog';
+import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import type { CreditCardDetails } from '@/types';
@@ -148,14 +148,14 @@ export function CreateVersionModal({
           </p>
         </div>
 
-        <div className="modal-actions">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
           <Button type="submit" disabled={submitting}>
             {submitting ? 'Creating...' : 'Create Version'}
           </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Dialog>
   );

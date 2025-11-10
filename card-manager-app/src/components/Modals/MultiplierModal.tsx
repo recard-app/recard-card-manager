@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Dialog } from '@/components/ui/Dialog';
+import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -223,14 +223,14 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
           helperText="⚠️ IMPORTANT: If this multiplier is currently active, leave this field BLANK."
         />
 
-        <div className="modal-actions">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
           <Button type="submit" disabled={submitting}>
             {submitting ? 'Saving...' : isEdit ? 'Update Multiplier' : 'Create Multiplier'}
           </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Dialog>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Dialog } from '@/components/ui/Dialog';
+import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -202,14 +202,14 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
           helperText="⚠️ IMPORTANT: If this perk is currently active, leave this field BLANK."
         />
 
-        <div className="modal-actions">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
           <Button type="submit" disabled={submitting}>
             {submitting ? 'Saving...' : isEdit ? 'Update Perk' : 'Create Perk'}
           </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Dialog>
   );

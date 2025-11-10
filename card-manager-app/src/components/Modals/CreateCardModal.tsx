@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Dialog } from '@/components/ui/Dialog';
+import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -160,7 +160,6 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
       description="Create a new credit card with its first version"
     >
       <form onSubmit={handleSubmit} className="create-card-modal-form">
-        <div className="form-content">
           <FormField
             label="Reference Card ID"
             value={formData.ReferenceCardId}
@@ -329,16 +328,15 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
               If checked, this first version will be activated; otherwise it remains inactive.
             </p>
           </div>
-        </div>
 
-        <div className="modal-actions">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
           <Button type="submit" disabled={submitting}>
             {submitting ? 'Creating...' : 'Create Card'}
           </Button>
-        </div>
+        </DialogFooter>
       </form>
     </Dialog>
   );
