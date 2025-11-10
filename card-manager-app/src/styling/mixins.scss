@@ -1,0 +1,42 @@
+@use './variables' as *;
+
+// Flexbox utilities
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+// Button base styles
+@mixin button-base {
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-md;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Card styles
+@mixin card {
+  background: $neutral-white;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-md;
+  padding: $spacing-lg;
+}

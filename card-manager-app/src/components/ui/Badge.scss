@@ -1,0 +1,37 @@
+@use '@/styling/variables' as *;
+@use 'sass:color';
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-xs;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &--default {
+    background-color: $neutral-gray-200;
+    color: $neutral-gray-800;
+  }
+
+  &--success {
+    background-color: rgba($raw-success-green, 0.1);
+    color: color.adjust($raw-success-green, $lightness: -15%);
+  }
+
+  &--warning {
+    background-color: rgba($raw-warning-yellow, 0.1);
+    color: color.adjust($raw-warning-yellow, $lightness: -25%);
+  }
+
+  &--error {
+    background-color: rgba($raw-error-red, 0.1);
+    color: color.adjust($raw-error-red, $lightness: -10%);
+  }
+
+  &--info {
+    background-color: rgba($raw-primary-blue, 0.1);
+    color: color.adjust($raw-primary-blue, $lightness: -10%);
+  }
+}

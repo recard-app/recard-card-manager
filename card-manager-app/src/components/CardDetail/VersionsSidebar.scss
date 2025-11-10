@@ -1,0 +1,110 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.versions-sidebar {
+  @include flex-column;
+  gap: $spacing-md;
+  height: fit-content;
+  position: sticky;
+  top: $spacing-lg;
+}
+
+.sidebar-header {
+  @include flex-row;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-md;
+  background-color: $neutral-gray-100;
+  border-radius: $border-radius-md;
+
+  h3 {
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $neutral-gray-800;
+    margin: 0;
+  }
+}
+
+.versions-list {
+  @include flex-column;
+  gap: $spacing-sm;
+  max-height: 600px;
+  overflow-y: auto;
+  padding: $spacing-xs;
+}
+
+.version-item {
+  @include flex-column;
+  gap: $spacing-xs;
+  padding: $spacing-md;
+  background-color: $neutral-white;
+  border: 2px solid $neutral-gray-200;
+  border-radius: $border-radius-md;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+
+  &:hover {
+    border-color: $neutral-gray-300;
+    box-shadow: $shadow-sm;
+  }
+
+  &.selected {
+    border-color: $primary-blue;
+    background-color: rgba($raw-primary-blue, 0.05);
+  }
+
+  .version-header {
+    @include flex-row;
+    justify-content: space-between;
+    align-items: center;
+    gap: $spacing-sm;
+
+    .version-name {
+      font-weight: 600;
+      color: $neutral-gray-800;
+      font-size: $font-size-sm;
+    }
+
+    .active-badge {
+      @include flex-row;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+
+  .version-dates {
+    @include flex-column;
+    gap: 2px;
+    font-size: $font-size-xs;
+    color: $neutral-gray-600;
+
+    .date-range {
+      font-weight: 500;
+    }
+
+    .updated {
+      color: $neutral-gray-600;
+    }
+  }
+}
+
+.sidebar-actions {
+  @include flex-column;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  background-color: $neutral-gray-100;
+  border-radius: $border-radius-md;
+
+  button {
+    width: 100%;
+  }
+}
+
+.empty-state {
+  padding: $spacing-lg;
+  text-align: center;
+  color: $neutral-gray-600;
+  font-size: $font-size-sm;
+}

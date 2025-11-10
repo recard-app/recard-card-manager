@@ -1,0 +1,75 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+@use 'sass:color';
+
+.btn {
+  @include button-base;
+  @include flex-center;
+  gap: $spacing-sm;
+  font-family: $font-family-base;
+
+  &--primary {
+    background-color: $primary-blue;
+    color: $neutral-white;
+
+    &:hover:not(:disabled) {
+      background-color: $primary-blue-hover;
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+  }
+
+  &--secondary {
+    background-color: $neutral-gray-200;
+    color: $neutral-gray-800;
+
+    &:hover:not(:disabled) {
+      background-color: $neutral-gray-300;
+    }
+  }
+
+  &--outline {
+    background-color: transparent;
+    color: $primary-blue;
+    border: 1px solid $primary-blue;
+
+    &:hover:not(:disabled) {
+      background-color: rgba($raw-primary-blue, 0.05);
+    }
+  }
+
+  &--destructive {
+    background-color: $error-red;
+    color: $neutral-white;
+
+    &:hover:not(:disabled) {
+      background-color: color.adjust($raw-error-red, $lightness: -10%);
+    }
+  }
+
+  &--ghost {
+    background-color: transparent;
+    color: $neutral-gray-800;
+
+    &:hover:not(:disabled) {
+      background-color: $neutral-gray-100;
+    }
+  }
+
+  &--sm {
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-xs;
+  }
+
+  &--md {
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-sm;
+  }
+
+  &--lg {
+    padding: $spacing-md $spacing-lg;
+    font-size: $font-size-base;
+  }
+}

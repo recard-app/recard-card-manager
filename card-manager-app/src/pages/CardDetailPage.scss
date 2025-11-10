@@ -1,0 +1,95 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.card-detail-page {
+  @include flex-column;
+  gap: $spacing-lg;
+  padding: $spacing-xl;
+  max-width: 1600px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.page-header {
+  @include flex-column;
+  gap: $spacing-md;
+
+  .header-content {
+    @include flex-column;
+    gap: $spacing-xs;
+  }
+
+  .title-row {
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-md;
+
+    h1 {
+      font-size: $font-size-xl;
+      font-weight: 600;
+      color: $neutral-gray-800;
+      margin: 0;
+    }
+  }
+
+  .card-issuer {
+    font-size: $font-size-base;
+    color: $neutral-gray-600;
+    margin: 0;
+  }
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: $spacing-lg;
+  flex: 1;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.main-content {
+  @include flex-column;
+  gap: $spacing-md;
+
+  .content-header {
+    @include flex-row;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacing-lg;
+    padding-bottom: 0;
+
+    h2 {
+      font-size: $font-size-lg;
+      font-weight: 600;
+      color: $neutral-gray-800;
+      margin: 0;
+    }
+  }
+}
+
+.loading,
+.error {
+  @include flex-column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl;
+  text-align: center;
+  min-height: 400px;
+}
+
+.loading {
+  color: $neutral-gray-600;
+  font-size: $font-size-base;
+}
+
+.error {
+  color: $error-red;
+  gap: $spacing-md;
+
+  p {
+    margin: 0;
+  }
+}

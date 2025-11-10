@@ -1,0 +1,19 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.card {
+  @include card;
+
+  &--default {
+    border: 1px solid $neutral-gray-200;
+  }
+
+  &--outlined {
+    border: 2px solid $neutral-gray-300;
+    box-shadow: none;
+  }
+
+  &--elevated {
+    box-shadow: $shadow-lg;
+  }
+}

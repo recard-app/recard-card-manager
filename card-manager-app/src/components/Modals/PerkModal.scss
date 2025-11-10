@@ -1,0 +1,71 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.perk-modal-form {
+  @include flex-column;
+  gap: $spacing-lg;
+}
+
+.textarea-wrapper {
+  @include flex-column;
+  gap: $spacing-xs;
+  width: 100%;
+}
+
+.textarea-label {
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: $neutral-gray-800;
+}
+
+.textarea {
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid $neutral-gray-300;
+  border-radius: $border-radius-md;
+  font-size: $font-size-sm;
+  font-family: $font-family-base;
+  color: $neutral-gray-800;
+  background-color: $neutral-white;
+  transition: all 0.2s ease;
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-blue;
+    box-shadow: 0 0 0 3px rgba($raw-primary-blue, 0.1);
+  }
+
+  &:disabled {
+    background-color: $neutral-gray-100;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  &--error {
+    border-color: $error-red;
+
+    &:focus {
+      border-color: $error-red;
+      box-shadow: 0 0 0 3px rgba($raw-error-red, 0.1);
+    }
+  }
+
+  &::placeholder {
+    color: $neutral-gray-600;
+  }
+}
+
+.textarea-error {
+  font-size: $font-size-xs;
+  color: $error-red;
+}
+
+.modal-actions {
+  @include flex-row;
+  justify-content: flex-end;
+  gap: $spacing-md;
+  margin-top: $spacing-md;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $neutral-gray-200;
+}

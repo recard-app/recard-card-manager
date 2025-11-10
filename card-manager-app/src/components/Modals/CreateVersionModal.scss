@@ -1,0 +1,66 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.create-version-modal-form {
+  @include flex-column;
+  gap: $spacing-lg;
+}
+
+.info-box {
+  padding: $spacing-md;
+  background-color: rgba($raw-primary-blue, 0.05);
+  border: 1px solid rgba($raw-primary-blue, 0.2);
+  border-radius: $border-radius-md;
+
+  p {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: $neutral-gray-600;
+
+    & + p {
+      margin-top: $spacing-xs;
+    }
+  }
+}
+
+.checkbox-group {
+  @include flex-column;
+  gap: $spacing-xs;
+
+  .checkbox-label {
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-sm;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: $neutral-gray-800;
+
+    input[type='checkbox'] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: $primary-blue;
+    }
+
+    span {
+      user-select: none;
+    }
+  }
+
+  .checkbox-description {
+    font-size: $font-size-xs;
+    color: $neutral-gray-600;
+    margin: 0;
+    padding-left: 26px;
+  }
+}
+
+.modal-actions {
+  @include flex-row;
+  justify-content: flex-end;
+  gap: $spacing-md;
+  margin-top: $spacing-md;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $neutral-gray-200;
+}

@@ -16,10 +16,12 @@ Before starting, familiarize yourself with these documents:
 
 ## Key Architecture Decisions
 
-- **Framework**: Next.js 14+ with App Router and TypeScript
-- **Database**: Direct Firebase Admin SDK connection (no API layer)
-- **Styling**: Tailwind CSS + shadcn/ui components
-- **State Management**: React Context + Server Components where possible
+- **Framework**: React 18.3.1 + Vite + TypeScript (matching existing Client)
+- **Routing**: React Router DOM v7
+- **Database**: Server admin API endpoints (Server uses Firebase Admin SDK)
+- **Styling**: SCSS with variables and mixins (matching Client, NO Tailwind)
+- **UI Components**: Radix UI headless components + custom styling
+- **State Management**: React Context API
 - **Data Pattern**: ReferenceCardId-based queries with date overlap logic
 - **Date Sentinel**: Use `"9999-12-31"` for all ongoing effectiveTo dates
 
@@ -29,66 +31,88 @@ Before starting, familiarize yourself with these documents:
 
 ### Phase 1: Project Setup and Configuration
 
-#### Step 1.1: Initialize Next.js Project
+#### Step 1.1: Initialize Vite + React Project
 
 ```bash
-# Create new Next.js project in CardManager directory
+# Create new Vite project in CardManager directory
 cd /Users/evaneckels/Documents/Projects/ReCard/CardManager
-npx create-next-app@latest card-manager-app --typescript --tailwind --app --src-dir --import-alias "@/*"
+npm create vite@latest card-manager-app -- --template react-ts
 cd card-manager-app
 ```
 
 **Configuration choices:**
+- ✅ React
 - ✅ TypeScript
-- ✅ Tailwind CSS
-- ✅ App Router
-- ✅ src/ directory
-- ✅ Import alias `@/*`
+- ✅ Vite
 
 #### Step 1.2: Install Dependencies
 
 ```bash
-npm install firebase-admin
-npm install @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-select @radix-ui/react-tabs
-npm install date-fns
-npm install class-variance-authority clsx tailwind-merge
-npm install lucide-react
-npm install -D @types/node
+# Core dependencies (matching Client stack)
+npm install react@^18.3.1 react-dom@^18.3.1
+npm install react-router-dom@^7.1.1
+npm install axios@^1.9.0
+
+# UI Components (matching Client stack)
+npm install @radix-ui/react-alert-dialog@^1.1.14
+npm install @radix-ui/react-dialog@^1.1.14
+npm install @radix-ui/react-dropdown-menu@^2.1.15
+npm install @radix-ui/react-select@^2.2.6
+npm install @radix-ui/react-slot@^1.2.3
+npm install lucide-react@^0.513.0
+
+# Styling (matching Client stack - SCSS only, no Tailwind)
+npm install sass@^1.83.0
+npm install clsx@^2.1.1
+
+# Dev dependencies
+npm install -D @types/node@^22
+npm install -D @types/react@^19.1.2
+npm install -D @types/react-dom@^19.1.2
+npm install -D typescript@^5.8.3
+npm install -D @vitejs/plugin-react@^4.4.1
 ```
 
 **Packages explained:**
-- `firebase-admin` - Direct Firestore access
-- `@radix-ui/*` - Headless UI components
-- `date-fns` - Date manipulation
-- `lucide-react` - Icons
-- `class-variance-authority` + `clsx` + `tailwind-merge` - Styling utilities
+- `react` + `react-dom` - React 18.3.1 (matches Client)
+- `react-router-dom` - Client-side routing v7
+- `axios` - HTTP client to call Server admin APIs
+- `@radix-ui/*` - Headless UI components (same as Client)
+- `lucide-react` - Icons (same as Client)
+- `sass` - SCSS preprocessor (same as Client)
+- `clsx` - Conditional classnames utility
 
 #### Step 1.3: Create Environment Variables
 
-Create `.env.local`:
+Create `.env`:
 
 ```bash
-# .env.local
-FIREBASE_PROJECT_ID=your_project_id
-FIREBASE_CLIENT_EMAIL=your_client_email
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+# .env
+VITE_API_BASE_URL=http://localhost:8000
 ```
+
+**Architecture Note**:
+The CardManager follows the same pattern as the Client:
+- Frontend: Vite + React + SCSS (browser-based)
+- Backend: Server provides admin-only API endpoints
+- Communication: axios calls to Server APIs at `/admin/*`
+- Firebase Admin SDK stays in the Server (secure)
 
 Create `.env.example` (template for version control):
 
 ```bash
 # .env.example
-FIREBASE_PROJECT_ID=
-FIREBASE_CLIENT_EMAIL=
-FIREBASE_PRIVATE_KEY=
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
-Update `.gitignore`:
+Update `.gitignore` (if not already present):
 
 ```
 # .gitignore
+.env
 .env.local
-firebase-service-account.json
+node_modules
+dist
 ```
 
 #### Step 1.4: Create Folder Structure
@@ -102,72 +126,307 @@ mkdir -p src/components/cards
 mkdir -p src/components/versions
 mkdir -p src/components/components
 mkdir -p src/utils
-mkdir -p src/app/cards
-mkdir -p src/app/components
+mkdir -p src/pages
+mkdir -p src/contexts
 ```
 
 **Folder purposes:**
-- `src/lib` - Firebase config, shared utilities
-- `src/types` - TypeScript type definitions (mostly imports)
-- `src/services` - Database service layer
+- `src/lib` - Axios config, shared utilities
+- `src/types` - TypeScript type definitions (mostly imports from Server)
+- `src/services` - API service layer (axios calls to Server)
 - `src/components/ui` - Reusable UI components (buttons, dialogs, etc.)
 - `src/components/cards` - Card-specific components
 - `src/components/versions` - Version management components
 - `src/components/components` - Component (perks/credits/multipliers) components
 - `src/utils` - Helper functions
-- `src/app/cards` - Card list and detail pages
-- `src/app/components` - Component library page
+- `src/pages` - Page components for React Router
+- `src/contexts` - React Context for state management
 
-**Checkpoint**: Verify project structure is created and dependencies are installed.
+#### Step 1.5: Configure Vite
+
+Update `vite.config.ts`:
+
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  server: {
+    port: 5174, // Different port from main Client (5173)
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `@use "@/styling/variables" as *; @use "@/styling/mixins" as *;`,
+      },
+    },
+  },
+})
+```
+
+#### Step 1.6: Configure TypeScript
+
+Update `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+```
+
+#### Step 1.7: Setup SCSS Styling Structure
+
+Create `src/styling` folder:
+
+```bash
+mkdir -p src/styling
+```
+
+Create `src/styling/variables.scss`:
+
+```scss
+// Colors
+$primary-blue: #1a73e8;
+$primary-blue-hover: #1557b0;
+$neutral-white: #ffffff;
+$neutral-gray-100: #f5f5f5;
+$neutral-gray-200: #e0e0e0;
+$neutral-gray-300: #cccccc;
+$neutral-gray-600: #757575;
+$neutral-gray-800: #424242;
+$neutral-black: #000000;
+
+$success-green: #34a853;
+$warning-yellow: #fbbc04;
+$error-red: #ea4335;
+
+// Spacing
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+
+// Typography
+$font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+$font-size-xs: 12px;
+$font-size-sm: 14px;
+$font-size-base: 16px;
+$font-size-lg: 18px;
+$font-size-xl: 24px;
+
+// Border radius
+$border-radius-sm: 4px;
+$border-radius-md: 8px;
+$border-radius-lg: 12px;
+
+// Shadows
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+```
+
+Create `src/styling/mixins.scss`:
+
+```scss
+// Flexbox utilities
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+// Button base styles
+@mixin button-base {
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-md;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Card styles
+@mixin card {
+  background: $neutral-white;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-md;
+  padding: $spacing-lg;
+}
+```
+
+Create `src/styling/globals.scss`:
+
+```scss
+@use './variables' as *;
+@use './mixins' as *;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  color: $neutral-gray-800;
+  background-color: $neutral-gray-100;
+}
+
+#root {
+  height: 100%;
+}
+```
+
+Update `src/main.tsx` to import global styles:
+
+```typescript
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './styling/globals.scss'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+```
+
+**Checkpoint**: Verify project structure is created, dependencies are installed, Vite config is correct, and SCSS files are in place.
 
 ---
 
-### Phase 2: Firebase Configuration
+### Phase 2: API Client Configuration
 
-#### Step 2.1: Create Firebase Admin Config
+#### Step 2.1: Create Axios Client
 
-**File**: `src/lib/firebase-admin.ts`
+**File**: `src/lib/api-client.ts`
 
 ```typescript
-import admin from 'firebase-admin';
+import axios from 'axios';
 
-// Initialize Firebase Admin SDK
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID!,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')!
-    })
-  });
-}
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
-export const db = admin.firestore();
-export const auth = admin.auth();
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor for authentication
+apiClient.interceptors.request.use(
+  (config) => {
+    // TODO: Add authentication token when implemented
+    // const token = localStorage.getItem('authToken');
+    // if (token) {
+    //   config.headers.Authorization = `Bearer ${token}`;
+    // }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for error handling
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Handle unauthorized
+      console.error('Unauthorized access');
+    }
+    return Promise.reject(error);
+  }
+);
 ```
 
-**Reference**: [design_proposal.md - Architecture: Direct Firestore Access](./design_proposal.md#architecture-direct-firestore-access)
+**Reference**: Matches Client axios pattern
 
-#### Step 2.2: Create Database Collections Constants
+#### Step 2.2: Create API Constants
 
-**File**: `src/lib/collections.ts`
+**File**: `src/lib/api-routes.ts`
 
 ```typescript
-// Firestore collection names
-export const COLLECTIONS = {
-  CREDIT_CARDS: 'credit_cards',
-  CREDIT_CARDS_HISTORY: 'credit_cards_history',
-  CREDIT_CARDS_CREDITS: 'credit_cards_credits',
-  CREDIT_CARDS_PERKS: 'credit_cards_perks',
-  CREDIT_CARDS_MULTIPLIERS: 'credit_cards_multipliers'
+// API route constants for card manager admin endpoints
+export const API_ROUTES = {
+  // Card routes (will be implemented in Server)
+  CARDS: {
+    LIST: '/admin/cards',
+    DETAILS: (id: string) => `/admin/cards/${id}`,
+    CREATE: '/admin/cards',
+    UPDATE: (id: string) => `/admin/cards/${id}`,
+    DELETE: (id: string) => `/admin/cards/${id}`,
+  },
+  // Version routes
+  VERSIONS: {
+    LIST: (referenceCardId: string) => `/admin/cards/${referenceCardId}/versions`,
+    CREATE: (referenceCardId: string) => `/admin/cards/${referenceCardId}/versions`,
+    ACTIVATE: (referenceCardId: string, versionId: string) =>
+      `/admin/cards/${referenceCardId}/versions/${versionId}/activate`,
+    DEACTIVATE: (referenceCardId: string) =>
+      `/admin/cards/${referenceCardId}/deactivate`,
+  },
+  // Component routes
+  COMPONENTS: {
+    LIST: (referenceCardId: string) => `/admin/cards/${referenceCardId}/components`,
+    CREATE: (type: string) => `/admin/components/${type}`,
+    UPDATE: (type: string, id: string) => `/admin/components/${type}/${id}`,
+    DELETE: (type: string, id: string) => `/admin/components/${type}/${id}`,
+  },
 } as const;
-
-export type CollectionName = typeof COLLECTIONS[keyof typeof COLLECTIONS];
 ```
 
-**Reference**: [DATA_STRUCTURE_AND_RELATIONSHIPS.md - Firestore Collections](./DATA_STRUCTURE_AND_RELATIONSHIPS.md#firestore-collections)
-
-**Checkpoint**: Test Firebase connection by creating a simple test script that reads from `credit_cards` collection.
+**Checkpoint**: Verify axios client is configured and can make requests to Server.
 
 ---
 

@@ -1,0 +1,63 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+// Define CSS Custom Properties at :root level
+:root {
+  // Colors
+  --color-primary-blue: #1a73e8;
+  --color-primary-blue-hover: #1557b0;
+  --color-neutral-white: #ffffff;
+  --color-neutral-gray-100: #f5f5f5;
+  --color-neutral-gray-200: #e0e0e0;
+  --color-neutral-gray-300: #cccccc;
+  --color-neutral-gray-600: #757575;
+  --color-neutral-gray-800: #424242;
+  --color-neutral-black: #000000;
+
+  --color-success-green: #34a853;
+  --color-warning-yellow: #fbbc04;
+  --color-error-red: #ea4335;
+
+  // Spacing
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  // Typography
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+
+  // Border radius
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+
+  // Shadows
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  color: $neutral-gray-800;
+  background-color: $neutral-gray-100;
+}
+
+#root {
+  height: 100%;
+}

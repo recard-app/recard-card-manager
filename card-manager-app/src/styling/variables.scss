@@ -1,0 +1,58 @@
+// CSS Custom Properties (CSS Variables) - defined in :root via globals.scss
+// These can be accessed in JS and overridden at runtime
+
+// SCSS Variables that reference CSS custom properties
+// This allows SCSS functions (like color.adjust()) while maintaining CSS variable flexibility
+
+// Colors
+$primary-blue: var(--color-primary-blue);
+$primary-blue-hover: var(--color-primary-blue-hover);
+$neutral-white: var(--color-neutral-white);
+$neutral-gray-100: var(--color-neutral-gray-100);
+$neutral-gray-200: var(--color-neutral-gray-200);
+$neutral-gray-300: var(--color-neutral-gray-300);
+$neutral-gray-600: var(--color-neutral-gray-600);
+$neutral-gray-800: var(--color-neutral-gray-800);
+$neutral-black: var(--color-neutral-black);
+
+$success-green: var(--color-success-green);
+$warning-yellow: var(--color-warning-yellow);
+$error-red: var(--color-error-red);
+
+// Spacing
+$spacing-xs: var(--spacing-xs);
+$spacing-sm: var(--spacing-sm);
+$spacing-md: var(--spacing-md);
+$spacing-lg: var(--spacing-lg);
+$spacing-xl: var(--spacing-xl);
+
+// Typography
+$font-family-base: var(--font-family-base);
+$font-size-xs: var(--font-size-xs);
+$font-size-sm: var(--font-size-sm);
+$font-size-base: var(--font-size-base);
+$font-size-lg: var(--font-size-lg);
+$font-size-xl: var(--font-size-xl);
+
+// Border radius
+$border-radius-sm: var(--border-radius-sm);
+$border-radius-md: var(--border-radius-md);
+$border-radius-lg: var(--border-radius-lg);
+
+// Shadows
+$shadow-sm: var(--shadow-sm);
+$shadow-md: var(--shadow-md);
+$shadow-lg: var(--shadow-lg);
+
+// Raw color values for SCSS functions (darken, lighten, etc.)
+// These are actual hex values that SCSS can manipulate
+$raw-primary-blue: #1a73e8;
+$raw-primary-blue-hover: #1557b0;
+$raw-success-green: #34a853;
+$raw-warning-yellow: #fbbc04;
+$raw-error-red: #ea4335;
+$raw-neutral-gray-100: #f5f5f5;
+$raw-neutral-gray-200: #e0e0e0;
+$raw-neutral-gray-300: #cccccc;
+$raw-neutral-gray-600: #757575;
+$raw-neutral-gray-800: #424242;
