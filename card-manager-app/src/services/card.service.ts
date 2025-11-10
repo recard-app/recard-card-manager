@@ -103,15 +103,15 @@ export class CardService {
   }
 
   /**
-   * Deactivate the currently active version
+   * Deactivate a specific version
    */
   static async deactivateVersion(
     referenceCardId: string,
-    options: { effectiveTo: string }
+    versionId: string
   ): Promise<void> {
     await apiClient.post(
-      API_ROUTES.VERSIONS.DEACTIVATE(referenceCardId),
-      options
+      API_ROUTES.VERSIONS.DEACTIVATE(referenceCardId, versionId),
+      {}
     );
   }
 }

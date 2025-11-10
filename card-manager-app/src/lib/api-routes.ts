@@ -20,7 +20,8 @@ export const API_ROUTES = {
     CREATE_AUTO: (referenceCardId: string) => `/admin/cards/${referenceCardId}/versions`,
     ACTIVATE: (referenceCardId: string, versionId: string) =>
       `/admin/cards/${referenceCardId}/versions/${versionId}/activate`,
-    DEACTIVATE: (referenceCardId: string) => `/admin/cards/${referenceCardId}/deactivate`,
+    DEACTIVATE: (referenceCardId: string, versionId: string) =>
+      `/admin/cards/${referenceCardId}/versions/${versionId}/deactivate`,
   },
 
   // Component routes - Credits

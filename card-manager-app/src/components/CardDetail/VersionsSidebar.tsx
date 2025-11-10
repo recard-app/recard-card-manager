@@ -14,7 +14,7 @@ interface VersionsSidebarProps {
   onVersionSelect: (versionId: string) => void;
   onCreateVersion: () => void;
   onActivateVersion: (versionId: string) => void;
-  onDeactivateVersion: () => void;
+  onDeactivateVersion: (versionId: string) => void;
 }
 
 export function VersionsSidebar({
@@ -124,9 +124,9 @@ export function VersionsSidebar({
             <Button
               variant="outline"
               size="sm"
-              onClick={onDeactivateVersion}
+              onClick={() => onDeactivateVersion(selectedVersionId)}
             >
-              Deactivate Version
+              Remove Active
             </Button>
           ) : (
             <Button
@@ -134,7 +134,7 @@ export function VersionsSidebar({
               size="sm"
               onClick={() => onActivateVersion(selectedVersionId)}
             >
-              Activate Version
+              Make Active
             </Button>
           )}
         </div>

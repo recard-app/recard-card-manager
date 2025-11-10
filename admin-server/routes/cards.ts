@@ -192,25 +192,18 @@ router.get('/:referenceCardId/versions', async (req: Request, res: Response) => 
       return res.json([]);
     }
 
-    const today = new Date().toISOString().split('T')[0];
     const versions: any[] = [];
 
     snapshot.forEach((doc) => {
       const data = doc.data() as CreditCardDetails;
-      const effectiveFrom = data.effectiveFrom;
-      const effectiveTo = data.effectiveTo;
-
-      const isActive =
-        effectiveFrom <= today &&
-        (effectiveTo === ONGOING_SENTINEL_DATE || effectiveTo >= today);
 
       versions.push({
         id: doc.id,
-        versionName: data.VersionName,
+        VersionName: data.VersionName,
         effectiveFrom: data.effectiveFrom,
         effectiveTo: data.effectiveTo,
         lastUpdated: data.lastUpdated,
-        isActive,
+        IsActive: data.IsActive || false,
       });
     });
 
@@ -308,13 +301,12 @@ router.post('/:referenceCardId/versions/:versionId', async (req: Request, res: R
 
 /**
  * POST /admin/cards/:referenceCardId/versions/:versionId/activate
- * Activate a specific version
+ * Activate a specific version by setting IsActive to true
  */
 router.post('/:referenceCardId/versions/:versionId/activate', async (req: Request, res: Response) => {
   try {
     const { referenceCardId, versionId } = req.params;
     const { deactivateOthers } = req.body;
-    const today = new Date().toISOString().split('T')[0];
 
     // Get the version to activate
     const versionDoc = await db.collection('credit_cards_history').doc(versionId).get();
@@ -322,30 +314,26 @@ router.post('/:referenceCardId/versions/:versionId/activate', async (req: Reques
       return res.status(404).json({ error: 'Version not found' });
     }
 
-    // Update effectiveTo to be ongoing
+    // Set IsActive to true
     await db.collection('credit_cards_history').doc(versionId).update({
-      effectiveTo: ONGOING_SENTINEL_DATE,
+      IsActive: true,
       lastUpdated: new Date().toISOString(),
     });
 
     // Deactivate other versions if requested
     if (deactivateOthers) {
       const snapshot = await db
-        .collection('creditCards')
+        .collection('credit_cards_history')
         .where('ReferenceCardId', '==', referenceCardId)
         .get();
 
       const batch = db.batch();
       snapshot.forEach((doc) => {
         if (doc.id !== versionId) {
-          const data = doc.data() as CreditCardDetails;
-          // Only update if currently active
-          if (data.effectiveTo === ONGOING_SENTINEL_DATE) {
-            batch.update(doc.ref, {
-              effectiveTo: today,
-              lastUpdated: new Date().toISOString(),
-            });
-          }
+          batch.update(doc.ref, {
+            IsActive: false,
+            lastUpdated: new Date().toISOString(),
+          });
         }
       });
 
@@ -360,33 +348,22 @@ router.post('/:referenceCardId/versions/:versionId/activate', async (req: Reques
 });
 
 /**
- * POST /admin/cards/:referenceCardId/deactivate
- * Deactivate the currently active version
+ * POST /admin/cards/:referenceCardId/versions/:versionId/deactivate
+ * Deactivate a specific version by setting IsActive to false
  */
-router.post('/:referenceCardId/deactivate', async (req: Request, res: Response) => {
+router.post('/:referenceCardId/versions/:versionId/deactivate', async (req: Request, res: Response) => {
   try {
-    const { referenceCardId } = req.params;
-    const { effectiveTo } = req.body;
+    const { versionId } = req.params;
 
-    const snapshot = await db
-      .collection('creditCards')
-      .where('ReferenceCardId', '==', referenceCardId)
-      .where('effectiveTo', '==', ONGOING_SENTINEL_DATE)
-      .get();
-
-    if (snapshot.empty) {
-      return res.status(404).json({ error: 'No active version found' });
+    const versionDoc = await db.collection('credit_cards_history').doc(versionId).get();
+    if (!versionDoc.exists) {
+      return res.status(404).json({ error: 'Version not found' });
     }
 
-    const batch = db.batch();
-    snapshot.forEach((doc) => {
-      batch.update(doc.ref, {
-        effectiveTo: effectiveTo,
-        lastUpdated: new Date().toISOString(),
-      });
+    await db.collection('credit_cards_history').doc(versionId).update({
+      IsActive: false,
+      lastUpdated: new Date().toISOString(),
     });
-
-    await batch.commit();
 
     res.json({ success: true });
   } catch (error) {

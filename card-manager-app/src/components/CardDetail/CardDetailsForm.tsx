@@ -8,6 +8,7 @@ import type { CreditCardDetails } from '@/types';
 import { normalizeEffectiveTo } from '@/types';
 import { formatDate } from '@/utils/date-utils';
 import { REWARDS_CURRENCIES } from '@/constants/form-options';
+import { Edit2, Trash2 } from 'lucide-react';
 import './CardDetailsForm.scss';
 import { CardIcon } from '@/components/icons/CardIcon';
 
@@ -15,11 +16,14 @@ interface CardDetailsFormProps {
   cardId: string;
   card: CreditCardDetails;
   onSaved?: () => void;
+  onDeleted?: () => void;
 }
 
-export function CardDetailsForm({ cardId, card, onSaved }: CardDetailsFormProps) {
+export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetailsFormProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Helper to sanitize numeric input (allows digits, decimal point, and negative sign)
@@ -118,14 +122,39 @@ export function CardDetailsForm({ cardId, card, onSaved }: CardDetailsFormProps)
     setIsEditing(false);
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await CardService.deleteCard(cardId);
+      setShowDeleteConfirm(false);
+      onDeleted?.();
+    } catch (err: any) {
+      alert('Failed to delete version: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <Card className="card-details-form">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>Card Details</h2>
         {!isEditing ? (
-          <Button size="sm" onClick={() => setIsEditing(true)}>
-            Edit
-          </Button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="delete-button"
+            >
+              <Trash2 size={16} />
+              Delete Version
+            </Button>
+            <Button size="sm" onClick={() => setIsEditing(true)}>
+              <Edit2 size={16} />
+              Edit
+            </Button>
+          </div>
         ) : (
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <Button variant="outline" size="sm" onClick={handleCancel} disabled={submitting}>
@@ -299,7 +328,7 @@ export function CardDetailsForm({ cardId, card, onSaved }: CardDetailsFormProps)
               value={formData.EffectiveTo}
               onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
               placeholder="Leave empty for ongoing"
-              helperText="If currently active, leave this blank."
+              helperText="⚠️ IMPORTANT: If this version is currently active, leave this field BLANK."
             />
           </div>
 
@@ -345,6 +374,36 @@ export function CardDetailsForm({ cardId, card, onSaved }: CardDetailsFormProps)
             </div>
           </div>
         </form>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="modal-overlay" onClick={() => !deleting && setShowDeleteConfirm(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete Version</h3>
+            <p>
+              Are you sure you want to delete version <strong>{card.VersionName}</strong>?
+              This action cannot be undone.
+            </p>
+            <div className="modal-actions">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{ backgroundColor: 'var(--error-red)', color: 'white', borderColor: 'var(--error-red)' }}
+              >
+                {deleting ? 'Deleting...' : 'Delete Version'}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </Card>
   );

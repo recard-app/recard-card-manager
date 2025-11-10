@@ -147,20 +147,20 @@ export function CardDetailPage() {
         deactivateOthers: true,
       });
       await loadVersions(card.ReferenceCardId);
+      await loadCardData(versionId); // Reload the card to update IsActive status
     } catch (err: any) {
       console.error('Error activating version:', err);
       alert('Failed to activate version: ' + err.message);
     }
   };
 
-  const handleDeactivateVersion = async () => {
+  const handleDeactivateVersion = async (versionId: string) => {
     if (!card?.ReferenceCardId) return;
 
     try {
-      await CardService.deactivateVersion(card.ReferenceCardId, {
-        effectiveTo: new Date().toISOString().split('T')[0],
-      });
+      await CardService.deactivateVersion(card.ReferenceCardId, versionId);
       await loadVersions(card.ReferenceCardId);
+      await loadCardData(versionId); // Reload the card to update IsActive status
     } catch (err: any) {
       console.error('Error deactivating version:', err);
       alert('Failed to deactivate version: ' + err.message);
@@ -301,6 +301,10 @@ export function CardDetailPage() {
               if (selectedVersionId) {
                 await loadComponents(selectedVersionId);
               }
+            }}
+            onDeleted={async () => {
+              // After deleting a version, navigate back to cards list
+              navigate('/cards');
             }}
           />
           <CardComponents
