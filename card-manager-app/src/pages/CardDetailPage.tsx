@@ -290,7 +290,19 @@ export function CardDetailPage() {
         />
 
         <div className="main-content">
-          <CardDetailsForm card={card} />
+          <CardDetailsForm
+            cardId={selectedVersionId || cardId!}
+            card={card}
+            onSaved={async () => {
+              await loadCardData(selectedVersionId || cardId!);
+              if (card.ReferenceCardId) {
+                await loadVersions(card.ReferenceCardId);
+              }
+              if (selectedVersionId) {
+                await loadComponents(selectedVersionId);
+              }
+            }}
+          />
           <CardComponents
             card={card}
             credits={credits}
@@ -318,21 +330,21 @@ export function CardDetailPage() {
           <CreditModal
             open={creditModalOpen}
             onOpenChange={setCreditModalOpen}
-            cardId={selectedVersionId}
+            referenceCardId={card.ReferenceCardId}
             credit={editingCredit}
             onSuccess={() => loadComponents(selectedVersionId)}
           />
           <PerkModal
             open={perkModalOpen}
             onOpenChange={setPerkModalOpen}
-            cardId={selectedVersionId}
+            referenceCardId={card.ReferenceCardId}
             perk={editingPerk}
             onSuccess={() => loadComponents(selectedVersionId)}
           />
           <MultiplierModal
             open={multiplierModalOpen}
             onOpenChange={setMultiplierModalOpen}
-            cardId={selectedVersionId}
+            referenceCardId={card.ReferenceCardId}
             multiplier={editingMultiplier}
             onSuccess={() => loadComponents(selectedVersionId)}
           />

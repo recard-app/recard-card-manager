@@ -27,7 +27,8 @@ export function VersionsSidebar({
   onDeactivateVersion,
 }: VersionsSidebarProps) {
   const selectedVersion = versions.find(v => v.id === selectedVersionId);
-  const isActiveVersion = selectedVersion?.isActive || false;
+  const isActiveVersion =
+    (selectedVersion && ('IsActive' in selectedVersion ? (selectedVersion as any).IsActive : (selectedVersion as any).isActive)) || false;
 
   if (collapsed) {
     return (
@@ -68,8 +69,13 @@ export function VersionsSidebar({
               onClick={() => onVersionSelect(version.id)}
             >
               <div className="version-header">
-                <span className="version-name">{version.versionName}</span>
-                {version.isActive && (
+                <div className="version-title">
+                  <span className="version-name">
+                    {(version as any).VersionName ?? (version as any).versionName ?? ''}
+                  </span>
+                  <div className="version-id">ID: {version.id}</div>
+                </div>
+                {(((version as any).IsActive) ?? ((version as any).isActive)) && (
                   <Badge variant="success" className="active-badge">
                     <Check size={12} />
                     Active

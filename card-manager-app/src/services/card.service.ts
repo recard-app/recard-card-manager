@@ -79,13 +79,13 @@ export class CardService {
    */
   static async createNewVersion(
     referenceCardId: string,
-    versionId: string,
     newVersionData: Omit<CreditCardDetails, 'id' | 'ReferenceCardId' | 'lastUpdated'>
-  ): Promise<void> {
-    await apiClient.post(
-      API_ROUTES.VERSIONS.CREATE(referenceCardId, versionId),
+  ): Promise<string> {
+    const response = await apiClient.post<{ id: string }>(
+      API_ROUTES.VERSIONS.CREATE_AUTO(referenceCardId),
       newVersionData
     );
+    return response.data.id;
   }
 
   /**

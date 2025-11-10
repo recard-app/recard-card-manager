@@ -48,8 +48,8 @@ router.get('/', async (req: Request, res: Response) => {
       let hasActiveVersion = false;
 
       for (const version of versions) {
-        const effectiveFrom = version.EffectiveFrom;
-        const effectiveTo = version.EffectiveTo;
+        const effectiveFrom = version.effectiveFrom;
+        const effectiveTo = version.effectiveTo;
 
         if (effectiveFrom <= today && (effectiveTo === ONGOING_SENTINEL_DATE || effectiveTo >= today)) {
           hasActiveVersion = true;
@@ -112,6 +112,11 @@ router.post('/', async (req: Request, res: Response) => {
 
     const newCard = {
       ...cardData,
+      // Normalize blank/undefined effectiveTo to the ongoing sentinel
+      effectiveTo:
+        cardData?.effectiveTo === '' || cardData?.effectiveTo == null
+          ? ONGOING_SENTINEL_DATE
+          : cardData.effectiveTo,
       lastUpdated: now,
     };
 
@@ -134,10 +139,17 @@ router.put('/:cardId', async (req: Request, res: Response) => {
     const cardData = req.body;
     const now = new Date().toISOString();
 
-    await db.collection('credit_cards_history').doc(cardId).update({
-      ...cardData,
-      lastUpdated: now,
-    });
+    // Build update payload, normalizing effectiveTo if provided blank/null
+    const updateData: Record<string, any> = { ...cardData };
+    if (Object.prototype.hasOwnProperty.call(cardData, 'effectiveTo')) {
+      updateData.effectiveTo =
+        cardData.effectiveTo === '' || cardData.effectiveTo == null
+          ? ONGOING_SENTINEL_DATE
+          : cardData.effectiveTo;
+    }
+    updateData.lastUpdated = now;
+
+    await db.collection('credit_cards_history').doc(cardId).update(updateData);
 
     res.json({ success: true });
   } catch (error) {
@@ -185,8 +197,8 @@ router.get('/:referenceCardId/versions', async (req: Request, res: Response) => 
 
     snapshot.forEach((doc) => {
       const data = doc.data() as CreditCardDetails;
-      const effectiveFrom = data.EffectiveFrom;
-      const effectiveTo = data.EffectiveTo;
+      const effectiveFrom = data.effectiveFrom;
+      const effectiveTo = data.effectiveTo;
 
       const isActive =
         effectiveFrom <= today &&
@@ -195,8 +207,8 @@ router.get('/:referenceCardId/versions', async (req: Request, res: Response) => 
       versions.push({
         id: doc.id,
         versionName: data.VersionName,
-        effectiveFrom: data.EffectiveFrom,
-        effectiveTo: data.EffectiveTo,
+        effectiveFrom: data.effectiveFrom,
+        effectiveTo: data.effectiveTo,
         lastUpdated: data.lastUpdated,
         isActive,
       });
@@ -236,10 +248,15 @@ router.post('/:referenceCardId/versions', async (req: Request, res: Response) =>
     const baseCard = snapshot.docs[0].data() as CreditCardDetails;
 
     // Create new version with the provided data
+    const normalizedEffectiveTo =
+      !newVersionData?.effectiveTo || newVersionData.effectiveTo === ''
+        ? ONGOING_SENTINEL_DATE
+        : newVersionData.effectiveTo;
     const newCard: CreditCardDetails = {
       ...baseCard,
       ...newVersionData,
       ReferenceCardId: referenceCardId,
+      effectiveTo: normalizedEffectiveTo,
       lastUpdated: now,
     };
 
@@ -248,6 +265,43 @@ router.post('/:referenceCardId/versions', async (req: Request, res: Response) =>
     res.status(201).json({ id: docRef.id });
   } catch (error) {
     console.error('Error creating new version:', error);
+    res.status(500).json({ error: 'Failed to create new version' });
+  }
+});
+
+/**
+ * POST /admin/cards/:referenceCardId/versions/:versionId
+ * Create a new version with a specific versionId
+ */
+router.post('/:referenceCardId/versions/:versionId', async (req: Request, res: Response) => {
+  try {
+    const { referenceCardId, versionId } = req.params;
+    const newVersionData = req.body as Partial<CreditCardDetails>;
+    const now = new Date().toISOString();
+
+    // Disallow overwriting an existing version with the same ID
+    const existing = await db.collection('credit_cards_history').doc(versionId).get();
+    if (existing.exists) {
+      return res.status(409).json({ error: 'Version with this ID already exists' });
+    }
+
+    // Persist exactly what the client sends, ensuring ReferenceCardId and lastUpdated are set
+    const normalizedEffectiveTo =
+      !newVersionData?.effectiveTo || newVersionData.effectiveTo === ''
+        ? ONGOING_SENTINEL_DATE
+        : newVersionData.effectiveTo;
+    const newCard: CreditCardDetails = {
+      ...(newVersionData as CreditCardDetails),
+      ReferenceCardId: referenceCardId,
+      effectiveTo: normalizedEffectiveTo,
+      lastUpdated: now,
+    };
+
+    await db.collection('credit_cards_history').doc(versionId).set(newCard);
+
+    res.status(201).json({ id: versionId });
+  } catch (error) {
+    console.error('Error creating new version with custom id:', error);
     res.status(500).json({ error: 'Failed to create new version' });
   }
 });
@@ -268,9 +322,9 @@ router.post('/:referenceCardId/versions/:versionId/activate', async (req: Reques
       return res.status(404).json({ error: 'Version not found' });
     }
 
-    // Update EffectiveTo to be ongoing
+    // Update effectiveTo to be ongoing
     await db.collection('credit_cards_history').doc(versionId).update({
-      EffectiveTo: ONGOING_SENTINEL_DATE,
+      effectiveTo: ONGOING_SENTINEL_DATE,
       lastUpdated: new Date().toISOString(),
     });
 
@@ -286,9 +340,9 @@ router.post('/:referenceCardId/versions/:versionId/activate', async (req: Reques
         if (doc.id !== versionId) {
           const data = doc.data() as CreditCardDetails;
           // Only update if currently active
-          if (data.EffectiveTo === ONGOING_SENTINEL_DATE) {
+          if (data.effectiveTo === ONGOING_SENTINEL_DATE) {
             batch.update(doc.ref, {
-              EffectiveTo: today,
+              effectiveTo: today,
               lastUpdated: new Date().toISOString(),
             });
           }
@@ -317,7 +371,7 @@ router.post('/:referenceCardId/deactivate', async (req: Request, res: Response) 
     const snapshot = await db
       .collection('creditCards')
       .where('ReferenceCardId', '==', referenceCardId)
-      .where('EffectiveTo', '==', ONGOING_SENTINEL_DATE)
+      .where('effectiveTo', '==', ONGOING_SENTINEL_DATE)
       .get();
 
     if (snapshot.empty) {
@@ -327,7 +381,7 @@ router.post('/:referenceCardId/deactivate', async (req: Request, res: Response) 
     const batch = db.batch();
     snapshot.forEach((doc) => {
       batch.update(doc.ref, {
-        EffectiveTo: effectiveTo,
+        effectiveTo: effectiveTo,
         lastUpdated: new Date().toISOString(),
       });
     });

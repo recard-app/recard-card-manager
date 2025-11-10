@@ -10,12 +10,12 @@ import './PerkModal.scss';
 interface PerkModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  cardId: string;
+  referenceCardId: string;
   perk?: CardPerk | null;
   onSuccess: () => void;
 }
 
-export function PerkModal({ open, onOpenChange, cardId, perk, onSuccess }: PerkModalProps) {
+export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess }: PerkModalProps) {
   const isEdit = !!perk;
 
   const [formData, setFormData] = useState({
@@ -92,8 +92,7 @@ export function PerkModal({ open, onOpenChange, cardId, perk, onSuccess }: PerkM
     setSubmitting(true);
 
     try {
-      const perkData: Omit<CardPerk, 'id' | 'LastUpdated'> = {
-        ReferenceCardId: cardId,
+      const basePerkData: Omit<CardPerk, 'id' | 'LastUpdated' | 'ReferenceCardId'> = {
         Title: formData.Title.trim(),
         Category: formData.Category.trim(),
         SubCategory: formData.SubCategory.trim(),
@@ -105,9 +104,13 @@ export function PerkModal({ open, onOpenChange, cardId, perk, onSuccess }: PerkM
       };
 
       if (isEdit && perk) {
-        await ComponentService.updatePerk(perk.id, perkData);
+        // Do not modify ReferenceCardId on update to avoid losing association
+        await ComponentService.updatePerk(perk.id, basePerkData);
       } else {
-        await ComponentService.createPerk(perkData);
+        await ComponentService.createPerk({
+          ReferenceCardId: referenceCardId,
+          ...basePerkData,
+        });
       }
 
       onSuccess();
@@ -191,6 +194,7 @@ export function PerkModal({ open, onOpenChange, cardId, perk, onSuccess }: PerkM
           value={formData.EffectiveTo}
           onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
           placeholder="Leave empty for ongoing"
+          helperText="If currently active, leave this blank."
         />
 
         <div className="modal-actions">

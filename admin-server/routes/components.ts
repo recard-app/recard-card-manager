@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { db } from '../firebase-admin';
-import { CardCredit, CardPerk, CardMultiplier } from '../types';
+import { CardCredit, CardPerk, CardMultiplier, ONGOING_SENTINEL_DATE } from '../types';
 import { verifyAuth } from '../middleware/auth';
 
 const router = express.Router();
@@ -60,6 +60,13 @@ router.get('/cards/:cardId/credits', async (req: Request, res: Response) => {
 router.post('/credits', async (req: Request, res: Response) => {
   try {
     const creditData = req.body;
+    // Normalize EffectiveTo if blank/null/undefined
+    if (Object.prototype.hasOwnProperty.call(creditData, 'EffectiveTo')) {
+      creditData.EffectiveTo =
+        creditData.EffectiveTo === '' || creditData.EffectiveTo == null
+          ? ONGOING_SENTINEL_DATE
+          : creditData.EffectiveTo;
+    }
     const docRef = await db.collection('credit_cards_credits').add(creditData);
 
     res.status(201).json({ id: docRef.id });
@@ -77,6 +84,13 @@ router.put('/credits/:creditId', async (req: Request, res: Response) => {
   try {
     const { creditId } = req.params;
     const creditData = req.body;
+    // Normalize EffectiveTo if explicitly provided
+    if (Object.prototype.hasOwnProperty.call(creditData, 'EffectiveTo')) {
+      creditData.EffectiveTo =
+        creditData.EffectiveTo === '' || creditData.EffectiveTo == null
+          ? ONGOING_SENTINEL_DATE
+          : creditData.EffectiveTo;
+    }
 
     await db.collection('credit_cards_credits').doc(creditId).update(creditData);
 
@@ -155,6 +169,12 @@ router.get('/cards/:cardId/perks', async (req: Request, res: Response) => {
 router.post('/perks', async (req: Request, res: Response) => {
   try {
     const perkData = req.body;
+    if (Object.prototype.hasOwnProperty.call(perkData, 'EffectiveTo')) {
+      perkData.EffectiveTo =
+        perkData.EffectiveTo === '' || perkData.EffectiveTo == null
+          ? ONGOING_SENTINEL_DATE
+          : perkData.EffectiveTo;
+    }
     const docRef = await db.collection('credit_cards_perks').add(perkData);
 
     res.status(201).json({ id: docRef.id });
@@ -172,6 +192,12 @@ router.put('/perks/:perkId', async (req: Request, res: Response) => {
   try {
     const { perkId } = req.params;
     const perkData = req.body;
+    if (Object.prototype.hasOwnProperty.call(perkData, 'EffectiveTo')) {
+      perkData.EffectiveTo =
+        perkData.EffectiveTo === '' || perkData.EffectiveTo == null
+          ? ONGOING_SENTINEL_DATE
+          : perkData.EffectiveTo;
+    }
 
     await db.collection('credit_cards_perks').doc(perkId).update(perkData);
 
@@ -250,6 +276,12 @@ router.get('/cards/:cardId/multipliers', async (req: Request, res: Response) => 
 router.post('/multipliers', async (req: Request, res: Response) => {
   try {
     const multiplierData = req.body;
+    if (Object.prototype.hasOwnProperty.call(multiplierData, 'EffectiveTo')) {
+      multiplierData.EffectiveTo =
+        multiplierData.EffectiveTo === '' || multiplierData.EffectiveTo == null
+          ? ONGOING_SENTINEL_DATE
+          : multiplierData.EffectiveTo;
+    }
     const docRef = await db.collection('credit_cards_multipliers').add(multiplierData);
 
     res.status(201).json({ id: docRef.id });
@@ -267,6 +299,12 @@ router.put('/multipliers/:multiplierId', async (req: Request, res: Response) => 
   try {
     const { multiplierId } = req.params;
     const multiplierData = req.body;
+    if (Object.prototype.hasOwnProperty.call(multiplierData, 'EffectiveTo')) {
+      multiplierData.EffectiveTo =
+        multiplierData.EffectiveTo === '' || multiplierData.EffectiveTo == null
+          ? ONGOING_SENTINEL_DATE
+          : multiplierData.EffectiveTo;
+    }
 
     await db.collection('credit_cards_multipliers').doc(multiplierId).update(multiplierData);
 

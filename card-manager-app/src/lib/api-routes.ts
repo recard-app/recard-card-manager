@@ -17,6 +17,7 @@ export const API_ROUTES = {
   VERSIONS: {
     LIST: (referenceCardId: string) => `/admin/cards/${referenceCardId}/versions`,
     CREATE: (referenceCardId: string, versionId: string) => `/admin/cards/${referenceCardId}/versions/${versionId}`,
+    CREATE_AUTO: (referenceCardId: string) => `/admin/cards/${referenceCardId}/versions`,
     ACTIVATE: (referenceCardId: string, versionId: string) =>
       `/admin/cards/${referenceCardId}/versions/${versionId}/activate`,
     DEACTIVATE: (referenceCardId: string) => `/admin/cards/${referenceCardId}/deactivate`,

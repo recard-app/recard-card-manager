@@ -2,15 +2,14 @@
 @use '@/styling/mixins' as *;
 
 .card-detail-page {
-  @include flex-column;
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
   overflow: hidden;
 }
 
 .page-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  flex-shrink: 0;
   background: $neutral-white;
   border-bottom: 1px solid $neutral-gray-200;
   padding: $spacing-sm $spacing-md;
@@ -49,8 +48,8 @@
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 0;
-  flex: 1;
-  height: calc(100vh - 60px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
 
   @media (max-width: 1400px) {

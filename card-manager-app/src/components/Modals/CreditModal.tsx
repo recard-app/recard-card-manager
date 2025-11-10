@@ -10,12 +10,12 @@ import './CreditModal.scss';
 interface CreditModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  cardId: string;
+  referenceCardId: string;
   credit?: CardCredit | null;
   onSuccess: () => void;
 }
 
-export function CreditModal({ open, onOpenChange, cardId, credit, onSuccess }: CreditModalProps) {
+export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuccess }: CreditModalProps) {
   const isEdit = !!credit;
 
   const [formData, setFormData] = useState({
@@ -99,8 +99,7 @@ export function CreditModal({ open, onOpenChange, cardId, credit, onSuccess }: C
     setSubmitting(true);
 
     try {
-      const creditData: Omit<CardCredit, 'id' | 'LastUpdated'> = {
-        ReferenceCardId: cardId,
+      const baseCreditData: Omit<CardCredit, 'id' | 'LastUpdated' | 'ReferenceCardId'> = {
         Title: formData.Title.trim(),
         Category: formData.Category.trim(),
         SubCategory: formData.SubCategory.trim(),
@@ -114,9 +113,13 @@ export function CreditModal({ open, onOpenChange, cardId, credit, onSuccess }: C
       };
 
       if (isEdit && credit) {
-        await ComponentService.updateCredit(credit.id, creditData);
+        // Preserve ReferenceCardId on update
+        await ComponentService.updateCredit(credit.id, baseCreditData);
       } else {
-        await ComponentService.createCredit(creditData);
+        await ComponentService.createCredit({
+          ReferenceCardId: referenceCardId,
+          ...baseCreditData,
+        });
       }
 
       onSuccess();
@@ -210,6 +213,7 @@ export function CreditModal({ open, onOpenChange, cardId, credit, onSuccess }: C
           value={formData.EffectiveTo}
           onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
           placeholder="Leave empty for ongoing"
+          helperText="If currently active, leave this blank."
         />
 
         <div className="modal-actions">

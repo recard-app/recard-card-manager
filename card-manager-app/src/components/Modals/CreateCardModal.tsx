@@ -6,6 +6,7 @@ import type { CreditCardDetails } from '@/types';
 import { CardService } from '@/services/card.service';
 import { normalizeEffectiveTo } from '@/types';
 import './CreateCardModal.scss';
+import { CardIcon } from '@/components/icons/CardIcon';
 
 interface CreateCardModalProps {
   open: boolean;
@@ -21,6 +22,8 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
     CardNetwork: '',
     CardDetails: '',
     CardImage: '',
+    CardPrimaryColor: '',
+    CardSecondaryColor: '',
     AnnualFee: '',
     ForeignExchangeFee: '',
     ForeignExchangeFeePercentage: '',
@@ -29,6 +32,7 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
     VersionName: 'V1',
     EffectiveFrom: '',
     EffectiveTo: '',
+    setAsActive: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -43,6 +47,8 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
         CardNetwork: '',
         CardDetails: '',
         CardImage: '',
+        CardPrimaryColor: '',
+        CardSecondaryColor: '',
         AnnualFee: '',
         ForeignExchangeFee: '',
         ForeignExchangeFeePercentage: '',
@@ -51,6 +57,7 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
         VersionName: 'V1',
         EffectiveFrom: new Date().toISOString().split('T')[0],
         EffectiveTo: '',
+        setAsActive: false,
       });
       setErrors({});
     }
@@ -61,8 +68,8 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
 
     if (!formData.ReferenceCardId.trim()) {
       newErrors.ReferenceCardId = 'Reference Card ID is required';
-    } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.ReferenceCardId)) {
-      newErrors.ReferenceCardId = 'Card ID can only contain letters, numbers, hyphens, and underscores';
+    } else if (!/^[a-zA-Z0-9-]+$/.test(formData.ReferenceCardId)) {
+      newErrors.ReferenceCardId = 'Card ID can only contain letters, numbers, and hyphens';
     }
 
     if (!formData.CardName.trim()) {
@@ -106,8 +113,8 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
         CardNetwork: formData.CardNetwork.trim(),
         CardDetails: formData.CardDetails.trim(),
         CardImage: formData.CardImage.trim() || undefined,
-        CardPrimaryColor: undefined,
-        CardSecondaryColor: undefined,
+        CardPrimaryColor: formData.CardPrimaryColor.trim() || undefined,
+        CardSecondaryColor: formData.CardSecondaryColor.trim() || undefined,
         AnnualFee: formData.AnnualFee ? parseFloat(formData.AnnualFee) : null,
         ForeignExchangeFee: formData.ForeignExchangeFee.trim(),
         ForeignExchangeFeePercentage: formData.ForeignExchangeFeePercentage
@@ -116,12 +123,11 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
         RewardsCurrency: formData.RewardsCurrency.trim(),
         PointsPerDollar: formData.PointsPerDollar ? parseFloat(formData.PointsPerDollar) : null,
         VersionName: formData.VersionName.trim(),
-        IsActive: true,
         effectiveFrom: formData.EffectiveFrom,
         effectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
       };
 
-      const newCardId = await CardService.createCard(cardData, true);
+      const newCardId = await CardService.createCard(cardData, formData.setAsActive);
 
       onSuccess(newCardId);
       onOpenChange(false);
@@ -148,12 +154,17 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
         <Input
           label="Reference Card ID"
           value={formData.ReferenceCardId}
-          onChange={(e) => setFormData({ ...formData, ReferenceCardId: e.target.value })}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              ReferenceCardId: e.target.value.replace(/[^a-zA-Z0-9-]/g, ''),
+            })
+          }
           error={errors.ReferenceCardId}
           placeholder="e.g., chase-sapphire-preferred"
         />
         <p className="field-help">
-          Unique identifier for this card (letters, numbers, hyphens, underscores only).
+          Unique identifier for this card (letters, numbers, hyphens only; no spaces).
           This will also be used as the ID for the first version and cannot be changed once created.
         </p>
 
@@ -198,6 +209,30 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
           onChange={(e) => setFormData({ ...formData, CardImage: e.target.value })}
           placeholder="https://example.com/card-image.png"
         />
+
+        <div className="form-row">
+          <Input
+            label="Primary Color (optional)"
+            value={formData.CardPrimaryColor}
+            onChange={(e) => setFormData({ ...formData, CardPrimaryColor: e.target.value })}
+            placeholder="#1A73E8"
+          />
+          <Input
+            label="Secondary Color (optional)"
+            value={formData.CardSecondaryColor}
+            onChange={(e) => setFormData({ ...formData, CardSecondaryColor: e.target.value })}
+            placeholder="#185ABC"
+          />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+          <CardIcon
+            title="Card preview"
+            size={36}
+            primary={formData.CardPrimaryColor || '#5A5F66'}
+            secondary={formData.CardSecondaryColor || '#F2F4F6'}
+          />
+          <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Preview</span>
+        </div>
 
         <div className="form-row">
           <Input
@@ -272,7 +307,21 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
           value={formData.EffectiveTo}
           onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
           placeholder="Leave empty for ongoing"
+          helperText="If currently active, leave this blank."
         />
+        <div className="checkbox-group">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={formData.setAsActive}
+              onChange={(e) => setFormData({ ...formData, setAsActive: e.target.checked })}
+            />
+            <span>Set as active version</span>
+          </label>
+          <p className="checkbox-description">
+            If checked, this first version will be activated; otherwise it remains inactive.
+          </p>
+        </div>
 
         <div className="modal-actions">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>

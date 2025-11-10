@@ -2,8 +2,9 @@
 @use '@/styling/mixins' as *;
 
 .versions-sidebar {
-  @include flex-column;
-  gap: $spacing-sm;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   height: 100%;
   width: 280px;
   border-right: 1px solid $neutral-gray-200;
@@ -52,11 +53,13 @@
 }
 
 .sidebar-header {
-  @include flex-row;
+  display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
   padding: $spacing-sm $spacing-md;
   border-bottom: 1px solid $neutral-gray-200;
+  flex-shrink: 0;
 
   .header-content {
     @include flex-row;
@@ -74,9 +77,11 @@
 }
 
 .versions-list {
-  @include flex-column;
+  display: flex;
+  flex-direction: column;
   gap: $spacing-xs;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding: $spacing-sm;
 }
@@ -115,6 +120,17 @@
       font-size: $font-size-sm;
     }
 
+    .version-title {
+      @include flex-column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .version-id {
+      font-size: $font-size-xs;
+      color: $neutral-gray-600;
+    }
+
     .active-badge {
       @include flex-row;
       align-items: center;
@@ -141,6 +157,7 @@
 .sidebar-actions {
   padding: $spacing-sm;
   border-top: 1px solid $neutral-gray-200;
+  flex-shrink: 0;
 
   button {
     width: 100%;

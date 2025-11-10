@@ -10,12 +10,12 @@ import './MultiplierModal.scss';
 interface MultiplierModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  cardId: string;
+  referenceCardId: string;
   multiplier?: CardMultiplier | null;
   onSuccess: () => void;
 }
 
-export function MultiplierModal({ open, onOpenChange, cardId, multiplier, onSuccess }: MultiplierModalProps) {
+export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplier, onSuccess }: MultiplierModalProps) {
   const isEdit = !!multiplier;
 
   const [formData, setFormData] = useState({
@@ -99,8 +99,7 @@ export function MultiplierModal({ open, onOpenChange, cardId, multiplier, onSucc
     setSubmitting(true);
 
     try {
-      const multiplierData: Omit<CardMultiplier, 'id' | 'LastUpdated'> = {
-        ReferenceCardId: cardId,
+      const baseMultiplierData: Omit<CardMultiplier, 'id' | 'LastUpdated' | 'ReferenceCardId'> = {
         Name: formData.Name.trim(),
         Category: formData.Category.trim(),
         SubCategory: formData.SubCategory.trim(),
@@ -113,9 +112,12 @@ export function MultiplierModal({ open, onOpenChange, cardId, multiplier, onSucc
       };
 
       if (isEdit && multiplier) {
-        await ComponentService.updateMultiplier(multiplier.id, multiplierData);
+        await ComponentService.updateMultiplier(multiplier.id, baseMultiplierData);
       } else {
-        await ComponentService.createMultiplier(multiplierData);
+        await ComponentService.createMultiplier({
+          ReferenceCardId: referenceCardId,
+          ...baseMultiplierData,
+        });
       }
 
       onSuccess();
@@ -209,6 +211,7 @@ export function MultiplierModal({ open, onOpenChange, cardId, multiplier, onSucc
           value={formData.EffectiveTo}
           onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
           placeholder="Leave empty for ongoing"
+          helperText="If currently active, leave this blank."
         />
 
         <div className="modal-actions">

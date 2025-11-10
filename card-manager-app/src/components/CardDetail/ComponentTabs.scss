@@ -2,16 +2,21 @@
 @use '@/styling/mixins' as *;
 
 .component-tabs {
-  @include flex-column;
+  display: flex;
+  flex-direction: column;
   gap: 0;
   height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .tabs-header {
-  @include flex-row;
+  display: flex;
+  flex-direction: row;
   gap: 0;
   border-bottom: 2px solid $neutral-gray-200;
   padding: 0 $spacing-sm;
+  flex-shrink: 0;
 
   .tab {
     padding: $spacing-sm $spacing-md;
@@ -40,7 +45,8 @@
 
 .tabs-content {
   padding: $spacing-sm;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -64,29 +70,40 @@
   }
 }
 
-.component-header {
+.component-actions {
+  width: 100%;
   @include flex-row;
-  justify-content: space-between;
+  justify-content: flex-end;
+  gap: $spacing-xs;
+  margin-bottom: $spacing-xs;
+}
+
+.component-title {
+  @include flex-row;
   align-items: flex-start;
-  gap: $spacing-sm;
+  gap: $spacing-xs;
+  flex: 1;
 
-  .component-title {
-    @include flex-row;
-    align-items: center;
-    gap: $spacing-xs;
-    flex: 1;
-
-    h4 {
-      font-size: $font-size-sm;
-      font-weight: 600;
-      color: $neutral-gray-800;
-      margin: 0;
-    }
+  h4 {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $neutral-gray-800;
+    margin: 0;
   }
 
-  .component-actions {
-    @include flex-row;
-    gap: $spacing-xs;
+  .component-title-text {
+    @include flex-column;
+    align-items: flex-start;
+    gap: 2px;
+
+    h4 {
+      margin: 0;
+    }
+
+    .component-id {
+      font-size: $font-size-xs;
+      color: $neutral-gray-600;
+    }
   }
 }
 
