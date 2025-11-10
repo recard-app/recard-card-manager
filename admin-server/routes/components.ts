@@ -17,9 +17,21 @@ router.use(verifyAuth);
 router.get('/cards/:cardId/credits', async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
+
+    // First, get the card to retrieve its ReferenceCardId
+    const cardDoc = await db.collection('credit_cards_history').doc(cardId).get();
+    if (!cardDoc.exists) {
+      return res.status(404).json({ error: 'Card not found' });
+    }
+
+    const referenceCardId = cardDoc.data()?.ReferenceCardId;
+    if (!referenceCardId) {
+      return res.json([]);
+    }
+
     const snapshot = await db
-      .collection('cardCredits')
-      .where('ReferenceCardId', '==', cardId)
+      .collection('credit_cards_credits')
+      .where('ReferenceCardId', '==', referenceCardId)
       .get();
 
     if (snapshot.empty) {
@@ -48,7 +60,7 @@ router.get('/cards/:cardId/credits', async (req: Request, res: Response) => {
 router.post('/credits', async (req: Request, res: Response) => {
   try {
     const creditData = req.body;
-    const docRef = await db.collection('cardCredits').add(creditData);
+    const docRef = await db.collection('credit_cards_credits').add(creditData);
 
     res.status(201).json({ id: docRef.id });
   } catch (error) {
@@ -66,7 +78,7 @@ router.put('/credits/:creditId', async (req: Request, res: Response) => {
     const { creditId } = req.params;
     const creditData = req.body;
 
-    await db.collection('cardCredits').doc(creditId).update(creditData);
+    await db.collection('credit_cards_credits').doc(creditId).update(creditData);
 
     res.json({ success: true });
   } catch (error) {
@@ -82,7 +94,7 @@ router.put('/credits/:creditId', async (req: Request, res: Response) => {
 router.delete('/credits/:creditId', async (req: Request, res: Response) => {
   try {
     const { creditId } = req.params;
-    await db.collection('cardCredits').doc(creditId).delete();
+    await db.collection('credit_cards_credits').doc(creditId).delete();
 
     res.json({ success: true });
   } catch (error) {
@@ -100,9 +112,21 @@ router.delete('/credits/:creditId', async (req: Request, res: Response) => {
 router.get('/cards/:cardId/perks', async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
+
+    // First, get the card to retrieve its ReferenceCardId
+    const cardDoc = await db.collection('credit_cards_history').doc(cardId).get();
+    if (!cardDoc.exists) {
+      return res.status(404).json({ error: 'Card not found' });
+    }
+
+    const referenceCardId = cardDoc.data()?.ReferenceCardId;
+    if (!referenceCardId) {
+      return res.json([]);
+    }
+
     const snapshot = await db
-      .collection('cardPerks')
-      .where('ReferenceCardId', '==', cardId)
+      .collection('credit_cards_perks')
+      .where('ReferenceCardId', '==', referenceCardId)
       .get();
 
     if (snapshot.empty) {
@@ -131,7 +155,7 @@ router.get('/cards/:cardId/perks', async (req: Request, res: Response) => {
 router.post('/perks', async (req: Request, res: Response) => {
   try {
     const perkData = req.body;
-    const docRef = await db.collection('cardPerks').add(perkData);
+    const docRef = await db.collection('credit_cards_perks').add(perkData);
 
     res.status(201).json({ id: docRef.id });
   } catch (error) {
@@ -149,7 +173,7 @@ router.put('/perks/:perkId', async (req: Request, res: Response) => {
     const { perkId } = req.params;
     const perkData = req.body;
 
-    await db.collection('cardPerks').doc(perkId).update(perkData);
+    await db.collection('credit_cards_perks').doc(perkId).update(perkData);
 
     res.json({ success: true });
   } catch (error) {
@@ -165,7 +189,7 @@ router.put('/perks/:perkId', async (req: Request, res: Response) => {
 router.delete('/perks/:perkId', async (req: Request, res: Response) => {
   try {
     const { perkId } = req.params;
-    await db.collection('cardPerks').doc(perkId).delete();
+    await db.collection('credit_cards_perks').doc(perkId).delete();
 
     res.json({ success: true });
   } catch (error) {
@@ -183,9 +207,21 @@ router.delete('/perks/:perkId', async (req: Request, res: Response) => {
 router.get('/cards/:cardId/multipliers', async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
+
+    // First, get the card to retrieve its ReferenceCardId
+    const cardDoc = await db.collection('credit_cards_history').doc(cardId).get();
+    if (!cardDoc.exists) {
+      return res.status(404).json({ error: 'Card not found' });
+    }
+
+    const referenceCardId = cardDoc.data()?.ReferenceCardId;
+    if (!referenceCardId) {
+      return res.json([]);
+    }
+
     const snapshot = await db
-      .collection('cardMultipliers')
-      .where('ReferenceCardId', '==', cardId)
+      .collection('credit_cards_multipliers')
+      .where('ReferenceCardId', '==', referenceCardId)
       .get();
 
     if (snapshot.empty) {
@@ -214,7 +250,7 @@ router.get('/cards/:cardId/multipliers', async (req: Request, res: Response) => 
 router.post('/multipliers', async (req: Request, res: Response) => {
   try {
     const multiplierData = req.body;
-    const docRef = await db.collection('cardMultipliers').add(multiplierData);
+    const docRef = await db.collection('credit_cards_multipliers').add(multiplierData);
 
     res.status(201).json({ id: docRef.id });
   } catch (error) {
@@ -232,7 +268,7 @@ router.put('/multipliers/:multiplierId', async (req: Request, res: Response) => 
     const { multiplierId } = req.params;
     const multiplierData = req.body;
 
-    await db.collection('cardMultipliers').doc(multiplierId).update(multiplierData);
+    await db.collection('credit_cards_multipliers').doc(multiplierId).update(multiplierData);
 
     res.json({ success: true });
   } catch (error) {
@@ -248,7 +284,7 @@ router.put('/multipliers/:multiplierId', async (req: Request, res: Response) => 
 router.delete('/multipliers/:multiplierId', async (req: Request, res: Response) => {
   try {
     const { multiplierId } = req.params;
-    await db.collection('cardMultipliers').doc(multiplierId).delete();
+    await db.collection('credit_cards_multipliers').doc(multiplierId).delete();
 
     res.json({ success: true });
   } catch (error) {

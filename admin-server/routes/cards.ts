@@ -16,7 +16,7 @@ router.use(verifyAuth);
  */
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const snapshot = await db.collection('creditCards').get();
+    const snapshot = await db.collection('credit_cards_history').get();
 
     if (snapshot.empty) {
       return res.json([]);
@@ -84,7 +84,7 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:cardId', async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
-    const doc = await db.collection('creditCards').doc(cardId).get();
+    const doc = await db.collection('credit_cards_history').doc(cardId).get();
 
     if (!doc.exists) {
       return res.status(404).json({ error: 'Card not found' });
@@ -115,7 +115,7 @@ router.post('/', async (req: Request, res: Response) => {
       lastUpdated: now,
     };
 
-    const docRef = await db.collection('creditCards').add(newCard);
+    const docRef = await db.collection('credit_cards_history').add(newCard);
 
     res.status(201).json({ id: docRef.id });
   } catch (error) {
@@ -134,7 +134,7 @@ router.put('/:cardId', async (req: Request, res: Response) => {
     const cardData = req.body;
     const now = new Date().toISOString();
 
-    await db.collection('creditCards').doc(cardId).update({
+    await db.collection('credit_cards_history').doc(cardId).update({
       ...cardData,
       lastUpdated: now,
     });
@@ -153,7 +153,7 @@ router.put('/:cardId', async (req: Request, res: Response) => {
 router.delete('/:cardId', async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
-    await db.collection('creditCards').doc(cardId).delete();
+    await db.collection('credit_cards_history').doc(cardId).delete();
 
     res.json({ success: true });
   } catch (error) {
@@ -172,7 +172,7 @@ router.get('/:referenceCardId/versions', async (req: Request, res: Response) => 
   try {
     const { referenceCardId } = req.params;
     const snapshot = await db
-      .collection('creditCards')
+      .collection('credit_cards_history')
       .where('ReferenceCardId', '==', referenceCardId)
       .get();
 
@@ -243,7 +243,7 @@ router.post('/:referenceCardId/versions', async (req: Request, res: Response) =>
       lastUpdated: now,
     };
 
-    const docRef = await db.collection('creditCards').add(newCard);
+    const docRef = await db.collection('credit_cards_history').add(newCard);
 
     res.status(201).json({ id: docRef.id });
   } catch (error) {
@@ -263,13 +263,13 @@ router.post('/:referenceCardId/versions/:versionId/activate', async (req: Reques
     const today = new Date().toISOString().split('T')[0];
 
     // Get the version to activate
-    const versionDoc = await db.collection('creditCards').doc(versionId).get();
+    const versionDoc = await db.collection('credit_cards_history').doc(versionId).get();
     if (!versionDoc.exists) {
       return res.status(404).json({ error: 'Version not found' });
     }
 
     // Update EffectiveTo to be ongoing
-    await db.collection('creditCards').doc(versionId).update({
+    await db.collection('credit_cards_history').doc(versionId).update({
       EffectiveTo: ONGOING_SENTINEL_DATE,
       lastUpdated: new Date().toISOString(),
     });
