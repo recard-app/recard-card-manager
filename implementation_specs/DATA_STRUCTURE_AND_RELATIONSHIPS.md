@@ -22,6 +22,80 @@ This design allows for:
 
 ---
 
+## Database Access Pattern
+
+### Internal Tool with Direct Firestore Access
+
+The Card Manager is an **internal administrative tool** that connects directly to Firestore using the Firebase Admin SDK, bypassing the need for a separate API layer.
+
+**Why Direct Access?**
+- **Simplicity**: No need to build/maintain CRUD API endpoints
+- **Full Control**: Direct access to batch writes, transactions, and complex queries
+- **Real-time Updates**: Leverage Firestore's built-in real-time listeners
+- **Faster Development**: Reduced complexity and faster iteration
+
+**Firebase Admin SDK Configuration:**
+
+```typescript
+// CardManager/config/firebase-admin.ts
+import admin from 'firebase-admin';
+
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+  })
+});
+
+export const db = admin.firestore();
+```
+
+**Shared Types and Constants:**
+
+The Card Manager reuses type definitions and constants from the Server codebase:
+
+```typescript
+// Import types from Server
+import {
+  CreditCardDetails,
+  CardCredit,
+  CardPerk,
+  CardMultiplier
+} from '../../Server/types/credit-card-types';
+
+// Import constants from Server
+import { ONGOING_SENTINEL_DATE } from '../../Server/constants/dates';
+```
+
+**Security Considerations:**
+
+1. **Credentials**: Store service account keys outside version control (`.env` file + `.gitignore`)
+2. **Access Control**: Tool is for internal administrators only - implement authentication
+3. **Validation**: Apply same data validation rules as the production API
+4. **Audit Trail**: Consider logging all changes for accountability
+
+**Direct Firestore Operations:**
+
+```typescript
+// Read operations
+const card = await db.collection('credit_cards').doc('amex-gold').get();
+
+// Query with composite indexes
+const credits = await db.collection('credit_cards_credits')
+  .where('ReferenceCardId', '==', 'amex-gold')
+  .orderBy('EffectiveFrom', 'desc')
+  .get();
+
+// Batch writes for atomicity
+const batch = db.batch();
+batch.set(historyRef, versionData);
+batch.update(currentRef, updates);
+await batch.commit();
+```
+
+---
+
 ## Firestore Collections
 
 ### 1. `credit_cards` Collection
@@ -56,8 +130,8 @@ This design allows for:
 **Key Points**:
 - Document ID is the human-readable card identifier (e.g., "amex-gold")
 - `ReferenceCardId` points to the base card this version belongs to
-- `Perks`, `Credits`, and `Multipliers` are **pointer arrays** containing only IDs
-- The actual component data lives in separate collections
+- Components (perks, credits, multipliers) are **NOT stored in cards** - they are separate documents linked by `ReferenceCardId`
+- Components are queried separately using composite indexes on `(ReferenceCardId, EffectiveFrom)`
 
 ---
 
@@ -104,7 +178,7 @@ This design allows for:
   Requirements: string;    // Eligibility requirements
   Details?: string;        // Additional details (optional)
   EffectiveFrom: string;   // ISO date when perk became available
-  EffectiveTo: string;     // ISO date when perk ended
+  EffectiveTo: string;     // ISO date when perk ended, or "9999-12-31" for ongoing
   LastUpdated: string;     // ISO date of last modification
 }
 ```
@@ -135,7 +209,7 @@ This design allows for:
   Requirements: string;    // Eligibility/usage requirements
   Details?: string;        // Additional details (optional)
   EffectiveFrom: string;   // ISO date when credit became available
-  EffectiveTo: string;     // ISO date when credit ended
+  EffectiveTo: string;     // ISO date when credit ended, or "9999-12-31" for ongoing
   LastUpdated: string;     // ISO date of last modification
 }
 ```
@@ -164,7 +238,7 @@ This design allows for:
   Requirements: string;    // Eligibility/activation requirements
   Details?: string;        // Additional details (optional)
   EffectiveFrom: string;   // ISO date when multiplier became active
-  EffectiveTo: string;     // ISO date when multiplier ended
+  EffectiveTo: string;     // ISO date when multiplier ended, or "9999-12-31" for ongoing
   LastUpdated: string;     // ISO date of last modification
 }
 ```
@@ -184,21 +258,24 @@ This design allows for:
 ```
 credit_cards (current version)
     ├─ id: "amex-gold"
-    ├─ Perks: [{id: "perk-1"}, {id: "perk-2"}]
-    ├─ Credits: [{id: "credit-1"}, {id: "credit-2"}]
-    └─ Multipliers: [{id: "mult-1"}, {id: "mult-2"}]
+    ├─ VersionName: "2025 Benefits"
+    ├─ effectiveFrom: "2025-01-01"
+    ├─ effectiveTo: "9999-12-31"
+    └─ (No pointer arrays stored)
+         │
+         │ (Components link TO card via ReferenceCardId)
          │
          ├──> credit_cards_perks
-         │    ├─ perk-1 {ReferenceCardId: "amex-gold", ...}
-         │    └─ perk-2 {ReferenceCardId: "amex-gold", ...}
+         │    ├─ perk-1 {ReferenceCardId: "amex-gold", EffectiveFrom: "2025-01-01", EffectiveTo: "9999-12-31"}
+         │    └─ perk-2 {ReferenceCardId: "amex-gold", EffectiveFrom: "2025-01-01", EffectiveTo: "9999-12-31"}
          │
          ├──> credit_cards_credits
-         │    ├─ credit-1 {ReferenceCardId: "amex-gold", ...}
-         │    └─ credit-2 {ReferenceCardId: "amex-gold", ...}
+         │    ├─ credit-1 {ReferenceCardId: "amex-gold", EffectiveFrom: "2025-01-01", EffectiveTo: "9999-12-31"}
+         │    └─ credit-2 {ReferenceCardId: "amex-gold", EffectiveFrom: "2025-01-01", EffectiveTo: "2025-12-31"}
          │
          └──> credit_cards_multipliers
-              ├─ mult-1 {ReferenceCardId: "amex-gold", ...}
-              └─ mult-2 {ReferenceCardId: "amex-gold", ...}
+              ├─ mult-1 {ReferenceCardId: "amex-gold", EffectiveFrom: "2025-01-01", EffectiveTo: "9999-12-31"}
+              └─ mult-2 {ReferenceCardId: "amex-gold", EffectiveFrom: "2025-01-01", EffectiveTo: "9999-12-31"}
 
 credit_cards_history (all versions)
     ├─ id: "uuid-v1"
@@ -206,40 +283,39 @@ credit_cards_history (all versions)
     │  ├─ VersionName: "2024 Benefits"
     │  ├─ effectiveFrom: "2024-01-01"
     │  ├─ effectiveTo: "2024-12-31"
-    │  └─ Perks/Credits/Multipliers: [pointers...]
+    │  └─ (No pointer arrays - components queried by ReferenceCardId + date overlap)
     │
     └─ id: "uuid-v2"
        ├─ ReferenceCardId: "amex-gold"
        ├─ VersionName: "2025 Benefits"
        ├─ effectiveFrom: "2025-01-01"
+       ├─ effectiveTo: "9999-12-31"
        ├─ IsActive: true
-       └─ Perks/Credits/Multipliers: [pointers...]
+       └─ (No pointer arrays - components queried by ReferenceCardId + date overlap)
 ```
 
 ### How Components Link to Cards
 
-**Forward References** (Card → Component):
-- Cards store arrays of ID pointers: `Perks: [{id: "perk-1"}]`
-- These IDs reference documents in component collections
-
-**Backward References** (Component → Card):
-- Components store `ReferenceCardId` field
-- Allows querying "all perks for amex-gold"
-- Enables shared components across cards
+**One-Way Reference** (Component → Card):
+- Components store `ReferenceCardId` field linking them to a card family
+- Cards do NOT store references to components (no pointer arrays)
+- Query pattern: `where('ReferenceCardId', '==', 'amex-gold')` to get all components for a card
+- Date overlap logic determines which components apply to which card versions
+- Components can be shared across card families by creating separate documents with different ReferenceCardIds
 
 ### Query Patterns
 
 **Get Card with Full Details**:
-1. Query `credit_cards` for the card document
-2. Extract `Perks`, `Credits`, `Multipliers` ID arrays
-3. Query component collections by IDs
-4. Combine data into `CreditCardDetailsEnhanced`
+1. Query `credit_cards` for the card document (returns `CreditCardDetails`)
+2. Separately query components by ReferenceCardId using `ComponentsService.getAllComponentsByCardIds()`
+3. Client combines card + components for display, or server enriches for OpenAI via `enrichedCardDetailsBuilder()`
 
 **Get All Components for a Card**:
 ```typescript
-// Using ComponentsService
+// Using ComponentsService with composite indexes
 const components = await ComponentsService.getAllComponentsByCardIds(["amex-gold"]);
 // Returns: { perks: [...], credits: [...], multipliers: [...] }
+// Components are filtered by ReferenceCardId using efficient composite indexes
 ```
 
 **Get Card Version History**:
@@ -260,17 +336,18 @@ const versions = await db.collection('credit_cards_history')
 **Process**:
 1. Copy current card from `credit_cards` to `credit_cards_history`
    - Generate new UUID for history document ID
-   - Set `effectiveTo` on previous active version
+   - Set `effectiveTo` on previous active version (use current date or "9999-12-31" if ongoing)
    - Mark previous version as `IsActive: false`
 2. Update card in `credit_cards` collection
-   - Modify card properties
-   - Update component pointer arrays if needed
+   - Modify card properties (annual fee, rewards rate, etc.)
    - Set new `effectiveFrom` timestamp
+   - Set `effectiveTo` to "9999-12-31" for ongoing versions
    - Set `IsActive: true`
-3. Create/update component documents as needed
-   - Add new perks/credits/multipliers to component collections
-   - Update `ReferenceCardId` to link to card
-   - Set `EffectiveFrom` and `EffectiveTo` dates
+3. Create/update component documents separately
+   - Add new perks/credits/multipliers to their respective collections
+   - Set `ReferenceCardId` to link to the card family (e.g., "amex-gold")
+   - Set `EffectiveFrom` and `EffectiveTo` dates (use "9999-12-31" for ongoing components)
+   - Components automatically associate with card versions via date overlap logic
 
 **Example Workflow**:
 ```
@@ -519,25 +596,13 @@ const credits = await db.collection('credit_cards_credits')
   "CardPrimaryColor": "#C89B3C",
   "CardSecondaryColor": "#1F1F1F",
   "effectiveFrom": "2025-01-01T00:00:00.000Z",
-  "effectiveTo": "",
+  "effectiveTo": "9999-12-31",
   "lastUpdated": "2025-01-01T00:00:00.000Z",
   "AnnualFee": 250,
   "ForeignExchangeFee": "None",
   "ForeignExchangeFeePercentage": 0,
   "RewardsCurrency": "Membership Rewards Points",
-  "PointsPerDollar": 1,
-  "Perks": [
-    {"id": "amex-gold-perk-travel-insurance"},
-    {"id": "amex-gold-perk-purchase-protection"}
-  ],
-  "Credits": [
-    {"id": "amex-gold-credit-dining"},
-    {"id": "amex-gold-credit-uber"}
-  ],
-  "Multipliers": [
-    {"id": "amex-gold-mult-dining"},
-    {"id": "amex-gold-mult-grocery"}
-  ]
+  "PointsPerDollar": 1
 }
 ```
 
@@ -556,10 +621,12 @@ const credits = await db.collection('credit_cards_credits')
   "Requirements": "Must enroll and use at eligible restaurants",
   "Details": "Automatically credited to statement within 2-4 weeks",
   "EffectiveFrom": "2025-01-01T00:00:00.000Z",
-  "EffectiveTo": "2025-12-31T23:59:59.999Z",
+  "EffectiveTo": "9999-12-31",
   "LastUpdated": "2025-01-01T00:00:00.000Z"
 }
 ```
+
+**Note**: `EffectiveTo` is set to "9999-12-31" to indicate this is an ongoing credit with no end date.
 
 ### Sample Perk
 
@@ -574,7 +641,7 @@ const credits = await db.collection('credit_cards_credits')
   "Requirements": "Pay for travel with card",
   "Details": "Covers trip cancellation, delays, and lost baggage",
   "EffectiveFrom": "2025-01-01T00:00:00.000Z",
-  "EffectiveTo": "2025-12-31T23:59:59.999Z",
+  "EffectiveTo": "9999-12-31",
   "LastUpdated": "2025-01-01T00:00:00.000Z"
 }
 ```
@@ -593,7 +660,7 @@ const credits = await db.collection('credit_cards_credits')
   "Requirements": "Automatically applied at eligible merchants",
   "Details": "Earn 4x points on dining purchases worldwide",
   "EffectiveFrom": "2025-01-01T00:00:00.000Z",
-  "EffectiveTo": "2025-12-31T23:59:59.999Z",
+  "EffectiveTo": "9999-12-31",
   "LastUpdated": "2025-01-01T00:00:00.000Z"
 }
 ```
@@ -602,11 +669,12 @@ const credits = await db.collection('credit_cards_credits')
 
 ## Key Insights for Dashboard Development
 
-### 1. Pointer Resolution Strategy
+### 1. Component Query Strategy
 When displaying a card with full details:
-- Option A: Resolve pointers at query time (current pattern)
-- Option B: Denormalize data by storing full objects in card document
-- Current system uses Option A for flexibility and storage efficiency
+- Components are queried separately by `ReferenceCardId` using composite indexes
+- No pointer arrays to maintain - components link themselves to cards
+- Efficient parallel queries fetch all component types simultaneously
+- Date overlap logic determines which components belong to which card versions
 
 ### 2. Version Tracking
 - `credit_cards` always contains the current/active version
@@ -616,9 +684,10 @@ When displaying a card with full details:
 
 ### 3. Component Lifecycle
 - Components have independent lifecycles from cards
-- Same component can be shared across cards (via `ReferenceCardId`)
+- Each component links to one card family via `ReferenceCardId`
 - Components can be active/inactive via `EffectiveFrom`/`EffectiveTo` dates
-- Cards reference components via ID pointers
+- Use "9999-12-31" as `EffectiveTo` for ongoing components with no end date
+- To share a component across multiple cards, create separate documents with different ReferenceCardIds
 
 ### 4. Dashboard Requirements
 For the Card Manager dashboard, you will need to:
@@ -631,11 +700,11 @@ For the Card Manager dashboard, you will need to:
 - Activate/deactivate specific versions
 
 **Component Operations**:
-- Create new perks/credits/multipliers
-- Update existing components
-- Link/unlink components to cards
-- View all components for a card
-- Track component effective dates
+- Create new perks/credits/multipliers with `ReferenceCardId` field
+- Update existing components (title, dates, requirements, etc.)
+- Set component `ReferenceCardId` to link to a card family
+- Query all components for a card using `ComponentsService`
+- Track component effective dates (use "9999-12-31" for ongoing)
 
 **Version Operations**:
 - Copy current to history before updates
@@ -655,7 +724,7 @@ For the Card Manager dashboard, you will need to:
 
 ## Summary
 
-The ReCard credit card data system uses a **pointer-based, versioned architecture** with five main collections:
+The ReCard credit card data system uses a **ReferenceCardId-based, versioned architecture** with five main collections:
 
 1. **credit_cards**: Current active card versions
 2. **credit_cards_history**: All historical card versions
@@ -663,6 +732,10 @@ The ReCard credit card data system uses a **pointer-based, versioned architectur
 4. **credit_cards_credits**: All credit objects
 5. **credit_cards_multipliers**: All multiplier objects
 
-Cards store arrays of ID pointers to components, while components store `ReferenceCardId` to link back to cards. This enables flexible versioning, shared components, and efficient queries through composite indexes.
+Components store `ReferenceCardId` to link to card families, while cards **do not** store pointer arrays. This design enables:
+- Simple component management (no pointer array maintenance)
+- Flexible versioning with date-based component association
+- Efficient queries through composite indexes on `(ReferenceCardId, EffectiveFrom)` and `(ReferenceCardId, EffectiveTo)`
+- Sentinel value "9999-12-31" for ongoing dates, enabling better firestore indexing and sorting
 
-The Card Manager dashboard will need to manage these collections, handle version creation/activation, and maintain referential integrity between cards and components.
+The Card Manager dashboard will need to manage these collections, handle version creation/activation, and query components by ReferenceCardId with date overlap logic.

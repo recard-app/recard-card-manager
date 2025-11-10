@@ -22,6 +22,8 @@ This is the **official implementation specification** for the Credit Card Manage
 8. [Automatic Date-Based Association System](#automatic-date-based-association-system)
 9. [Edge Cases and Error Handling](#edge-cases-and-error-handling)
 10. [Technical Implementation](#technical-implementation)
+    - [Architecture: Direct Firestore Access](#architecture-direct-firestore-access)
+    - [Service Layer](#service-layer)
 
 ---
 
@@ -188,10 +190,8 @@ Index: (ReferenceCardId ASC, effectiveTo DESC)
   effectiveFrom: string;      // ISO date: "2025-01-01"
   effectiveTo: string;        // ISO date: "2025-12-31" or "9999-12-31" for ongoing
   lastUpdated: string;
-  // NOTE: Pointer arrays below are NOT stored - calculated on API read
-  Perks: Array<{id: string}>;      // Calculated based on date overlap
-  Credits: Array<{id: string}>;    // Calculated based on date overlap
-  Multipliers: Array<{id: string}>; // Calculated based on date overlap
+  // NOTE: Perks, Credits, Multipliers are NOT stored here
+  // They are queried separately by ReferenceCardId from their respective collections
 }
 ```
 
@@ -203,10 +203,8 @@ Index: (ReferenceCardId ASC, effectiveTo DESC)
   ReferenceCardId: string;    // Links to card family
   effectiveFrom: string;      // ISO date: "2025-01-01"
   effectiveTo: string;        // ISO date: "2025-12-31" or "9999-12-31" for ongoing
-  // NOTE: Pointer arrays below are NOT stored - calculated on API read
-  Perks: Array<{id: string}>;      // Calculated based on date overlap
-  Credits: Array<{id: string}>;    // Calculated based on date overlap
-  Multipliers: Array<{id: string}>; // Calculated based on date overlap
+  // NOTE: Perks, Credits, Multipliers are NOT stored here
+  // They are queried separately by ReferenceCardId from their respective collections
 }
 ```
 
@@ -250,8 +248,8 @@ Card Version (Jan 1 - Dec 31, 2025)
 
 // Components that will appear
 Credit 1: { ReferenceCardId: "amex-gold", EffectiveFrom: "2025-01-01", EffectiveTo: "2025-12-31" } ✓
-Credit 2: { ReferenceCardId: "amex-gold", EffectiveFrom: "2024-01-01", EffectiveTo: "" } ✓ (ongoing)
-Credit 3: { ReferenceCardId: "amex-gold", EffectiveFrom: "2026-01-01", EffectiveTo: "" } ✗ (future)
+Credit 2: { ReferenceCardId: "amex-gold", EffectiveFrom: "2024-01-01", EffectiveTo: "9999-12-31" } ✓ (ongoing)
+Credit 3: { ReferenceCardId: "amex-gold", EffectiveFrom: "2026-01-01", EffectiveTo: "9999-12-31" } ✗ (future)
 ```
 
 ---
@@ -1024,6 +1022,101 @@ Deleting this component will remove it from all these versions.
 
 ## Technical Implementation
 
+### Architecture: Direct Firestore Access
+
+**Internal Tool Approach:**
+The Card Manager is an **internal administrative tool** with direct Firebase Admin SDK access to Firestore. This approach provides:
+
+- **Simplicity**: No need to build/maintain CRUD API endpoints
+- **Full Control**: Direct access to all Firestore operations (batch writes, transactions, complex queries)
+- **Real-time Updates**: Leverage Firestore listeners for live data updates
+- **Faster Development**: Reduced complexity compared to API-based architecture
+
+**Firebase Admin SDK Setup:**
+
+```typescript
+// config/firebase-admin.ts
+import admin from 'firebase-admin';
+
+// Initialize with service account credentials
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+  })
+});
+
+export const db = admin.firestore();
+```
+
+**Security Considerations:**
+
+1. **Credentials Management**:
+   - Service account JSON stored outside version control (`.gitignore`)
+   - Use environment variables for all credentials
+   - Never commit Firebase service account keys
+
+2. **Access Control**:
+   - Tool is for internal use only (not public-facing)
+   - Restrict access to authorized administrators
+   - Consider IP whitelisting if deployed
+   - Implement user authentication (Firebase Auth for admins)
+
+3. **Data Validation**:
+   - Validate all input data before writing to Firestore
+   - Follow same data integrity rules as production API
+   - Use TypeScript types from `Server/types/` for consistency
+
+**Shared Code with Server:**
+
+```typescript
+// Reuse Server type definitions
+import {
+  CreditCardDetails,
+  CardCredit,
+  CardPerk,
+  CardMultiplier
+} from '../../Server/types/credit-card-types';
+
+// Reuse Server constants
+import { ONGOING_SENTINEL_DATE } from '../../Server/constants/dates';
+
+// Reuse Server validation (optional)
+import { validateCreditCardDetails } from '../../Server/utils/validation';
+```
+
+**Direct Firestore Operations:**
+
+```typescript
+// Read operations
+const card = await db.collection('credit_cards').doc('amex-gold').get();
+
+// Write operations
+await db.collection('credit_cards_credits').doc(creditId).set(creditData);
+
+// Batch operations for version management
+const batch = db.batch();
+batch.set(historyRef, historicalVersion);
+batch.update(currentRef, newVersion);
+await batch.commit();
+
+// Real-time listeners
+db.collection('credit_cards').onSnapshot(snapshot => {
+  // Handle real-time updates
+});
+```
+
+**Data Integrity Rules:**
+
+Even with direct access, maintain the same rules:
+
+1. **Sentinel Values**: Use `"9999-12-31"` for ongoing `effectiveTo` dates
+2. **ReferenceCardId Links**: Always set `ReferenceCardId` on components
+3. **No Pointer Arrays**: Cards do NOT store component arrays
+4. **Version Management**: Follow batch write patterns for creating versions
+5. **Timestamps**: Always update `lastUpdated` / `LastUpdated` fields
+
 ### Service Layer
 
 ```typescript
@@ -1032,101 +1125,39 @@ Deleting this component will remove it from all these versions.
 export class ComponentService {
 
   /**
-   * Save component and automatically update pointer arrays
+   * Save component (simple - no pointer array maintenance)
    */
   static async saveComponent(
     componentData: CardCredit | CardPerk | CardMultiplier,
     componentType: 'credits' | 'perks' | 'multipliers'
   ): Promise<void> {
 
-    const batch = db.batch();
     const collectionName = this.getCollectionName(componentType);
 
-    // 1. Save component
-    const componentRef = db.collection(collectionName).doc(componentData.id);
-    batch.set(componentRef, componentData);
+    // Simply save the component with ReferenceCardId
+    await db.collection(collectionName).doc(componentData.id).set(componentData);
 
-    // 2. Get all versions for this card
-    const versions = await CardService.getVersionsByReferenceCardId(
-      componentData.ReferenceCardId
-    );
-
-    // 3. Update pointer arrays based on date overlap
-    for (const version of versions) {
-      const shouldInclude = this.datesOverlap(
-        componentData.EffectiveFrom,
-        componentData.EffectiveTo,
-        version.effectiveFrom,
-        version.effectiveTo
-      );
-
-      const versionRef = version.source === 'credit_cards' ?
-        db.collection('credit_cards').doc(version.id) :
-        db.collection('credit_cards_history').doc(version.id);
-
-      const arrayField = this.getArrayFieldName(componentType);
-
-      if (shouldInclude) {
-        // Add to pointer array if dates overlap
-        batch.update(versionRef, {
-          [arrayField]: arrayUnion({ id: componentData.id }),
-          lastUpdated: new Date().toISOString()
-        });
-      } else {
-        // Remove from pointer array if dates don't overlap
-        batch.update(versionRef, {
-          [arrayField]: arrayRemove({ id: componentData.id }),
-          lastUpdated: new Date().toISOString()
-        });
-      }
-    }
-
-    await batch.commit();
+    // No pointer array updates needed - components are linked via ReferenceCardId
   }
 
   /**
-   * Delete component and remove from all pointer arrays
+   * Delete component
    */
   static async deleteComponent(
     componentId: string,
     componentType: 'credits' | 'perks' | 'multipliers'
   ): Promise<void> {
 
-    const batch = db.batch();
     const collectionName = this.getCollectionName(componentType);
-    const arrayField = this.getArrayFieldName(componentType);
 
-    // 1. Get component to find ReferenceCardId
-    const componentDoc = await db.collection(collectionName).doc(componentId).get();
-    if (!componentDoc.exists) {
-      throw new Error('Component not found');
-    }
+    // Simply delete the component
+    await db.collection(collectionName).doc(componentId).delete();
 
-    const referenceCardId = componentDoc.data()!.ReferenceCardId;
-
-    // 2. Get all versions for this card
-    const versions = await CardService.getVersionsByReferenceCardId(referenceCardId);
-
-    // 3. Remove from all pointer arrays
-    for (const version of versions) {
-      const versionRef = version.source === 'credit_cards' ?
-        db.collection('credit_cards').doc(version.id) :
-        db.collection('credit_cards_history').doc(version.id);
-
-      batch.update(versionRef, {
-        [arrayField]: arrayRemove({ id: componentId }),
-        lastUpdated: new Date().toISOString()
-      });
-    }
-
-    // 4. Delete component document
-    batch.delete(db.collection(collectionName).doc(componentId));
-
-    await batch.commit();
+    // No pointer array cleanup needed - components are linked via ReferenceCardId
   }
 
   /**
-   * Get all components for a version (using pointer arrays)
+   * Get all components for a version (query by ReferenceCardId)
    */
   static async getComponentsForVersion(
     version: CreditCardDetails
@@ -1136,46 +1167,33 @@ export class ComponentService {
     multipliers: CardMultiplier[];
   }> {
 
-    // Use pointer arrays for efficient lookup
-    const creditIds = version.Credits.map(c => c.id);
-    const perkIds = version.Perks.map(p => p.id);
-    const multiplierIds = version.Multipliers.map(m => m.id);
-
+    // Query components by ReferenceCardId
     const [credits, perks, multipliers] = await Promise.all([
-      this.getComponentsByIds('credit_cards_credits', creditIds),
-      this.getComponentsByIds('credit_cards_perks', perkIds),
-      this.getComponentsByIds('credit_cards_multipliers', multiplierIds)
+      this.getComponentsByReferenceCardId('credit_cards_credits', version.ReferenceCardId),
+      this.getComponentsByReferenceCardId('credit_cards_perks', version.ReferenceCardId),
+      this.getComponentsByReferenceCardId('credit_cards_multipliers', version.ReferenceCardId)
     ]);
 
     return { credits, perks, multipliers };
   }
 
   /**
-   * Get components by IDs
+   * Get components by ReferenceCardId
    */
-  private static async getComponentsByIds(
+  private static async getComponentsByReferenceCardId(
     collection: string,
-    ids: string[]
+    referenceCardId: string
   ): Promise<any[]> {
 
-    if (ids.length === 0) return [];
+    const snapshot = await db.collection(collection)
+      .where('ReferenceCardId', '==', referenceCardId)
+      .orderBy('EffectiveFrom', 'desc')  // Uses composite index
+      .get();
 
-    // Firestore 'in' query limit is 10, so batch if needed
-    const components: any[] = [];
-
-    for (let i = 0; i < ids.length; i += 10) {
-      const batchIds = ids.slice(i, i + 10);
-      const snapshot = await db.collection(collection)
-        .where(FieldPath.documentId(), 'in', batchIds)
-        .get();
-
-      components.push(...snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })));
-    }
-
-    return components;
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
   }
 
   /**

@@ -280,7 +280,7 @@ async function deactivateVersion(
     batch.set(db.collection('credit_cards_history').doc(historyId), {
       ...activeData,
       IsActive: false,
-      effectiveTo: effectiveTo || activeData.effectiveTo || '',
+      effectiveTo: effectiveTo || activeData.effectiveTo || '9999-12-31',
       lastUpdated: new Date().toISOString(),
       deactivationReason: reason // Add metadata
     });
@@ -411,7 +411,7 @@ async function setVersionAsActive(
     ...versionData,
     IsActive: true,
     effectiveFrom: options.newEffectiveFrom || versionData.effectiveFrom,
-    effectiveTo: options.clearEffectiveTo ? '' : versionData.effectiveTo,
+    effectiveTo: options.clearEffectiveTo ? '9999-12-31' : versionData.effectiveTo,
     lastUpdated: new Date().toISOString()
   });
 
@@ -539,11 +539,9 @@ async function createNewCard(
     ReferenceCardId: formData.referenceCardId,
     IsActive: setAsActive,
     effectiveFrom: formData.effectiveFrom,
-    effectiveTo: formData.effectiveTo || '',
-    lastUpdated: new Date().toISOString(),
-    Perks: [],
-    Credits: [],
-    Multipliers: []
+    effectiveTo: formData.effectiveTo || '9999-12-31',
+    lastUpdated: new Date().toISOString()
+    // No pointer arrays - components linked via ReferenceCardId
   };
 
   if (setAsActive) {
@@ -663,6 +661,42 @@ async function findComponentsForInactiveCards(): Promise<{
 
 ## Service Layer - New Methods
 
+### Database Access Pattern
+
+**Direct Firestore Access:**
+The Card Manager uses Firebase Admin SDK to connect directly to Firestore, providing full control over database operations without requiring an API layer.
+
+```typescript
+// config/firebase-admin.ts
+import admin from 'firebase-admin';
+
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+  })
+});
+
+export const db = admin.firestore();
+```
+
+**Shared Code:**
+Reuse Server types and constants for consistency:
+
+```typescript
+import { CreditCardDetails } from '../../Server/types/credit-card-types';
+import { ONGOING_SENTINEL_DATE } from '../../Server/constants/dates';
+```
+
+**Data Integrity:**
+- Use sentinel value `"9999-12-31"` for ongoing dates
+- Follow batch write patterns for atomic operations
+- Validate all data before writing to Firestore
+- No pointer arrays - components linked via `ReferenceCardId`
+
+### CardService Methods
+
 ```typescript
 // services/CardService.ts
 
@@ -698,7 +732,7 @@ export class CardService {
       batch.set(db.collection('credit_cards_history').doc(historyId), {
         ...activeData,
         IsActive: false,
-        effectiveTo: options.effectiveTo || activeData.effectiveTo || '',
+        effectiveTo: options.effectiveTo || activeData.effectiveTo || '9999-12-31',
         lastUpdated: new Date().toISOString(),
         deactivationReason: options.reason
       });
@@ -798,7 +832,7 @@ export class CardService {
       ...versionData,
       IsActive: true,
       effectiveFrom: options.newEffectiveFrom || versionData.effectiveFrom,
-      effectiveTo: options.clearEffectiveTo ? '' : versionData.effectiveTo,
+      effectiveTo: options.clearEffectiveTo ? '9999-12-31' : versionData.effectiveTo,
       lastUpdated: new Date().toISOString()
     });
 
