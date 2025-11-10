@@ -212,13 +212,6 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
             />
           </div>
 
-          <FormField
-            label="Card Image URL (optional)"
-            value={formData.CardImage}
-            onChange={(e) => setFormData({ ...formData, CardImage: e.target.value })}
-            placeholder="https://example.com/card-image.png"
-          />
-
           <div className="form-row">
             <FormField
               label="Primary Color (optional)"

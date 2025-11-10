@@ -342,12 +342,6 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
               onChange={(e) => setFormData({ ...formData, CardDetails: e.target.value })}
               rows={3}
             />
-            <FormField
-              label="Card Image URL (optional)"
-              value={formData.CardImage}
-              onChange={(e) => setFormData({ ...formData, CardImage: e.target.value })}
-              placeholder="https://example.com/card-image.png"
-            />
             <div className="form-row">
               <FormField
                 label="Primary Color (optional)"
