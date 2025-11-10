@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import type { CreditCardDetails } from '@/types';
 import { CardService } from '@/services/card.service';
 import { normalizeEffectiveTo } from '@/types';
+import { CARD_NETWORKS, CARD_ISSUERS, REWARDS_CURRENCIES } from '@/constants/form-options';
 import './CreateCardModal.scss';
 import { CardIcon } from '@/components/icons/CardIcon';
 
@@ -176,20 +178,20 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
           placeholder="e.g., Chase Sapphire Preferred"
         />
 
-        <Input
+        <Select
           label="Card Issuer"
           value={formData.CardIssuer}
           onChange={(e) => setFormData({ ...formData, CardIssuer: e.target.value })}
           error={errors.CardIssuer}
-          placeholder="e.g., Chase"
+          options={CARD_ISSUERS.map(issuer => ({ value: issuer, label: issuer }))}
         />
 
-        <Input
+        <Select
           label="Card Network"
           value={formData.CardNetwork}
           onChange={(e) => setFormData({ ...formData, CardNetwork: e.target.value })}
           error={errors.CardNetwork}
-          placeholder="e.g., Visa, Mastercard, Amex"
+          options={CARD_NETWORKS.map(network => ({ value: network, label: network }))}
         />
 
         <div className="textarea-wrapper">
@@ -264,11 +266,11 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
         />
 
         <div className="form-row">
-          <Input
+          <Select
             label="Rewards Currency"
             value={formData.RewardsCurrency}
             onChange={(e) => setFormData({ ...formData, RewardsCurrency: e.target.value })}
-            placeholder="e.g., Points, Miles, Cash Back"
+            options={REWARDS_CURRENCIES.map(currency => ({ value: currency, label: currency }))}
           />
 
           <Input
@@ -307,7 +309,7 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
           value={formData.EffectiveTo}
           onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
           placeholder="Leave empty for ongoing"
-          helperText="If currently active, leave this blank."
+          helperText="⚠️ IMPORTANT: If this version is currently active, leave this field BLANK."
         />
         <div className="checkbox-group">
           <label className="checkbox-label">

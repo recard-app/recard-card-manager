@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import type { CardPerk } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
+import { CATEGORIES, SUBCATEGORIES } from '@/constants/form-options';
 import './PerkModal.scss';
 
 interface PerkModalProps {
@@ -139,20 +141,22 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
           placeholder="e.g., Airport Lounge Access"
         />
 
-        <Input
+        <Select
           label="Category"
           value={formData.Category}
-          onChange={(e) => setFormData({ ...formData, Category: e.target.value })}
+          onChange={(e) => setFormData({ ...formData, Category: e.target.value, SubCategory: '' })}
           error={errors.Category}
-          placeholder="e.g., Travel, Dining, Entertainment"
+          options={Object.keys(CATEGORIES).map(cat => ({ value: cat, label: cat }))}
         />
 
-        <Input
-          label="Sub Category"
-          value={formData.SubCategory}
-          onChange={(e) => setFormData({ ...formData, SubCategory: e.target.value })}
-          placeholder="e.g., Airport Amenities"
-        />
+        {formData.Category && SUBCATEGORIES[formData.Category]?.length > 0 && (
+          <Select
+            label="Sub Category"
+            value={formData.SubCategory}
+            onChange={(e) => setFormData({ ...formData, SubCategory: e.target.value })}
+            options={SUBCATEGORIES[formData.Category].map(sub => ({ value: sub, label: sub }))}
+          />
+        )}
 
         <div className="textarea-wrapper">
           <label className="textarea-label">Description</label>
@@ -194,7 +198,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
           value={formData.EffectiveTo}
           onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
           placeholder="Leave empty for ongoing"
-          helperText="If currently active, leave this blank."
+          helperText="⚠️ IMPORTANT: If this perk is currently active, leave this field BLANK."
         />
 
         <div className="modal-actions">

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import type { CardCredit } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
+import { CATEGORIES, SUBCATEGORIES, TIME_PERIODS, sanitizeId } from '@/constants/form-options';
 import './CreditModal.scss';
 
 interface CreditModalProps {
@@ -148,34 +150,37 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           placeholder="e.g., Annual Travel Credit"
         />
 
-        <Input
+        <Select
           label="Category"
           value={formData.Category}
-          onChange={(e) => setFormData({ ...formData, Category: e.target.value })}
+          onChange={(e) => setFormData({ ...formData, Category: e.target.value, SubCategory: '' })}
           error={errors.Category}
-          placeholder="e.g., Travel"
+          options={Object.keys(CATEGORIES).map(cat => ({ value: cat, label: cat }))}
         />
 
-        <Input
-          label="Sub Category"
-          value={formData.SubCategory}
-          onChange={(e) => setFormData({ ...formData, SubCategory: e.target.value })}
-          placeholder="e.g., Annual Credit"
-        />
+        {formData.Category && SUBCATEGORIES[formData.Category]?.length > 0 && (
+          <Select
+            label="Sub Category"
+            value={formData.SubCategory}
+            onChange={(e) => setFormData({ ...formData, SubCategory: e.target.value })}
+            options={SUBCATEGORIES[formData.Category].map(sub => ({ value: sub, label: sub }))}
+          />
+        )}
 
         <Input
-          label="Value"
+          label="Value ($)"
+          type="text"
           value={formData.Value}
           onChange={(e) => setFormData({ ...formData, Value: e.target.value })}
           error={errors.Value}
-          placeholder="e.g., $300"
+          placeholder="e.g., 300 or $300"
         />
 
-        <Input
+        <Select
           label="Time Period"
           value={formData.TimePeriod}
           onChange={(e) => setFormData({ ...formData, TimePeriod: e.target.value })}
-          placeholder="e.g., Annual, Monthly"
+          options={TIME_PERIODS.map(tp => ({ value: tp, label: tp }))}
         />
 
         <Input
@@ -213,7 +218,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           value={formData.EffectiveTo}
           onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
           placeholder="Leave empty for ongoing"
-          helperText="If currently active, leave this blank."
+          helperText="⚠️ IMPORTANT: If this credit is currently active, leave this field BLANK."
         />
 
         <div className="modal-actions">

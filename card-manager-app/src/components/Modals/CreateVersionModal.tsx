@@ -130,7 +130,7 @@ export function CreateVersionModal({
           value={formData.EffectiveTo}
           onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
           placeholder="Leave empty for ongoing"
-          helperText="If currently active, leave this blank."
+          helperText="⚠️ IMPORTANT: If this version is currently active, leave this field BLANK."
         />
 
         <div className="checkbox-group">
