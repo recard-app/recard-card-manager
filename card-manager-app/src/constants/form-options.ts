@@ -48,19 +48,9 @@ export const TIME_PERIODS = [
 // Rewards currencies
 export const REWARDS_CURRENCIES = [
   'Points',
+  'Cashback',
   'Miles',
-  'Cash Back',
-  'Membership Rewards',
-  'Ultimate Rewards',
-  'ThankYou Points',
-  'Venture Miles',
-  'SkyMiles',
-  'Rapid Rewards',
-  'TrueBlue Points',
-  'AAdvantage Miles',
-  'Hilton Honors',
-  'Marriott Bonvoy',
-  'IHG Rewards',
+  'Other',
 ] as const;
 
 // Card networks

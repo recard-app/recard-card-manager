@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { CardService } from '@/services/card.service';
 import type { CreditCardDetails } from '@/types';
 import { normalizeEffectiveTo } from '@/types';
 import { formatDate } from '@/utils/date-utils';
+import { REWARDS_CURRENCIES } from '@/constants/form-options';
 import './CardDetailsForm.scss';
 import { CardIcon } from '@/components/icons/CardIcon';
 
@@ -19,6 +21,12 @@ export function CardDetailsForm({ cardId, card, onSaved }: CardDetailsFormProps)
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Helper to sanitize numeric input (allows digits, decimal point, and negative sign)
+  const sanitizeNumericInput = (value: string): string => {
+    return value.replace(/[^0-9.-]/g, '');
+  };
+
   const [formData, setFormData] = useState({
     CardName: '',
     CardIssuer: '',
@@ -241,10 +249,9 @@ export function CardDetailsForm({ cardId, card, onSaved }: CardDetailsFormProps)
             <h3>Fees</h3>
             <Input
               label="Annual Fee"
-              type="number"
-              step="0.01"
+              type="text"
               value={formData.AnnualFee}
-              onChange={(e) => setFormData({ ...formData, AnnualFee: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, AnnualFee: sanitizeNumericInput(e.target.value) })}
             />
             <Input
               label="Foreign Exchange Fee Description"
@@ -253,28 +260,27 @@ export function CardDetailsForm({ cardId, card, onSaved }: CardDetailsFormProps)
             />
             <Input
               label="FX Fee Percentage"
-              type="number"
-              step="0.01"
+              type="text"
               value={formData.ForeignExchangeFeePercentage}
               onChange={(e) =>
-                setFormData({ ...formData, ForeignExchangeFeePercentage: e.target.value })
+                setFormData({ ...formData, ForeignExchangeFeePercentage: sanitizeNumericInput(e.target.value) })
               }
             />
           </div>
 
           <div className="detail-group">
             <h3>Rewards</h3>
-            <Input
+            <Select
               label="Rewards Currency"
               value={formData.RewardsCurrency}
               onChange={(e) => setFormData({ ...formData, RewardsCurrency: e.target.value })}
+              options={REWARDS_CURRENCIES.map(currency => ({ value: currency, label: currency }))}
             />
             <Input
               label="Points Per Dollar"
-              type="number"
-              step="0.1"
+              type="text"
               value={formData.PointsPerDollar}
-              onChange={(e) => setFormData({ ...formData, PointsPerDollar: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, PointsPerDollar: sanitizeNumericInput(e.target.value) })}
             />
           </div>
 

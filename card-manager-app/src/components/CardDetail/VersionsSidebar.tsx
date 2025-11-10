@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import type { VersionSummary } from '@/types/ui-types';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Plus, Check, ChevronLeft } from 'lucide-react';
+import { Plus, Check, ChevronLeft, Search } from 'lucide-react';
 import { formatDate } from '@/utils/date-utils';
 import './VersionsSidebar.scss';
 
@@ -26,9 +27,18 @@ export function VersionsSidebar({
   onActivateVersion,
   onDeactivateVersion,
 }: VersionsSidebarProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
   const selectedVersion = versions.find(v => v.id === selectedVersionId);
   const isActiveVersion =
     (selectedVersion && ('IsActive' in selectedVersion ? (selectedVersion as any).IsActive : (selectedVersion as any).isActive)) || false;
+
+  const filteredVersions = versions.filter(version => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const versionName = ((version as any).VersionName ?? (version as any).versionName ?? '').toLowerCase();
+    return version.id.toLowerCase().includes(query) || versionName.includes(query);
+  });
 
   if (collapsed) {
     return (
@@ -58,11 +68,24 @@ export function VersionsSidebar({
         </div>
       </div>
 
+      <div className="search-container">
+        <Search size={16} className="search-icon" />
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search versions..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
       <div className="versions-list">
-        {versions.length === 0 ? (
-          <div className="empty-state">No versions found</div>
+        {filteredVersions.length === 0 ? (
+          <div className="empty-state">
+            {searchQuery.trim() ? 'No versions match your search' : 'No versions found'}
+          </div>
         ) : (
-          versions.map((version) => (
+          filteredVersions.map((version) => (
             <button
               key={version.id}
               className={`version-item ${selectedVersionId === version.id ? 'selected' : ''}`}

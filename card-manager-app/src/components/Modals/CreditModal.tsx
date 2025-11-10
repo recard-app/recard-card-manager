@@ -36,6 +36,11 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Helper to sanitize numeric input (allows digits, decimal point, negative sign, and dollar sign)
+  const sanitizeNumericInput = (value: string): string => {
+    return value.replace(/[^0-9.$-]/g, '');
+  };
+
   useEffect(() => {
     if (credit) {
       setFormData({
@@ -171,7 +176,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           label="Value ($)"
           type="text"
           value={formData.Value}
-          onChange={(e) => setFormData({ ...formData, Value: e.target.value })}
+          onChange={(e) => setFormData({ ...formData, Value: sanitizeNumericInput(e.target.value) })}
           error={errors.Value}
           placeholder="e.g., 300 or $300"
         />

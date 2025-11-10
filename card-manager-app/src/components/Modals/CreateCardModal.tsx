@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import type { CreditCardDetails } from '@/types';
 import { CardService } from '@/services/card.service';
 import { normalizeEffectiveTo } from '@/types';
-import { CARD_NETWORKS, CARD_ISSUERS, REWARDS_CURRENCIES } from '@/constants/form-options';
+import { REWARDS_CURRENCIES } from '@/constants/form-options';
 import './CreateCardModal.scss';
 import { CardIcon } from '@/components/icons/CardIcon';
 
@@ -39,6 +39,11 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+
+  // Helper to sanitize numeric input (allows digits, decimal point, and negative sign)
+  const sanitizeNumericInput = (value: string): string => {
+    return value.replace(/[^0-9.-]/g, '');
+  };
 
   useEffect(() => {
     if (open) {
@@ -178,20 +183,20 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
           placeholder="e.g., Chase Sapphire Preferred"
         />
 
-        <Select
+        <Input
           label="Card Issuer"
           value={formData.CardIssuer}
           onChange={(e) => setFormData({ ...formData, CardIssuer: e.target.value })}
           error={errors.CardIssuer}
-          options={CARD_ISSUERS.map(issuer => ({ value: issuer, label: issuer }))}
+          placeholder="e.g., Chase"
         />
 
-        <Select
+        <Input
           label="Card Network"
           value={formData.CardNetwork}
           onChange={(e) => setFormData({ ...formData, CardNetwork: e.target.value })}
           error={errors.CardNetwork}
-          options={CARD_NETWORKS.map(network => ({ value: network, label: network }))}
+          placeholder="e.g., Visa, Mastercard, Amex"
         />
 
         <div className="textarea-wrapper">
@@ -239,20 +244,18 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
         <div className="form-row">
           <Input
             label="Annual Fee"
-            type="number"
-            step="0.01"
+            type="text"
             value={formData.AnnualFee}
-            onChange={(e) => setFormData({ ...formData, AnnualFee: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, AnnualFee: sanitizeNumericInput(e.target.value) })}
             placeholder="95"
           />
 
           <Input
             label="Foreign Exchange Fee %"
-            type="number"
-            step="0.01"
+            type="text"
             value={formData.ForeignExchangeFeePercentage}
             onChange={(e) =>
-              setFormData({ ...formData, ForeignExchangeFeePercentage: e.target.value })
+              setFormData({ ...formData, ForeignExchangeFeePercentage: sanitizeNumericInput(e.target.value) })
             }
             placeholder="3"
           />
@@ -275,10 +278,9 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
 
           <Input
             label="Points Per Dollar"
-            type="number"
-            step="0.1"
+            type="text"
             value={formData.PointsPerDollar}
-            onChange={(e) => setFormData({ ...formData, PointsPerDollar: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, PointsPerDollar: sanitizeNumericInput(e.target.value) })}
             placeholder="1"
           />
         </div>

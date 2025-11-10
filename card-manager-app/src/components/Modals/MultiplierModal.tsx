@@ -35,6 +35,11 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Helper to sanitize numeric input (allows digits, decimal point, and negative sign)
+  const sanitizeNumericInput = (value: string): string => {
+    return value.replace(/[^0-9.-]/g, '');
+  };
+
   useEffect(() => {
     if (multiplier) {
       setFormData({
@@ -179,10 +184,9 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
 
         <Input
           label="Multiplier (x)"
-          type="number"
-          step="0.1"
+          type="text"
           value={formData.Multiplier}
-          onChange={(e) => setFormData({ ...formData, Multiplier: e.target.value })}
+          onChange={(e) => setFormData({ ...formData, Multiplier: sanitizeNumericInput(e.target.value) })}
           error={errors.Multiplier}
           placeholder="e.g., 3"
         />
