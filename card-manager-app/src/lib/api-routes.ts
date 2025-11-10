@@ -7,7 +7,7 @@ export const API_ROUTES = {
   // Card routes
   CARDS: {
     LIST: '/admin/cards',
-    CREATE: '/admin/cards',
+    CREATE: (cardId: string) => `/admin/cards/${cardId}`,
     DETAILS: (cardId: string) => `/admin/cards/${cardId}`,
     UPDATE: (cardId: string) => `/admin/cards/${cardId}`,
     DELETE: (cardId: string) => `/admin/cards/${cardId}`,
@@ -16,7 +16,7 @@ export const API_ROUTES = {
   // Version management routes
   VERSIONS: {
     LIST: (referenceCardId: string) => `/admin/cards/${referenceCardId}/versions`,
-    CREATE: (referenceCardId: string) => `/admin/cards/${referenceCardId}/versions`,
+    CREATE: (referenceCardId: string, versionId: string) => `/admin/cards/${referenceCardId}/versions/${versionId}`,
     ACTIVATE: (referenceCardId: string, versionId: string) =>
       `/admin/cards/${referenceCardId}/versions/${versionId}/activate`,
     DEACTIVATE: (referenceCardId: string) => `/admin/cards/${referenceCardId}/deactivate`,

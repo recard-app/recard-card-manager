@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { CardCredit } from '@/types';
+import type { CardCredit } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
 import './CreditModal.scss';
@@ -19,10 +19,14 @@ export function CreditModal({ open, onOpenChange, cardId, credit, onSuccess }: C
   const isEdit = !!credit;
 
   const [formData, setFormData] = useState({
-    CreditName: '',
-    CreditAmount: '',
-    IsCashBack: false,
-    RequiresActivation: false,
+    Title: '',
+    Category: '',
+    SubCategory: '',
+    Description: '',
+    Value: '',
+    TimePeriod: '',
+    Requirements: '',
+    Details: '',
     EffectiveFrom: '',
     EffectiveTo: '',
   });
@@ -33,20 +37,28 @@ export function CreditModal({ open, onOpenChange, cardId, credit, onSuccess }: C
   useEffect(() => {
     if (credit) {
       setFormData({
-        CreditName: credit.CreditName,
-        CreditAmount: credit.CreditAmount.toString(),
-        IsCashBack: credit.IsCashBack,
-        RequiresActivation: credit.RequiresActivation,
+        Title: credit.Title,
+        Category: credit.Category,
+        SubCategory: credit.SubCategory,
+        Description: credit.Description,
+        Value: credit.Value,
+        TimePeriod: credit.TimePeriod,
+        Requirements: credit.Requirements,
+        Details: credit.Details || '',
         EffectiveFrom: credit.EffectiveFrom,
         EffectiveTo: denormalizeEffectiveTo(credit.EffectiveTo),
       });
     } else {
       // Reset form for new credit
       setFormData({
-        CreditName: '',
-        CreditAmount: '',
-        IsCashBack: false,
-        RequiresActivation: false,
+        Title: '',
+        Category: '',
+        SubCategory: '',
+        Description: '',
+        Value: '',
+        TimePeriod: '',
+        Requirements: '',
+        Details: '',
         EffectiveFrom: new Date().toISOString().split('T')[0],
         EffectiveTo: '',
       });
@@ -57,12 +69,16 @@ export function CreditModal({ open, onOpenChange, cardId, credit, onSuccess }: C
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.CreditName.trim()) {
-      newErrors.CreditName = 'Credit name is required';
+    if (!formData.Title.trim()) {
+      newErrors.Title = 'Title is required';
     }
 
-    if (!formData.CreditAmount || parseFloat(formData.CreditAmount) <= 0) {
-      newErrors.CreditAmount = 'Credit amount must be greater than 0';
+    if (!formData.Category.trim()) {
+      newErrors.Category = 'Category is required';
+    }
+
+    if (!formData.Value.trim()) {
+      newErrors.Value = 'Value is required';
     }
 
     if (!formData.EffectiveFrom) {
@@ -83,12 +99,16 @@ export function CreditModal({ open, onOpenChange, cardId, credit, onSuccess }: C
     setSubmitting(true);
 
     try {
-      const creditData: Omit<CardCredit, 'id'> = {
+      const creditData: Omit<CardCredit, 'id' | 'LastUpdated'> = {
         ReferenceCardId: cardId,
-        CreditName: formData.CreditName.trim(),
-        CreditAmount: parseFloat(formData.CreditAmount),
-        IsCashBack: formData.IsCashBack,
-        RequiresActivation: formData.RequiresActivation,
+        Title: formData.Title.trim(),
+        Category: formData.Category.trim(),
+        SubCategory: formData.SubCategory.trim(),
+        Description: formData.Description.trim(),
+        Value: formData.Value.trim(),
+        TimePeriod: formData.TimePeriod.trim(),
+        Requirements: formData.Requirements.trim(),
+        Details: formData.Details.trim() || undefined,
         EffectiveFrom: formData.EffectiveFrom,
         EffectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
       };
@@ -118,46 +138,63 @@ export function CreditModal({ open, onOpenChange, cardId, credit, onSuccess }: C
     >
       <form onSubmit={handleSubmit} className="credit-modal-form">
         <Input
-          label="Credit Name"
-          value={formData.CreditName}
-          onChange={(e) => setFormData({ ...formData, CreditName: e.target.value })}
-          error={errors.CreditName}
+          label="Title"
+          value={formData.Title}
+          onChange={(e) => setFormData({ ...formData, Title: e.target.value })}
+          error={errors.Title}
           placeholder="e.g., Annual Travel Credit"
         />
 
         <Input
-          label="Credit Amount ($)"
-          type="number"
-          step="0.01"
-          value={formData.CreditAmount}
-          onChange={(e) => setFormData({ ...formData, CreditAmount: e.target.value })}
-          error={errors.CreditAmount}
-          placeholder="e.g., 300"
+          label="Category"
+          value={formData.Category}
+          onChange={(e) => setFormData({ ...formData, Category: e.target.value })}
+          error={errors.Category}
+          placeholder="e.g., Travel"
         />
 
-        <div className="checkbox-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={formData.IsCashBack}
-              onChange={(e) => setFormData({ ...formData, IsCashBack: e.target.checked })}
-            />
-            <span>Is Cash Back</span>
-          </label>
-          <p className="checkbox-description">Check if this is a cash back credit rather than a statement credit</p>
-        </div>
+        <Input
+          label="Sub Category"
+          value={formData.SubCategory}
+          onChange={(e) => setFormData({ ...formData, SubCategory: e.target.value })}
+          placeholder="e.g., Annual Credit"
+        />
 
-        <div className="checkbox-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={formData.RequiresActivation}
-              onChange={(e) => setFormData({ ...formData, RequiresActivation: e.target.checked })}
-            />
-            <span>Requires Activation</span>
-          </label>
-          <p className="checkbox-description">Check if this credit requires manual activation by the cardholder</p>
-        </div>
+        <Input
+          label="Value"
+          value={formData.Value}
+          onChange={(e) => setFormData({ ...formData, Value: e.target.value })}
+          error={errors.Value}
+          placeholder="e.g., $300"
+        />
+
+        <Input
+          label="Time Period"
+          value={formData.TimePeriod}
+          onChange={(e) => setFormData({ ...formData, TimePeriod: e.target.value })}
+          placeholder="e.g., Annual, Monthly"
+        />
+
+        <Input
+          label="Description"
+          value={formData.Description}
+          onChange={(e) => setFormData({ ...formData, Description: e.target.value })}
+          placeholder="Describe the credit"
+        />
+
+        <Input
+          label="Requirements"
+          value={formData.Requirements}
+          onChange={(e) => setFormData({ ...formData, Requirements: e.target.value })}
+          placeholder="Any requirements or conditions"
+        />
+
+        <Input
+          label="Details (optional)"
+          value={formData.Details}
+          onChange={(e) => setFormData({ ...formData, Details: e.target.value })}
+          placeholder="Additional details"
+        />
 
         <Input
           label="Effective From"

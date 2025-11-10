@@ -3,43 +3,91 @@
 
 .versions-sidebar {
   @include flex-column;
-  gap: $spacing-md;
-  height: fit-content;
-  position: sticky;
-  top: $spacing-lg;
+  gap: $spacing-sm;
+  height: 100%;
+  width: 280px;
+  border-right: 1px solid $neutral-gray-200;
+  background: $neutral-white;
+  transition: width 0.3s ease;
+  overflow: hidden;
+
+  &.collapsed {
+    width: 40px;
+    align-items: center;
+    padding: $spacing-sm 0;
+
+    .collapsed-label {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      font-weight: 600;
+      color: $neutral-gray-600;
+      margin-top: $spacing-md;
+      font-size: $font-size-sm;
+    }
+  }
+
+  .collapse-toggle {
+    background: none;
+    border: none;
+    padding: $spacing-xs;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: $border-radius-sm;
+    transition: all 0.2s;
+
+    &:hover {
+      background-color: $neutral-gray-200;
+    }
+
+    svg {
+      transition: transform 0.3s ease;
+    }
+  }
+
+  &.collapsed .collapse-toggle svg {
+    transform: rotate(180deg);
+  }
 }
 
 .sidebar-header {
   @include flex-row;
   justify-content: space-between;
   align-items: center;
-  padding: $spacing-md;
-  background-color: $neutral-gray-100;
-  border-radius: $border-radius-md;
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $neutral-gray-200;
 
-  h3 {
-    font-size: $font-size-base;
-    font-weight: 600;
-    color: $neutral-gray-800;
-    margin: 0;
+  .header-content {
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-sm;
+    flex: 1;
+
+    h3 {
+      font-size: $font-size-sm;
+      font-weight: 600;
+      color: $neutral-gray-800;
+      margin: 0;
+    }
   }
 }
 
 .versions-list {
   @include flex-column;
-  gap: $spacing-sm;
-  max-height: 600px;
+  gap: $spacing-xs;
+  flex: 1;
   overflow-y: auto;
-  padding: $spacing-xs;
+  padding: $spacing-sm;
 }
 
 .version-item {
   @include flex-column;
   gap: $spacing-xs;
-  padding: $spacing-md;
+  padding: $spacing-sm;
   background-color: $neutral-white;
-  border: 2px solid $neutral-gray-200;
-  border-radius: $border-radius-md;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-sm;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
@@ -47,7 +95,7 @@
 
   &:hover {
     border-color: $neutral-gray-300;
-    box-shadow: $shadow-sm;
+    background-color: rgba($raw-primary-blue, 0.02);
   }
 
   &.selected {
@@ -59,7 +107,7 @@
     @include flex-row;
     justify-content: space-between;
     align-items: center;
-    gap: $spacing-sm;
+    gap: $spacing-xs;
 
     .version-name {
       font-weight: 600;
@@ -91,11 +139,8 @@
 }
 
 .sidebar-actions {
-  @include flex-column;
-  gap: $spacing-sm;
-  padding: $spacing-md;
-  background-color: $neutral-gray-100;
-  border-radius: $border-radius-md;
+  padding: $spacing-sm;
+  border-top: 1px solid $neutral-gray-200;
 
   button {
     width: 100%;

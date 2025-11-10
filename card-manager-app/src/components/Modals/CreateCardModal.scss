@@ -1,0 +1,78 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.create-card-modal-form {
+  @include flex-column;
+  gap: $spacing-md;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: $spacing-xs;
+}
+
+.field-help {
+  font-size: $font-size-xs;
+  color: $neutral-gray-600;
+  margin: -#{$spacing-sm} 0 0 0;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-md;
+}
+
+.section-divider {
+  padding-top: $spacing-md;
+  margin-top: $spacing-sm;
+  border-top: 1px solid $neutral-gray-200;
+
+  h3 {
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $neutral-gray-800;
+    margin: 0 0 $spacing-md 0;
+  }
+}
+
+.textarea-wrapper {
+  @include flex-column;
+  gap: $spacing-xs;
+
+  .textarea-label {
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: $neutral-gray-800;
+  }
+
+  .textarea {
+    padding: $spacing-sm;
+    border: 1px solid $neutral-gray-300;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+
+    &:focus {
+      outline: none;
+      border-color: $primary-blue;
+      box-shadow: 0 0 0 3px rgba($raw-primary-blue, 0.1);
+    }
+
+    &::placeholder {
+      color: $neutral-gray-600;
+    }
+  }
+}
+
+.modal-actions {
+  @include flex-row;
+  justify-content: flex-end;
+  gap: $spacing-md;
+  margin-top: $spacing-md;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $neutral-gray-200;
+  position: sticky;
+  bottom: 0;
+  background-color: $neutral-white;
+}

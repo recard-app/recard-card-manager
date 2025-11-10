@@ -1,11 +1,13 @@
-import { VersionSummary } from '@/types/ui-types';
+import type { VersionSummary } from '@/types/ui-types';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Plus, Check } from 'lucide-react';
+import { Plus, Check, ChevronLeft } from 'lucide-react';
 import { formatDate } from '@/utils/date-utils';
 import './VersionsSidebar.scss';
 
 interface VersionsSidebarProps {
+  collapsed: boolean;
+  onToggleCollapse: () => void;
   versions: VersionSummary[];
   selectedVersionId: string | null;
   onVersionSelect: (versionId: string) => void;
@@ -15,6 +17,8 @@ interface VersionsSidebarProps {
 }
 
 export function VersionsSidebar({
+  collapsed,
+  onToggleCollapse,
   versions,
   selectedVersionId,
   onVersionSelect,
@@ -25,14 +29,32 @@ export function VersionsSidebar({
   const selectedVersion = versions.find(v => v.id === selectedVersionId);
   const isActiveVersion = selectedVersion?.isActive || false;
 
+  if (collapsed) {
+    return (
+      <div className="versions-sidebar collapsed">
+        <button className="collapse-toggle" onClick={onToggleCollapse}>
+          <ChevronLeft size={20} />
+        </button>
+        <div className="collapsed-label">
+          <span>Versions</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="versions-sidebar">
       <div className="sidebar-header">
-        <h3>Versions</h3>
-        <Button size="sm" onClick={onCreateVersion}>
-          <Plus size={14} />
-          New
-        </Button>
+        <button className="collapse-toggle" onClick={onToggleCollapse}>
+          <ChevronLeft size={20} />
+        </button>
+        <div className="header-content">
+          <h3>Versions</h3>
+          <Button size="sm" onClick={onCreateVersion}>
+            <Plus size={14} />
+            New
+          </Button>
+        </div>
       </div>
 
       <div className="versions-list">

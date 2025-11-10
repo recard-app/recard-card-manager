@@ -1,0 +1,122 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.card-components {
+  margin-top: $spacing-xl;
+  padding-top: $spacing-xl;
+  border-top: 2px solid $neutral-gray-200;
+
+  h2 {
+    font-size: $font-size-xl;
+    font-weight: 600;
+    color: $neutral-gray-800;
+    margin: 0 0 $spacing-sm 0;
+  }
+
+  .components-description {
+    font-size: $font-size-sm;
+    color: $neutral-gray-600;
+    margin: 0 0 $spacing-lg 0;
+  }
+
+  .empty-state {
+    padding: $spacing-xl;
+    text-align: center;
+    color: $neutral-gray-600;
+    font-size: $font-size-sm;
+    background-color: $neutral-gray-100;
+    border-radius: $border-radius-lg;
+    border: 1px dashed $neutral-gray-300;
+  }
+}
+
+.components-list {
+  @include flex-column;
+  gap: $spacing-md;
+}
+
+.component-card {
+  padding: $spacing-lg;
+  background-color: $neutral-white;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-lg;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: $neutral-gray-300;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.component-header {
+  @include flex-column;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+}
+
+.component-title-row {
+  @include flex-row;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+
+  h3 {
+    font-size: $font-size-lg;
+    font-weight: 600;
+    color: $neutral-gray-800;
+    margin: 0;
+  }
+
+  .badges {
+    @include flex-row;
+    gap: $spacing-xs;
+    flex-shrink: 0;
+  }
+}
+
+.component-meta {
+  @include flex-row;
+  align-items: center;
+  gap: $spacing-md;
+  font-size: $font-size-sm;
+
+  .category {
+    color: $neutral-gray-600;
+    font-weight: 500;
+  }
+
+  .value,
+  .multiplier-value {
+    padding: 2px 8px;
+    background-color: rgba($raw-primary-blue, 0.1);
+    color: $primary-blue;
+    border-radius: $border-radius-sm;
+    font-weight: 600;
+    font-size: $font-size-sm;
+  }
+}
+
+.component-description {
+  color: $neutral-gray-800;
+  font-size: $font-size-sm;
+  line-height: 1.5;
+  margin: 0 0 $spacing-md 0;
+}
+
+.component-dates {
+  @include flex-row;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $font-size-xs;
+  color: $neutral-gray-600;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $neutral-gray-100;
+
+  .date-label {
+    font-weight: 500;
+  }
+
+  .date-range {
+    color: $neutral-gray-600;
+  }
+}

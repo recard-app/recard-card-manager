@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { CardPerk } from '@/types';
+import type { CardPerk } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
 import './PerkModal.scss';
@@ -19,9 +19,12 @@ export function PerkModal({ open, onOpenChange, cardId, perk, onSuccess }: PerkM
   const isEdit = !!perk;
 
   const [formData, setFormData] = useState({
-    PerkName: '',
-    PerkDescription: '',
-    PerkCategory: '',
+    Title: '',
+    Category: '',
+    SubCategory: '',
+    Description: '',
+    Requirements: '',
+    Details: '',
     EffectiveFrom: '',
     EffectiveTo: '',
   });
@@ -32,17 +35,23 @@ export function PerkModal({ open, onOpenChange, cardId, perk, onSuccess }: PerkM
   useEffect(() => {
     if (perk) {
       setFormData({
-        PerkName: perk.PerkName,
-        PerkDescription: perk.PerkDescription,
-        PerkCategory: perk.PerkCategory,
+        Title: perk.Title,
+        Category: perk.Category,
+        SubCategory: perk.SubCategory,
+        Description: perk.Description,
+        Requirements: perk.Requirements,
+        Details: perk.Details || '',
         EffectiveFrom: perk.EffectiveFrom,
         EffectiveTo: denormalizeEffectiveTo(perk.EffectiveTo),
       });
     } else {
       setFormData({
-        PerkName: '',
-        PerkDescription: '',
-        PerkCategory: '',
+        Title: '',
+        Category: '',
+        SubCategory: '',
+        Description: '',
+        Requirements: '',
+        Details: '',
         EffectiveFrom: new Date().toISOString().split('T')[0],
         EffectiveTo: '',
       });
@@ -53,16 +62,16 @@ export function PerkModal({ open, onOpenChange, cardId, perk, onSuccess }: PerkM
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.PerkName.trim()) {
-      newErrors.PerkName = 'Perk name is required';
+    if (!formData.Title.trim()) {
+      newErrors.Title = 'Title is required';
     }
 
-    if (!formData.PerkDescription.trim()) {
-      newErrors.PerkDescription = 'Perk description is required';
+    if (!formData.Category.trim()) {
+      newErrors.Category = 'Category is required';
     }
 
-    if (!formData.PerkCategory.trim()) {
-      newErrors.PerkCategory = 'Perk category is required';
+    if (!formData.Description.trim()) {
+      newErrors.Description = 'Description is required';
     }
 
     if (!formData.EffectiveFrom) {
@@ -83,11 +92,14 @@ export function PerkModal({ open, onOpenChange, cardId, perk, onSuccess }: PerkM
     setSubmitting(true);
 
     try {
-      const perkData: Omit<CardPerk, 'id'> = {
+      const perkData: Omit<CardPerk, 'id' | 'LastUpdated'> = {
         ReferenceCardId: cardId,
-        PerkName: formData.PerkName.trim(),
-        PerkDescription: formData.PerkDescription.trim(),
-        PerkCategory: formData.PerkCategory.trim(),
+        Title: formData.Title.trim(),
+        Category: formData.Category.trim(),
+        SubCategory: formData.SubCategory.trim(),
+        Description: formData.Description.trim(),
+        Requirements: formData.Requirements.trim(),
+        Details: formData.Details.trim() || undefined,
         EffectiveFrom: formData.EffectiveFrom,
         EffectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
       };
@@ -117,31 +129,52 @@ export function PerkModal({ open, onOpenChange, cardId, perk, onSuccess }: PerkM
     >
       <form onSubmit={handleSubmit} className="perk-modal-form">
         <Input
-          label="Perk Name"
-          value={formData.PerkName}
-          onChange={(e) => setFormData({ ...formData, PerkName: e.target.value })}
-          error={errors.PerkName}
+          label="Title"
+          value={formData.Title}
+          onChange={(e) => setFormData({ ...formData, Title: e.target.value })}
+          error={errors.Title}
           placeholder="e.g., Airport Lounge Access"
         />
 
+        <Input
+          label="Category"
+          value={formData.Category}
+          onChange={(e) => setFormData({ ...formData, Category: e.target.value })}
+          error={errors.Category}
+          placeholder="e.g., Travel, Dining, Entertainment"
+        />
+
+        <Input
+          label="Sub Category"
+          value={formData.SubCategory}
+          onChange={(e) => setFormData({ ...formData, SubCategory: e.target.value })}
+          placeholder="e.g., Airport Amenities"
+        />
+
         <div className="textarea-wrapper">
-          <label className="textarea-label">Perk Description</label>
+          <label className="textarea-label">Description</label>
           <textarea
-            className={`textarea ${errors.PerkDescription ? 'textarea--error' : ''}`}
-            value={formData.PerkDescription}
-            onChange={(e) => setFormData({ ...formData, PerkDescription: e.target.value })}
+            className={`textarea ${errors.Description ? 'textarea--error' : ''}`}
+            value={formData.Description}
+            onChange={(e) => setFormData({ ...formData, Description: e.target.value })}
             placeholder="Describe the perk in detail..."
             rows={4}
           />
-          {errors.PerkDescription && <span className="textarea-error">{errors.PerkDescription}</span>}
+          {errors.Description && <span className="textarea-error">{errors.Description}</span>}
         </div>
 
         <Input
-          label="Perk Category"
-          value={formData.PerkCategory}
-          onChange={(e) => setFormData({ ...formData, PerkCategory: e.target.value })}
-          error={errors.PerkCategory}
-          placeholder="e.g., Travel, Dining, Entertainment"
+          label="Requirements"
+          value={formData.Requirements}
+          onChange={(e) => setFormData({ ...formData, Requirements: e.target.value })}
+          placeholder="Any requirements or conditions"
+        />
+
+        <Input
+          label="Details (optional)"
+          value={formData.Details}
+          onChange={(e) => setFormData({ ...formData, Details: e.target.value })}
+          placeholder="Additional details"
         />
 
         <Input

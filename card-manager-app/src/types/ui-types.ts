@@ -1,4 +1,4 @@
-import { CreditCardDetails, CardCredit, CardPerk, CardMultiplier } from './index';
+import type { CreditCardDetails, CardCredit, CardPerk, CardMultiplier } from './index';
 
 /**
  * Component type discriminator
@@ -28,11 +28,6 @@ export interface VersionSummary {
   effectiveTo: string;
   IsActive: boolean;
   lastUpdated: string;
-  componentCounts: {
-    credits: number;
-    perks: number;
-    multipliers: number;
-  };
 }
 
 /**

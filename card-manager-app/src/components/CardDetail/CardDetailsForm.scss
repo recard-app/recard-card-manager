@@ -1,0 +1,54 @@
+.card-details-form {
+  h2 {
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+
+  .detail-group {
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-secondary);
+    }
+
+    &.full-width {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .label {
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .value {
+      font-weight: 400;
+      text-align: right;
+    }
+  }
+
+  .card-details-text {
+    padding: 1rem;
+    background: var(--background-secondary);
+    border-radius: 4px;
+    line-height: 1.6;
+  }
+}

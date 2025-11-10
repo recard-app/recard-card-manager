@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import { API_ROUTES } from '@/lib/api-routes';
-import { CreditCardDetails } from '@/types';
-import { CardWithStatus, VersionSummary } from '@/types/ui-types';
+import type { CreditCardDetails } from '@/types';
+import type { CardWithStatus, VersionSummary } from '@/types/ui-types';
 
 /**
  * Card Service
@@ -43,14 +43,19 @@ export class CardService {
 
   /**
    * Create a new card
+   * @param cardData The card data including ReferenceCardId which will be used as the card ID
+   * @param setAsActive Whether to set this card version as active
+   * @returns The created card ID (same as ReferenceCardId for the first version)
    */
   static async createCard(
-    cardData: CreditCardDetails,
+    cardData: Omit<CreditCardDetails, 'id' | 'lastUpdated'>,
     setAsActive: boolean
   ): Promise<string> {
+    // Use ReferenceCardId as the card ID for the first version
+    const cardId = cardData.ReferenceCardId;
     const response = await apiClient.post<{ id: string }>(
-      API_ROUTES.CARDS.CREATE,
-      { ...cardData, setAsActive }
+      API_ROUTES.CARDS.CREATE(cardId),
+      { ...cardData, IsActive: setAsActive }
     );
     return response.data.id;
   }
@@ -74,10 +79,11 @@ export class CardService {
    */
   static async createNewVersion(
     referenceCardId: string,
-    newVersionData: CreditCardDetails
+    versionId: string,
+    newVersionData: Omit<CreditCardDetails, 'id' | 'ReferenceCardId' | 'lastUpdated'>
   ): Promise<void> {
     await apiClient.post(
-      API_ROUTES.VERSIONS.CREATE(referenceCardId),
+      API_ROUTES.VERSIONS.CREATE(referenceCardId, versionId),
       newVersionData
     );
   }

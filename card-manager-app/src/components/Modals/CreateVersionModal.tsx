@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { CreditCardDetails } from '@/types';
+import type { CreditCardDetails } from '@/types';
 import { CardService } from '@/services/card.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
 import './CreateVersionModal.scss';
@@ -23,6 +23,7 @@ export function CreateVersionModal({
   onSuccess,
 }: CreateVersionModalProps) {
   const [formData, setFormData] = useState({
+    versionId: '',
     VersionName: '',
     EffectiveFrom: '',
     EffectiveTo: '',
@@ -35,6 +36,7 @@ export function CreateVersionModal({
   useEffect(() => {
     if (open) {
       setFormData({
+        versionId: '',
         VersionName: '',
         EffectiveFrom: new Date().toISOString().split('T')[0],
         EffectiveTo: '',
@@ -46,6 +48,12 @@ export function CreateVersionModal({
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
+
+    if (!formData.versionId.trim()) {
+      newErrors.versionId = 'Version ID is required';
+    } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.versionId)) {
+      newErrors.versionId = 'Version ID can only contain letters, numbers, hyphens, and underscores';
+    }
 
     if (!formData.VersionName.trim()) {
       newErrors.VersionName = 'Version name is required';
@@ -75,24 +83,24 @@ export function CreateVersionModal({
         VersionName: formData.VersionName.trim(),
         EffectiveFrom: formData.EffectiveFrom,
         EffectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
+        IsActive: formData.setAsActive,
       };
 
-      // Remove the id so the server generates a new one
+      // Remove the id so we can use the custom one
       delete (newVersionData as any).id;
+      delete (newVersionData as any).lastUpdated;
 
-      await CardService.createNewVersion(referenceCardId, newVersionData);
-
-      // If setAsActive is true, we need to activate the new version
-      if (formData.setAsActive) {
-        // This will be handled after getting the new version ID
-        // The server's createNewVersion endpoint should handle this
-      }
+      await CardService.createNewVersion(referenceCardId, formData.versionId.trim(), newVersionData);
 
       onSuccess();
       onOpenChange(false);
     } catch (err: any) {
       console.error('Error creating version:', err);
-      alert('Failed to create version: ' + err.message);
+      if (err.message?.includes('already exists')) {
+        setErrors({ versionId: 'A version with this ID already exists' });
+      } else {
+        alert('Failed to create version: ' + err.message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -107,6 +115,15 @@ export function CreateVersionModal({
     >
       <form onSubmit={handleSubmit} className="create-version-modal-form">
         <Input
+          label="Version ID"
+          value={formData.versionId}
+          onChange={(e) => setFormData({ ...formData, versionId: e.target.value })}
+          error={errors.versionId}
+          placeholder="e.g., chase-sapphire-preferred-v2"
+        />
+        <p className="field-help">Unique identifier for this version (cannot be changed once created)</p>
+
+        <Input
           label="Version Name"
           value={formData.VersionName}
           onChange={(e) => setFormData({ ...formData, VersionName: e.target.value })}
@@ -116,7 +133,6 @@ export function CreateVersionModal({
 
         <div className="info-box">
           <p>This will create a new version based on the current card configuration.</p>
-          <p>All components (credits, perks, multipliers) will be copied to the new version.</p>
         </div>
 
         <Input

@@ -1,6 +1,6 @@
 import { apiClient } from '@/lib/api-client';
 import { API_ROUTES } from '@/lib/api-routes';
-import { CardCredit, CardPerk, CardMultiplier } from '@/types';
+import type { CardCredit, CardPerk, CardMultiplier } from '@/types';
 
 /**
  * Component Service

@@ -6,6 +6,12 @@
   gap: $spacing-lg;
 }
 
+.field-help {
+  font-size: $font-size-xs;
+  color: $neutral-gray-600;
+  margin: -#{$spacing-sm} 0 0 0;
+}
+
 .info-box {
   padding: $spacing-md;
   background-color: rgba($raw-primary-blue, 0.05);

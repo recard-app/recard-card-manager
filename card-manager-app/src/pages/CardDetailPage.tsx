@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CardService } from '@/services/card.service';
 import { ComponentService } from '@/services/component.service';
-import { CreditCardDetails, CardCredit, CardPerk, CardMultiplier } from '@/types';
-import { VersionSummary } from '@/types/ui-types';
+import type { CreditCardDetails, CardCredit, CardPerk, CardMultiplier } from '@/types';
+import type { VersionSummary } from '@/types/ui-types';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { VersionsSidebar } from '@/components/CardDetail/VersionsSidebar';
 import { ComponentTabs } from '@/components/CardDetail/ComponentTabs';
+import { CardDetailsForm } from '@/components/CardDetail/CardDetailsForm';
+import { ComponentsSidebar } from '@/components/CardDetail/ComponentsSidebar';
+import { CardComponents } from '@/components/CardDetail/CardComponents';
 import { CreditModal } from '@/components/Modals/CreditModal';
 import { PerkModal } from '@/components/Modals/PerkModal';
 import { MultiplierModal } from '@/components/Modals/MultiplierModal';
@@ -31,6 +34,10 @@ export function CardDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'credits' | 'perks' | 'multipliers'>('credits');
+
+  // Sidebar collapse state
+  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
+  const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
 
   // Modal state
   const [creditModalOpen, setCreditModalOpen] = useState(false);
@@ -89,6 +96,23 @@ export function CardDetailPage() {
     }
   };
 
+  const sortComponents = <T extends { EffectiveFrom: string; EffectiveTo: string }>(components: T[]): T[] => {
+    const today = new Date().toISOString().split('T')[0];
+    const ONGOING = '9999-12-31';
+
+    return components.sort((a, b) => {
+      const aIsActive = a.EffectiveFrom <= today && (a.EffectiveTo === ONGOING || a.EffectiveTo >= today);
+      const bIsActive = b.EffectiveFrom <= today && (b.EffectiveTo === ONGOING || b.EffectiveTo >= today);
+
+      // Active items first
+      if (aIsActive && !bIsActive) return -1;
+      if (!aIsActive && bIsActive) return 1;
+
+      // Then sort by EffectiveTo (most recent first)
+      return b.EffectiveTo.localeCompare(a.EffectiveTo);
+    });
+  };
+
   const loadComponents = async (versionId: string) => {
     try {
       const [creditsData, perksData, multipliersData] = await Promise.all([
@@ -97,9 +121,10 @@ export function CardDetailPage() {
         ComponentService.getMultipliersByCardId(versionId),
       ]);
 
-      setCredits(creditsData);
-      setPerks(perksData);
-      setMultipliers(multipliersData);
+      // Sort components with active first, then by most recent EffectiveTo
+      setCredits(sortComponents(creditsData));
+      setPerks(sortComponents(perksData));
+      setMultipliers(sortComponents(multipliersData));
     } catch (err: any) {
       console.error('Error loading components:', err);
     }
@@ -232,28 +257,30 @@ export function CardDetailPage() {
   }
 
   const selectedVersion = versions.find(v => v.id === selectedVersionId);
-  const isActiveVersion = selectedVersion?.isActive || false;
+  const isActiveVersion = selectedVersion?.IsActive || false;
 
   return (
     <div className="card-detail-page">
       <div className="page-header">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/cards')}>
-          <ArrowLeft size={16} />
-          Back to Cards
-        </Button>
         <div className="header-content">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/cards')}>
+            <ArrowLeft size={16} />
+            Back
+          </Button>
           <div className="title-row">
             <h1>{card.CardName}</h1>
+            <span className="card-issuer">• {card.CardIssuer}</span>
             <Badge variant={isActiveVersion ? 'success' : 'default'}>
               {isActiveVersion ? 'Active' : 'Inactive'}
             </Badge>
           </div>
-          <p className="card-issuer">{card.CardIssuer}</p>
         </div>
       </div>
 
       <div className="detail-layout">
         <VersionsSidebar
+          collapsed={leftSidebarCollapsed}
+          onToggleCollapse={() => setLeftSidebarCollapsed(!leftSidebarCollapsed)}
           versions={versions}
           selectedVersionId={selectedVersionId}
           onVersionSelect={handleVersionSelect}
@@ -263,26 +290,27 @@ export function CardDetailPage() {
         />
 
         <div className="main-content">
-          <Card>
-            <div className="content-header">
-              <h2>Version: {card.VersionName}</h2>
-              <Button onClick={() => handleAddComponent(activeTab)}>
-                <Plus size={16} />
-                Add {activeTab === 'credits' ? 'Credit' : activeTab === 'perks' ? 'Perk' : 'Multiplier'}
-              </Button>
-            </div>
-
-            <ComponentTabs
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              credits={credits}
-              perks={perks}
-              multipliers={multipliers}
-              onEdit={handleEditComponent}
-              onDelete={handleDeleteComponent}
-            />
-          </Card>
+          <CardDetailsForm card={card} />
+          <CardComponents
+            card={card}
+            credits={credits}
+            perks={perks}
+            multipliers={multipliers}
+          />
         </div>
+
+        <ComponentsSidebar
+          collapsed={rightSidebarCollapsed}
+          onToggleCollapse={() => setRightSidebarCollapsed(!rightSidebarCollapsed)}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          credits={credits}
+          perks={perks}
+          multipliers={multipliers}
+          onEdit={handleEditComponent}
+          onDelete={handleDeleteComponent}
+          onAdd={handleAddComponent}
+        />
       </div>
 
       {selectedVersionId && (

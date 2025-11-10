@@ -3,9 +3,9 @@
 
 .cards-list-page {
   @include flex-column;
-  gap: $spacing-lg;
-  padding: $spacing-xl;
-  max-width: 1400px;
+  gap: $spacing-xs;
+  padding: $spacing-sm;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
@@ -13,10 +13,11 @@
   @include flex-row;
   justify-content: space-between;
   align-items: center;
-  gap: $spacing-md;
+  gap: $spacing-xs;
+  padding: $spacing-xs 0;
 
   h1 {
-    font-size: $font-size-xl;
+    font-size: $font-size-base;
     font-weight: 600;
     color: $neutral-gray-800;
     margin: 0;
@@ -25,30 +26,32 @@
 
 .filters {
   @include flex-row;
-  gap: $spacing-md;
+  gap: $spacing-xs;
   flex-wrap: wrap;
 }
 
 .search-box {
   position: relative;
   flex: 1;
-  min-width: 250px;
+  min-width: 200px;
 
   .search-icon {
     position: absolute;
-    left: $spacing-md;
+    left: $spacing-xs;
     top: 50%;
     transform: translateY(-50%);
     color: $neutral-gray-600;
     pointer-events: none;
+    width: 14px;
+    height: 14px;
   }
 
   .search-input {
     width: 100%;
-    padding: $spacing-sm $spacing-md $spacing-sm 40px;
-    border: 1px solid $neutral-gray-300;
-    border-radius: $border-radius-md;
-    font-size: $font-size-sm;
+    padding: 6px $spacing-xs 6px 28px;
+    border: 1px solid $neutral-gray-200;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-xs;
     font-family: $font-family-base;
     color: $neutral-gray-800;
     background-color: $neutral-white;
@@ -57,7 +60,7 @@
     &:focus {
       outline: none;
       border-color: $primary-blue;
-      box-shadow: 0 0 0 3px rgba($raw-primary-blue, 0.1);
+      box-shadow: 0 0 0 2px rgba($raw-primary-blue, 0.1);
     }
 
     &::placeholder {
@@ -67,10 +70,10 @@
 }
 
 .status-filter {
-  padding: $spacing-sm $spacing-md;
-  border: 1px solid $neutral-gray-300;
-  border-radius: $border-radius-md;
-  font-size: $font-size-sm;
+  padding: 6px $spacing-xs;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-xs;
   font-family: $font-family-base;
   color: $neutral-gray-800;
   background-color: $neutral-white;
@@ -80,97 +83,94 @@
   &:focus {
     outline: none;
     border-color: $primary-blue;
-    box-shadow: 0 0 0 3px rgba($raw-primary-blue, 0.1);
+    box-shadow: 0 0 0 2px rgba($raw-primary-blue, 0.1);
   }
 
   &:hover {
-    border-color: $neutral-gray-600;
+    border-color: $neutral-gray-300;
   }
 }
 
-.cards-list {
-  @include flex-column;
-  gap: $spacing-md;
+.cards-table {
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-sm;
+  overflow: hidden;
 }
 
-.card-link {
+.table-header {
+  display: grid;
+  grid-template-columns: 60px 1fr 200px 140px 180px 120px;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  background-color: $neutral-gray-100;
+  border-bottom: 1px solid $neutral-gray-200;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  color: $neutral-gray-800;
+
+  > div {
+    display: flex;
+    align-items: center;
+  }
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 200px 140px 180px 120px;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
   text-decoration: none;
   color: inherit;
-  display: block;
-  transition: transform 0.2s ease;
+  border-bottom: 1px solid $neutral-gray-200;
+  transition: background-color 0.15s ease;
+  font-size: $font-size-xs;
+
+  &:last-child {
+    border-bottom: none;
+  }
 
   &:hover {
-    transform: translateY(-2px);
+    background-color: rgba($raw-primary-blue, 0.03);
+  }
 
-    .card-item {
-      box-shadow: $shadow-lg;
-    }
+  > div {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .col-image {
+    justify-content: center;
+  }
+
+  .col-name {
+    font-weight: 600;
+    color: $neutral-gray-800;
+  }
+
+  .col-issuer {
+    color: $neutral-gray-600;
+  }
+
+  .col-status {
+    justify-content: flex-start;
+  }
+
+  .col-version {
+    color: $neutral-gray-600;
+  }
+
+  .col-updated {
+    color: $neutral-gray-600;
   }
 }
 
-.card-item {
-  transition: box-shadow 0.2s ease;
-
-  .card-content {
-    @include flex-row;
-    justify-content: space-between;
-    align-items: center;
-    gap: $spacing-lg;
-    width: 100%;
-  }
-
-  .card-left {
-    @include flex-row;
-    align-items: center;
-    gap: $spacing-md;
-    flex: 1;
-  }
-
-  .card-image {
-    width: 80px;
-    height: 50px;
-    object-fit: cover;
-    border-radius: $border-radius-sm;
-    background-color: $neutral-gray-100;
-  }
-
-  .card-info {
-    @include flex-column;
-    gap: $spacing-xs;
-  }
-
-  .card-title-row {
-    @include flex-row;
-    align-items: center;
-    gap: $spacing-sm;
-  }
-
-  .card-name {
-    font-size: $font-size-lg;
-    font-weight: 600;
-    color: $neutral-gray-800;
-    margin: 0;
-  }
-
-  .card-issuer {
-    font-size: $font-size-sm;
-    color: $neutral-gray-600;
-    margin: 0;
-  }
-
-  .card-right {
-    @include flex-row;
-    align-items: center;
-    gap: $spacing-md;
-  }
-
-  .card-meta {
-    @include flex-column;
-    gap: $spacing-xs;
-    text-align: right;
-    font-size: $font-size-xs;
-    color: $neutral-gray-600;
-  }
+.card-image {
+  width: 50px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: $border-radius-sm;
+  background-color: $neutral-gray-100;
 }
 
 .loading,
@@ -179,21 +179,22 @@
   @include flex-column;
   align-items: center;
   justify-content: center;
-  padding: $spacing-xl;
+  padding: $spacing-md;
   text-align: center;
 }
 
 .loading {
   color: $neutral-gray-600;
-  font-size: $font-size-base;
+  font-size: $font-size-xs;
 }
 
 .error {
   color: $error-red;
-  gap: $spacing-md;
+  gap: $spacing-xs;
 
   p {
     margin: 0;
+    font-size: $font-size-xs;
   }
 }
 
@@ -202,14 +203,13 @@
 
   p {
     margin: 0;
-    font-size: $font-size-base;
+    font-size: $font-size-xs;
   }
 }
 
 .summary {
-  text-align: center;
-  font-size: $font-size-sm;
+  text-align: right;
+  font-size: $font-size-xs;
   color: $neutral-gray-600;
-  padding-top: $spacing-md;
-  border-top: 1px solid $neutral-gray-200;
+  padding: $spacing-xs 0;
 }

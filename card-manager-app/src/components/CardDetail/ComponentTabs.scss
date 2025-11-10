@@ -4,21 +4,22 @@
 .component-tabs {
   @include flex-column;
   gap: 0;
+  height: 100%;
 }
 
 .tabs-header {
   @include flex-row;
   gap: 0;
   border-bottom: 2px solid $neutral-gray-200;
-  padding: 0 $spacing-lg;
+  padding: 0 $spacing-sm;
 
   .tab {
-    padding: $spacing-md $spacing-lg;
+    padding: $spacing-sm $spacing-md;
     background: none;
     border: none;
-    border-bottom: 3px solid transparent;
+    border-bottom: 2px solid transparent;
     color: $neutral-gray-600;
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -38,26 +39,28 @@
 }
 
 .tabs-content {
-  padding: $spacing-lg;
+  padding: $spacing-sm;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .components-list {
   @include flex-column;
-  gap: $spacing-md;
+  gap: $spacing-xs;
 }
 
 .component-item {
   @include flex-column;
-  gap: $spacing-md;
-  padding: $spacing-md;
+  gap: $spacing-xs;
+  padding: $spacing-sm;
   border: 1px solid $neutral-gray-200;
-  border-radius: $border-radius-md;
+  border-radius: $border-radius-sm;
   background-color: $neutral-white;
   transition: all 0.2s ease;
 
   &:hover {
     border-color: $neutral-gray-300;
-    box-shadow: $shadow-sm;
+    background-color: rgba($raw-primary-blue, 0.02);
   }
 }
 
@@ -65,16 +68,16 @@
   @include flex-row;
   justify-content: space-between;
   align-items: flex-start;
-  gap: $spacing-md;
+  gap: $spacing-sm;
 
   .component-title {
     @include flex-row;
     align-items: center;
-    gap: $spacing-sm;
+    gap: $spacing-xs;
     flex: 1;
 
     h4 {
-      font-size: $font-size-base;
+      font-size: $font-size-sm;
       font-weight: 600;
       color: $neutral-gray-800;
       margin: 0;
@@ -89,17 +92,16 @@
 
 .component-details {
   @include flex-column;
-  gap: $spacing-sm;
+  gap: $spacing-xs;
 
   .detail-row {
-    @include flex-row;
-    gap: $spacing-sm;
-    font-size: $font-size-sm;
+    @include flex-column;
+    gap: 2px;
+    font-size: $font-size-xs;
 
     .label {
       font-weight: 500;
       color: $neutral-gray-600;
-      min-width: 100px;
     }
 
     .value {
@@ -109,7 +111,7 @@
 }
 
 .empty-state {
-  padding: $spacing-xl;
+  padding: $spacing-lg;
   text-align: center;
   color: $neutral-gray-600;
   font-size: $font-size-sm;

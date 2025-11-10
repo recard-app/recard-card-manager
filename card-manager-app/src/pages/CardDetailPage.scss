@@ -3,66 +3,82 @@
 
 .card-detail-page {
   @include flex-column;
-  gap: $spacing-lg;
-  padding: $spacing-xl;
-  max-width: 1600px;
-  margin: 0 auto;
   min-height: 100vh;
+  overflow: hidden;
 }
 
 .page-header {
-  @include flex-column;
-  gap: $spacing-md;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: $neutral-white;
+  border-bottom: 1px solid $neutral-gray-200;
+  padding: $spacing-sm $spacing-md;
+  box-shadow: $shadow-sm;
 
   .header-content {
-    @include flex-column;
-    gap: $spacing-xs;
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-md;
+    max-width: 1600px;
+    margin: 0 auto;
   }
 
   .title-row {
     @include flex-row;
     align-items: center;
-    gap: $spacing-md;
+    gap: $spacing-sm;
+    flex: 1;
 
     h1 {
-      font-size: $font-size-xl;
+      font-size: $font-size-lg;
       font-weight: 600;
       color: $neutral-gray-800;
       margin: 0;
     }
-  }
 
-  .card-issuer {
-    font-size: $font-size-base;
-    color: $neutral-gray-600;
-    margin: 0;
+    .card-issuer {
+      font-size: $font-size-sm;
+      color: $neutral-gray-600;
+      margin: 0;
+    }
   }
 }
 
 .detail-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: $spacing-lg;
+  grid-template-columns: auto 1fr auto;
+  gap: 0;
   flex: 1;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+
+  @media (max-width: 1400px) {
+    grid-template-columns: auto 1fr;
+  }
 
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
   }
 }
 
 .main-content {
   @include flex-column;
-  gap: $spacing-md;
+  gap: $spacing-sm;
+  overflow-y: auto;
+  padding: $spacing-md;
 
   .content-header {
     @include flex-row;
     justify-content: space-between;
     align-items: center;
-    padding: $spacing-lg;
+    padding: $spacing-md;
     padding-bottom: 0;
 
     h2 {
-      font-size: $font-size-lg;
+      font-size: $font-size-base;
       font-weight: 600;
       color: $neutral-gray-800;
       margin: 0;

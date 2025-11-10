@@ -1,4 +1,4 @@
-import { CardCredit, CardPerk, CardMultiplier } from '@/types';
+import type { CardCredit, CardPerk, CardMultiplier } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Edit2, Trash2 } from 'lucide-react';
@@ -93,10 +93,8 @@ function CreditsList({ credits, onEdit, onDelete }: CreditsListProps) {
         <div key={credit.id} className="component-item">
           <div className="component-header">
             <div className="component-title">
-              <h4>{credit.CreditName}</h4>
-              <Badge variant={credit.IsCashBack ? 'success' : 'info'}>
-                {credit.IsCashBack ? 'Cash Back' : 'Statement Credit'}
-              </Badge>
+              <h4>{credit.Title}</h4>
+              <Badge variant="info">{credit.Category}</Badge>
             </div>
             <div className="component-actions">
               <Button variant="ghost" size="sm" onClick={() => onEdit(credit.id)}>
@@ -110,8 +108,16 @@ function CreditsList({ credits, onEdit, onDelete }: CreditsListProps) {
 
           <div className="component-details">
             <div className="detail-row">
-              <span className="label">Amount:</span>
-              <span className="value">${credit.CreditAmount}</span>
+              <span className="label">Value:</span>
+              <span className="value">{credit.Value}</span>
+            </div>
+            <div className="detail-row">
+              <span className="label">Time Period:</span>
+              <span className="value">{credit.TimePeriod}</span>
+            </div>
+            <div className="detail-row">
+              <span className="label">Description:</span>
+              <span className="value">{credit.Description}</span>
             </div>
             <div className="detail-row">
               <span className="label">Effective:</span>
@@ -119,9 +125,10 @@ function CreditsList({ credits, onEdit, onDelete }: CreditsListProps) {
                 {formatDate(credit.EffectiveFrom)} - {credit.EffectiveTo === '9999-12-31' ? 'Ongoing' : formatDate(credit.EffectiveTo)}
               </span>
             </div>
-            {credit.RequiresActivation && (
+            {credit.Requirements && (
               <div className="detail-row">
-                <Badge variant="warning">Requires Activation</Badge>
+                <span className="label">Requirements:</span>
+                <span className="value">{credit.Requirements}</span>
               </div>
             )}
           </div>
@@ -148,8 +155,8 @@ function PerksList({ perks, onEdit, onDelete }: PerksListProps) {
         <div key={perk.id} className="component-item">
           <div className="component-header">
             <div className="component-title">
-              <h4>{perk.PerkName}</h4>
-              <Badge variant="info">{perk.PerkCategory}</Badge>
+              <h4>{perk.Title}</h4>
+              <Badge variant="info">{perk.Category}</Badge>
             </div>
             <div className="component-actions">
               <Button variant="ghost" size="sm" onClick={() => onEdit(perk.id)}>
@@ -164,7 +171,7 @@ function PerksList({ perks, onEdit, onDelete }: PerksListProps) {
           <div className="component-details">
             <div className="detail-row">
               <span className="label">Description:</span>
-              <span className="value">{perk.PerkDescription}</span>
+              <span className="value">{perk.Description}</span>
             </div>
             <div className="detail-row">
               <span className="label">Effective:</span>
@@ -172,6 +179,12 @@ function PerksList({ perks, onEdit, onDelete }: PerksListProps) {
                 {formatDate(perk.EffectiveFrom)} - {perk.EffectiveTo === '9999-12-31' ? 'Ongoing' : formatDate(perk.EffectiveTo)}
               </span>
             </div>
+            {perk.Requirements && (
+              <div className="detail-row">
+                <span className="label">Requirements:</span>
+                <span className="value">{perk.Requirements}</span>
+              </div>
+            )}
           </div>
         </div>
       ))}
@@ -196,7 +209,7 @@ function MultipliersList({ multipliers, onEdit, onDelete }: MultipliersListProps
         <div key={multiplier.id} className="component-item">
           <div className="component-header">
             <div className="component-title">
-              <h4>{multiplier.MultiplierCategory}</h4>
+              <h4>{multiplier.Name}</h4>
               <Badge variant="success">{multiplier.Multiplier}x</Badge>
             </div>
             <div className="component-actions">
@@ -211,8 +224,12 @@ function MultipliersList({ multipliers, onEdit, onDelete }: MultipliersListProps
 
           <div className="component-details">
             <div className="detail-row">
+              <span className="label">Category:</span>
+              <span className="value">{multiplier.Category}</span>
+            </div>
+            <div className="detail-row">
               <span className="label">Description:</span>
-              <span className="value">{multiplier.MultiplierDescription}</span>
+              <span className="value">{multiplier.Description}</span>
             </div>
             <div className="detail-row">
               <span className="label">Effective:</span>
@@ -220,15 +237,10 @@ function MultipliersList({ multipliers, onEdit, onDelete }: MultipliersListProps
                 {formatDate(multiplier.EffectiveFrom)} - {multiplier.EffectiveTo === '9999-12-31' ? 'Ongoing' : formatDate(multiplier.EffectiveTo)}
               </span>
             </div>
-            {multiplier.RequiresActivation && (
+            {multiplier.Requirements && (
               <div className="detail-row">
-                <Badge variant="warning">Requires Activation</Badge>
-              </div>
-            )}
-            {multiplier.HasSpendingCap && (
-              <div className="detail-row">
-                <span className="label">Spending Cap:</span>
-                <span className="value">${multiplier.SpendingCapAmount}</span>
+                <span className="label">Requirements:</span>
+                <span className="value">{multiplier.Requirements}</span>
               </div>
             )}
           </div>

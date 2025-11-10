@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog } from '@/components/ui/Dialog';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { CardMultiplier } from '@/types';
+import type { CardMultiplier } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
 import './MultiplierModal.scss';
@@ -19,12 +19,13 @@ export function MultiplierModal({ open, onOpenChange, cardId, multiplier, onSucc
   const isEdit = !!multiplier;
 
   const [formData, setFormData] = useState({
-    MultiplierCategory: '',
-    MultiplierDescription: '',
+    Name: '',
+    Category: '',
+    SubCategory: '',
+    Description: '',
     Multiplier: '',
-    RequiresActivation: false,
-    HasSpendingCap: false,
-    SpendingCapAmount: '',
+    Requirements: '',
+    Details: '',
     EffectiveFrom: '',
     EffectiveTo: '',
   });
@@ -35,23 +36,25 @@ export function MultiplierModal({ open, onOpenChange, cardId, multiplier, onSucc
   useEffect(() => {
     if (multiplier) {
       setFormData({
-        MultiplierCategory: multiplier.MultiplierCategory,
-        MultiplierDescription: multiplier.MultiplierDescription,
-        Multiplier: multiplier.Multiplier.toString(),
-        RequiresActivation: multiplier.RequiresActivation,
-        HasSpendingCap: multiplier.HasSpendingCap,
-        SpendingCapAmount: multiplier.SpendingCapAmount?.toString() || '',
+        Name: multiplier.Name,
+        Category: multiplier.Category,
+        SubCategory: multiplier.SubCategory,
+        Description: multiplier.Description,
+        Multiplier: multiplier.Multiplier?.toString() || '',
+        Requirements: multiplier.Requirements,
+        Details: multiplier.Details || '',
         EffectiveFrom: multiplier.EffectiveFrom,
         EffectiveTo: denormalizeEffectiveTo(multiplier.EffectiveTo),
       });
     } else {
       setFormData({
-        MultiplierCategory: '',
-        MultiplierDescription: '',
+        Name: '',
+        Category: '',
+        SubCategory: '',
+        Description: '',
         Multiplier: '',
-        RequiresActivation: false,
-        HasSpendingCap: false,
-        SpendingCapAmount: '',
+        Requirements: '',
+        Details: '',
         EffectiveFrom: new Date().toISOString().split('T')[0],
         EffectiveTo: '',
       });
@@ -62,20 +65,20 @@ export function MultiplierModal({ open, onOpenChange, cardId, multiplier, onSucc
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.MultiplierCategory.trim()) {
-      newErrors.MultiplierCategory = 'Multiplier category is required';
+    if (!formData.Name.trim()) {
+      newErrors.Name = 'Name is required';
     }
 
-    if (!formData.MultiplierDescription.trim()) {
-      newErrors.MultiplierDescription = 'Multiplier description is required';
+    if (!formData.Category.trim()) {
+      newErrors.Category = 'Category is required';
+    }
+
+    if (!formData.Description.trim()) {
+      newErrors.Description = 'Description is required';
     }
 
     if (!formData.Multiplier || parseFloat(formData.Multiplier) <= 0) {
       newErrors.Multiplier = 'Multiplier must be greater than 0';
-    }
-
-    if (formData.HasSpendingCap && (!formData.SpendingCapAmount || parseFloat(formData.SpendingCapAmount) <= 0)) {
-      newErrors.SpendingCapAmount = 'Spending cap amount must be greater than 0';
     }
 
     if (!formData.EffectiveFrom) {
@@ -96,14 +99,15 @@ export function MultiplierModal({ open, onOpenChange, cardId, multiplier, onSucc
     setSubmitting(true);
 
     try {
-      const multiplierData: Omit<CardMultiplier, 'id'> = {
+      const multiplierData: Omit<CardMultiplier, 'id' | 'LastUpdated'> = {
         ReferenceCardId: cardId,
-        MultiplierCategory: formData.MultiplierCategory.trim(),
-        MultiplierDescription: formData.MultiplierDescription.trim(),
+        Name: formData.Name.trim(),
+        Category: formData.Category.trim(),
+        SubCategory: formData.SubCategory.trim(),
+        Description: formData.Description.trim(),
         Multiplier: parseFloat(formData.Multiplier),
-        RequiresActivation: formData.RequiresActivation,
-        HasSpendingCap: formData.HasSpendingCap,
-        SpendingCapAmount: formData.HasSpendingCap ? parseFloat(formData.SpendingCapAmount) : undefined,
+        Requirements: formData.Requirements.trim(),
+        Details: formData.Details.trim() || undefined,
         EffectiveFrom: formData.EffectiveFrom,
         EffectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
       };
@@ -133,23 +137,38 @@ export function MultiplierModal({ open, onOpenChange, cardId, multiplier, onSucc
     >
       <form onSubmit={handleSubmit} className="multiplier-modal-form">
         <Input
-          label="Multiplier Category"
-          value={formData.MultiplierCategory}
-          onChange={(e) => setFormData({ ...formData, MultiplierCategory: e.target.value })}
-          error={errors.MultiplierCategory}
+          label="Name"
+          value={formData.Name}
+          onChange={(e) => setFormData({ ...formData, Name: e.target.value })}
+          error={errors.Name}
+          placeholder="e.g., 3x on Dining"
+        />
+
+        <Input
+          label="Category"
+          value={formData.Category}
+          onChange={(e) => setFormData({ ...formData, Category: e.target.value })}
+          error={errors.Category}
           placeholder="e.g., Dining, Travel, Gas"
         />
 
+        <Input
+          label="Sub Category"
+          value={formData.SubCategory}
+          onChange={(e) => setFormData({ ...formData, SubCategory: e.target.value })}
+          placeholder="e.g., Restaurants"
+        />
+
         <div className="textarea-wrapper">
-          <label className="textarea-label">Multiplier Description</label>
+          <label className="textarea-label">Description</label>
           <textarea
-            className={`textarea ${errors.MultiplierDescription ? 'textarea--error' : ''}`}
-            value={formData.MultiplierDescription}
-            onChange={(e) => setFormData({ ...formData, MultiplierDescription: e.target.value })}
+            className={`textarea ${errors.Description ? 'textarea--error' : ''}`}
+            value={formData.Description}
+            onChange={(e) => setFormData({ ...formData, Description: e.target.value })}
             placeholder="Describe when this multiplier applies..."
-            rows={3}
+            rows={4}
           />
-          {errors.MultiplierDescription && <span className="textarea-error">{errors.MultiplierDescription}</span>}
+          {errors.Description && <span className="textarea-error">{errors.Description}</span>}
         </div>
 
         <Input
@@ -162,41 +181,19 @@ export function MultiplierModal({ open, onOpenChange, cardId, multiplier, onSucc
           placeholder="e.g., 3"
         />
 
-        <div className="checkbox-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={formData.RequiresActivation}
-              onChange={(e) => setFormData({ ...formData, RequiresActivation: e.target.checked })}
-            />
-            <span>Requires Activation</span>
-          </label>
-          <p className="checkbox-description">Check if this multiplier requires manual activation by the cardholder</p>
-        </div>
+        <Input
+          label="Requirements"
+          value={formData.Requirements}
+          onChange={(e) => setFormData({ ...formData, Requirements: e.target.value })}
+          placeholder="Any requirements or conditions"
+        />
 
-        <div className="checkbox-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={formData.HasSpendingCap}
-              onChange={(e) => setFormData({ ...formData, HasSpendingCap: e.target.checked })}
-            />
-            <span>Has Spending Cap</span>
-          </label>
-          <p className="checkbox-description">Check if this multiplier has a spending limit</p>
-        </div>
-
-        {formData.HasSpendingCap && (
-          <Input
-            label="Spending Cap Amount ($)"
-            type="number"
-            step="0.01"
-            value={formData.SpendingCapAmount}
-            onChange={(e) => setFormData({ ...formData, SpendingCapAmount: e.target.value })}
-            error={errors.SpendingCapAmount}
-            placeholder="e.g., 10000"
-          />
-        )}
+        <Input
+          label="Details (optional)"
+          value={formData.Details}
+          onChange={(e) => setFormData({ ...formData, Details: e.target.value })}
+          placeholder="Additional details"
+        />
 
         <Input
           label="Effective From"

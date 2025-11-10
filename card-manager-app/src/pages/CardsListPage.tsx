@@ -1,20 +1,23 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CardService } from '@/services/card.service';
-import { CardWithStatus } from '@/types/ui-types';
+import type { CardWithStatus } from '@/types/ui-types';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Plus, Search } from 'lucide-react';
 import { formatDate } from '@/utils/date-utils';
+import { CreateCardModal } from '@/components/Modals/CreateCardModal';
 import './CardsListPage.scss';
 
 export function CardsListPage() {
+  const navigate = useNavigate();
   const [cards, setCards] = useState<CardWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [createCardModalOpen, setCreateCardModalOpen] = useState(false);
 
   useEffect(() => {
     loadCards();
@@ -88,7 +91,7 @@ export function CardsListPage() {
     <div className="cards-list-page">
       <div className="page-header">
         <h1>Credit Cards</h1>
-        <Button>
+        <Button onClick={() => setCreateCardModalOpen(true)}>
           <Plus size={16} />
           New Card
         </Button>
@@ -117,55 +120,63 @@ export function CardsListPage() {
         </select>
       </div>
 
-      <div className="cards-list">
+      <div className="cards-table">
         {filteredCards.length === 0 ? (
           <div className="empty-state">
             <p>No cards found matching your filters</p>
           </div>
         ) : (
-          filteredCards.map(card => (
-            <Link
-              key={card.id}
-              to={`/cards/${card.ReferenceCardId}`}
-              className="card-link"
-            >
-              <Card className="card-item">
-                <div className="card-content">
-                  <div className="card-left">
-                    {card.CardImage && (
-                      <img
-                        src={card.CardImage}
-                        alt={card.CardName}
-                        className="card-image"
-                      />
-                    )}
-                    <div className="card-info">
-                      <div className="card-title-row">
-                        <h3 className="card-name">{card.CardName}</h3>
-                        <Badge variant={getStatusBadgeVariant(card.status)}>
-                          {getStatusLabel(card.status)}
-                        </Badge>
-                      </div>
-                      <p className="card-issuer">{card.CardIssuer}</p>
-                    </div>
-                  </div>
-
-                  <div className="card-right">
-                    <div className="card-meta">
-                      <div>Version: {card.VersionName}</div>
-                      <div>Updated: {formatDate(card.lastUpdated)}</div>
-                    </div>
-                  </div>
+          <>
+            <div className="table-header">
+              <div className="col-image"></div>
+              <div className="col-name">Card Name</div>
+              <div className="col-issuer">Issuer</div>
+              <div className="col-status">Status</div>
+              <div className="col-version">Version</div>
+              <div className="col-updated">Updated</div>
+            </div>
+            {filteredCards.map(card => (
+              <Link
+                key={card.id}
+                to={`/cards/${card.id}`}
+                className="table-row"
+              >
+                <div className="col-image">
+                  {card.CardImage && (
+                    <img
+                      src={card.CardImage}
+                      alt={card.CardName}
+                      className="card-image"
+                    />
+                  )}
                 </div>
-              </Card>
-            </Link>
-          ))
+                <div className="col-name">{card.CardName}</div>
+                <div className="col-issuer">{card.CardIssuer}</div>
+                <div className="col-status">
+                  <Badge variant={getStatusBadgeVariant(card.status)}>
+                    {getStatusLabel(card.status)}
+                  </Badge>
+                </div>
+                <div className="col-version">{card.VersionName}</div>
+                <div className="col-updated">{formatDate(card.lastUpdated)}</div>
+              </Link>
+            ))}
+          </>
         )}
       </div>
 
       <div className="summary">
         Showing {filteredCards.length} of {cards.length} cards
       </div>
+
+      <CreateCardModal
+        open={createCardModalOpen}
+        onOpenChange={setCreateCardModalOpen}
+        onSuccess={(cardId) => {
+          loadCards();
+          navigate(`/cards/${cardId}`);
+        }}
+      />
     </div>
   );
 }
