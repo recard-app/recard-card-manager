@@ -68,10 +68,17 @@ export class CardService {
   }
 
   /**
-   * Delete a card
+   * Delete a card version
    */
   static async deleteCard(cardId: string): Promise<void> {
     await apiClient.delete(API_ROUTES.CARDS.DELETE(cardId));
+  }
+
+  /**
+   * Delete an entire card (all versions and associated components)
+   */
+  static async deleteEntireCard(referenceCardId: string): Promise<void> {
+    await apiClient.delete(API_ROUTES.CARDS.DELETE_ENTIRE(referenceCardId));
   }
 
   /**

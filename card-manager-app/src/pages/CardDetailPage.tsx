@@ -7,7 +7,8 @@ import type { CreditCardDetails, CardCredit, CardPerk, CardMultiplier } from '@/
 import type { VersionSummary } from '@/types/ui-types';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { ArrowLeft } from 'lucide-react';
+import { Dialog, DialogFooter } from '@/components/ui/Dialog';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 import { VersionsSidebar } from '@/components/CardDetail/VersionsSidebar';
 import { CardDetailsForm } from '@/components/CardDetail/CardDetailsForm';
 import { ComponentsSidebar } from '@/components/CardDetail/ComponentsSidebar';
@@ -47,6 +48,8 @@ export function CardDetailPage() {
   const [editingCredit, setEditingCredit] = useState<CardCredit | null>(null);
   const [editingPerk, setEditingPerk] = useState<CardPerk | null>(null);
   const [editingMultiplier, setEditingMultiplier] = useState<CardMultiplier | null>(null);
+  const [showDeleteCardConfirm, setShowDeleteCardConfirm] = useState(false);
+  const [deletingCard, setDeletingCard] = useState(false);
 
   // Track if we're on initial load (to avoid re-triggering full page load on URL changes)
   const isInitialLoad = useRef(true);
@@ -263,6 +266,23 @@ export function CardDetailPage() {
     }
   };
 
+  const handleDeleteEntireCard = async () => {
+    if (!card?.ReferenceCardId) return;
+
+    setDeletingCard(true);
+    try {
+      await CardService.deleteEntireCard(card.ReferenceCardId);
+      toast.success('Card deleted successfully');
+      setShowDeleteCardConfirm(false);
+      navigate('/cards');
+    } catch (err: any) {
+      console.error('Error deleting card:', err);
+      toast.error('Failed to delete card: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setDeletingCard(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="card-detail-page">
@@ -289,16 +309,29 @@ export function CardDetailPage() {
     <div className="card-detail-page">
       <div className="page-header">
         <div className="header-content">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/cards')}>
-            <ArrowLeft size={16} />
-            Back
-          </Button>
-          <div className="title-row">
-            <h1>{card.CardName}</h1>
-            <span className="card-issuer">• {card.CardIssuer}</span>
-            <Badge variant={isActiveVersion ? 'success' : 'default'}>
-              {isActiveVersion ? 'Active' : 'Inactive'}
-            </Badge>
+          <div className="header-left">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/cards')}>
+              <ArrowLeft size={16} />
+              Back
+            </Button>
+            <div className="title-row">
+              <h1>{card.CardName}</h1>
+              <span className="card-issuer">• {card.CardIssuer}</span>
+              <Badge variant={isActiveVersion ? 'success' : 'default'}>
+                {isActiveVersion ? 'Active' : 'Inactive'}
+              </Badge>
+            </div>
+          </div>
+          <div className="header-actions">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowDeleteCardConfirm(true)}
+              className="delete-card-button"
+            >
+              <Trash2 size={14} />
+              Delete Card
+            </Button>
           </div>
         </div>
       </div>
@@ -399,6 +432,39 @@ export function CardDetailPage() {
           }}
         />
       )}
+
+      {/* Delete Card Confirmation Dialog */}
+      <Dialog
+        open={showDeleteCardConfirm}
+        onOpenChange={setShowDeleteCardConfirm}
+        title="Delete Entire Card"
+        description="This action cannot be undone"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <p>
+            Are you sure you want to delete <strong>{card?.CardName}</strong>?
+          </p>
+          <p style={{ color: 'var(--error-red)', fontWeight: 600, margin: 0 }}>
+            This will permanently delete ALL {versions.length} version{versions.length !== 1 ? 's' : ''} and ALL associated credits, perks, and multipliers.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setShowDeleteCardConfirm(false)}
+            disabled={deletingCard}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteEntireCard}
+            disabled={deletingCard}
+            className="delete-confirm-button"
+          >
+            {deletingCard ? 'Deleting...' : 'Delete Card'}
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </div>
   );
 }

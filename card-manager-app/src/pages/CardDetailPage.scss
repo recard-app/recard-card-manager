@@ -16,18 +16,30 @@
   box-shadow: $shadow-sm;
 
   .header-content {
-    @include flex-row;
+    display: flex;
+    flex-direction: row;
     align-items: center;
+    justify-content: space-between;
     gap: $spacing-md;
+    width: 100%;
     max-width: 1600px;
     margin: 0 auto;
   }
 
+  .header-left {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $spacing-md;
+    flex: 0 1 auto;
+    justify-content: flex-start;
+  }
+
   .title-row {
-    @include flex-row;
+    display: flex;
+    flex-direction: row;
     align-items: center;
     gap: $spacing-sm;
-    flex: 1;
 
     h1 {
       font-size: $font-size-lg;
@@ -41,6 +53,38 @@
       color: $neutral-gray-600;
       margin: 0;
     }
+  }
+
+  .header-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 auto;
+
+    .delete-card-button {
+      background-color: $error-red;
+      color: white;
+      border-color: $error-red;
+
+      &:hover:not(:disabled) {
+        filter: brightness(0.9);
+      }
+
+      svg {
+        margin-right: 0.25rem;
+      }
+    }
+  }
+}
+
+.delete-confirm-button {
+  background-color: $error-red !important;
+  color: white !important;
+  border-color: $error-red !important;
+
+  &:hover:not(:disabled) {
+    filter: brightness(0.9) !important;
   }
 }
 

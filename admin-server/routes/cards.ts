@@ -48,10 +48,8 @@ router.get('/', async (req: Request, res: Response) => {
       let hasActiveVersion = false;
 
       for (const version of versions) {
-        const effectiveFrom = version.effectiveFrom;
-        const effectiveTo = version.effectiveTo;
-
-        if (effectiveFrom <= today && (effectiveTo === ONGOING_SENTINEL_DATE || effectiveTo >= today)) {
+        // Check if this version is marked as active
+        if (version.IsActive === true) {
           hasActiveVersion = true;
           version.status = 'active';
         }
@@ -103,7 +101,7 @@ router.get('/:cardId', async (req: Request, res: Response) => {
 
 /**
  * POST /admin/cards
- * Create a new card
+ * Create a new card with auto-generated ID
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
@@ -123,6 +121,41 @@ router.post('/', async (req: Request, res: Response) => {
     const docRef = await db.collection('credit_cards_history').add(newCard);
 
     res.status(201).json({ id: docRef.id });
+  } catch (error) {
+    console.error('Error creating card:', error);
+    res.status(500).json({ error: 'Failed to create card' });
+  }
+});
+
+/**
+ * POST /admin/cards/:cardId
+ * Create a new card with a specific cardId (for the first version, use ReferenceCardId as the card ID)
+ */
+router.post('/:cardId', async (req: Request, res: Response) => {
+  try {
+    const { cardId } = req.params;
+    const cardData = req.body;
+    const now = new Date().toISOString();
+
+    // Check if a card with this ID already exists
+    const existing = await db.collection('credit_cards_history').doc(cardId).get();
+    if (existing.exists) {
+      return res.status(409).json({ error: 'A card with this ID already exists' });
+    }
+
+    const newCard = {
+      ...cardData,
+      // Normalize blank/undefined effectiveTo to the ongoing sentinel
+      effectiveTo:
+        cardData?.effectiveTo === '' || cardData?.effectiveTo == null
+          ? ONGOING_SENTINEL_DATE
+          : cardData.effectiveTo,
+      lastUpdated: now,
+    };
+
+    await db.collection('credit_cards_history').doc(cardId).set(newCard);
+
+    res.status(201).json({ id: cardId });
   } catch (error) {
     console.error('Error creating card:', error);
     res.status(500).json({ error: 'Failed to create card' });
@@ -160,7 +193,7 @@ router.put('/:cardId', async (req: Request, res: Response) => {
 
 /**
  * DELETE /admin/cards/:cardId
- * Delete a card
+ * Delete a card version
  */
 router.delete('/:cardId', async (req: Request, res: Response) => {
   try {
@@ -171,6 +204,66 @@ router.delete('/:cardId', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting card:', error);
     res.status(500).json({ error: 'Failed to delete card' });
+  }
+});
+
+/**
+ * DELETE /admin/cards/reference/:referenceCardId/all
+ * Delete ALL versions of a card by ReferenceCardId, plus all associated components
+ */
+router.delete('/reference/:referenceCardId/all', async (req: Request, res: Response) => {
+  try {
+    const { referenceCardId } = req.params;
+
+    // Get all versions with this ReferenceCardId
+    const versionsSnapshot = await db
+      .collection('credit_cards_history')
+      .where('ReferenceCardId', '==', referenceCardId)
+      .get();
+
+    if (versionsSnapshot.empty) {
+      return res.status(404).json({ error: 'No versions found for this card' });
+    }
+
+    const batch = db.batch();
+    const versionIds: string[] = [];
+
+    // Delete all version documents
+    versionsSnapshot.forEach((doc) => {
+      versionIds.push(doc.id);
+      batch.delete(doc.ref);
+    });
+
+    // Delete all associated components for each version
+    for (const versionId of versionIds) {
+      // Delete credits
+      const creditsSnapshot = await db
+        .collection('card_credits')
+        .where('CardId', '==', versionId)
+        .get();
+      creditsSnapshot.forEach((doc) => batch.delete(doc.ref));
+
+      // Delete perks
+      const perksSnapshot = await db
+        .collection('card_perks')
+        .where('CardId', '==', versionId)
+        .get();
+      perksSnapshot.forEach((doc) => batch.delete(doc.ref));
+
+      // Delete multipliers
+      const multipliersSnapshot = await db
+        .collection('card_multipliers')
+        .where('CardId', '==', versionId)
+        .get();
+      multipliersSnapshot.forEach((doc) => batch.delete(doc.ref));
+    }
+
+    await batch.commit();
+
+    res.json({ success: true, deletedVersions: versionIds.length });
+  } catch (error) {
+    console.error('Error deleting entire card:', error);
+    res.status(500).json({ error: 'Failed to delete entire card' });
   }
 });
 
@@ -219,7 +312,7 @@ router.get('/:referenceCardId/versions', async (req: Request, res: Response) => 
 
 /**
  * POST /admin/cards/:referenceCardId/versions
- * Create a new version of a card
+ * Create a new version of a card with provided data (does not copy from existing versions)
  */
 router.post('/:referenceCardId/versions', async (req: Request, res: Response) => {
   try {
@@ -227,26 +320,13 @@ router.post('/:referenceCardId/versions', async (req: Request, res: Response) =>
     const newVersionData = req.body;
     const now = new Date().toISOString();
 
-    // Get the existing card to copy from
-    const snapshot = await db
-      .collection('credit_cards_history')
-      .where('ReferenceCardId', '==', referenceCardId)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) {
-      return res.status(404).json({ error: 'Reference card not found' });
-    }
-
-    const baseCard = snapshot.docs[0].data() as CreditCardDetails;
-
     // Create new version with the provided data
     const normalizedEffectiveTo =
       !newVersionData?.effectiveTo || newVersionData.effectiveTo === ''
         ? ONGOING_SENTINEL_DATE
         : newVersionData.effectiveTo;
+
     const newCard: CreditCardDetails = {
-      ...baseCard,
       ...newVersionData,
       ReferenceCardId: referenceCardId,
       effectiveTo: normalizedEffectiveTo,

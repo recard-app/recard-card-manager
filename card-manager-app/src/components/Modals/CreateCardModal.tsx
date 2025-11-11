@@ -325,7 +325,7 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" onClick={handleSubmit} disabled={submitting}>
             {submitting ? 'Creating...' : 'Create Card'}
           </Button>
         </DialogFooter>

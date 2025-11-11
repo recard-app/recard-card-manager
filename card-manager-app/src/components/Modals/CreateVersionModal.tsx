@@ -71,11 +71,20 @@ export function CreateVersionModal({
     setSubmitting(true);
 
     try {
-      // Create a new version based on the current card data
-      const { id, lastUpdated, ReferenceCardId, ...baseCardData } = currentCard as any;
-
+      // Create a new version with blank values
       const newVersionData = {
-        ...baseCardData,
+        CardName: currentCard.CardName,
+        CardIssuer: currentCard.CardIssuer,
+        CardNetwork: currentCard.CardNetwork,
+        CardDetails: '',
+        CardImage: currentCard.CardImage,
+        CardPrimaryColor: currentCard.CardPrimaryColor,
+        CardSecondaryColor: currentCard.CardSecondaryColor,
+        AnnualFee: null,
+        ForeignExchangeFee: '',
+        ForeignExchangeFeePercentage: null,
+        RewardsCurrency: '',
+        PointsPerDollar: null,
         VersionName: formData.VersionName.trim(),
         effectiveFrom: formData.EffectiveFrom,
         effectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
