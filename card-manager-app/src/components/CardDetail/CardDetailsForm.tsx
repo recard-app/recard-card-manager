@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { TextareaField } from '@/components/shadcn/form-field';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { CardService } from '@/services/card.service';
 import type { CreditCardDetails } from '@/types';
 import { normalizeEffectiveTo } from '@/types';
@@ -317,18 +318,16 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
 
           <div className="detail-group">
             <h3>Version Information</h3>
-            <FormField
+            <DatePicker
               label="Effective From"
-              type="date"
               value={formData.EffectiveFrom}
-              onChange={(e) => setFormData({ ...formData, EffectiveFrom: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, EffectiveFrom: value })}
               error={errors.EffectiveFrom}
             />
-            <FormField
+            <DatePicker
               label="Effective To (optional)"
-              type="date"
               value={formData.EffectiveTo}
-              onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, EffectiveTo: value })}
               placeholder="Leave empty for ongoing"
               helperText="⚠️ IMPORTANT: If this version is currently active, leave this field BLANK."
             />

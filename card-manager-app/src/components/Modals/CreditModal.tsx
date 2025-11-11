@@ -4,6 +4,7 @@ import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { DatePicker } from '@/components/ui/DatePicker';
 import type { CardCredit } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
@@ -210,19 +211,17 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           placeholder="Additional details"
         />
 
-        <FormField
+        <DatePicker
           label="Effective From"
-          type="date"
           value={formData.EffectiveFrom}
-          onChange={(e) => setFormData({ ...formData, EffectiveFrom: e.target.value })}
+          onChange={(value) => setFormData({ ...formData, EffectiveFrom: value })}
           error={errors.EffectiveFrom}
         />
 
-        <FormField
+        <DatePicker
           label="Effective To (optional)"
-          type="date"
           value={formData.EffectiveTo}
-          onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
+          onChange={(value) => setFormData({ ...formData, EffectiveTo: value })}
           placeholder="Leave empty for ongoing"
           helperText="⚠️ IMPORTANT: If this credit is currently active, leave this field BLANK."
         />

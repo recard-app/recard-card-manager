@@ -229,7 +229,7 @@ router.post('/:referenceCardId/versions', async (req: Request, res: Response) =>
 
     // Get the existing card to copy from
     const snapshot = await db
-      .collection('creditCards')
+      .collection('credit_cards_history')
       .where('ReferenceCardId', '==', referenceCardId)
       .limit(1)
       .get();

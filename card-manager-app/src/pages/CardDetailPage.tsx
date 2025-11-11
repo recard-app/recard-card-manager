@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CardService } from '@/services/card.service';
@@ -31,6 +31,7 @@ export function CardDetailPage() {
   const [multipliers, setMultipliers] = useState<CardMultiplier[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [contentLoading, setContentLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'credits' | 'perks' | 'multipliers'>('credits');
 
@@ -47,9 +48,13 @@ export function CardDetailPage() {
   const [editingPerk, setEditingPerk] = useState<CardPerk | null>(null);
   const [editingMultiplier, setEditingMultiplier] = useState<CardMultiplier | null>(null);
 
+  // Track if we're on initial load (to avoid re-triggering full page load on URL changes)
+  const isInitialLoad = useRef(true);
+
   useEffect(() => {
-    if (cardId) {
+    if (cardId && isInitialLoad.current) {
       loadCardData(cardId);
+      isInitialLoad.current = false;
     }
   }, [cardId]);
 
@@ -129,9 +134,30 @@ export function CardDetailPage() {
     }
   };
 
-  const handleVersionSelect = (versionId: string) => {
-    setSelectedVersionId(versionId);
-    navigate(`/cards/${versionId}`, { replace: true });
+  const handleVersionSelect = async (versionId: string) => {
+    try {
+      setContentLoading(true);
+      setError(null);
+
+      // Load the new version data
+      const data = await CardService.getCardById(versionId);
+
+      if (!data) {
+        setError('Card not found');
+        return;
+      }
+
+      setCard(data);
+      setSelectedVersionId(versionId);
+
+      // Update URL without triggering navigation/reload
+      navigate(`/cards/${versionId}`, { replace: true });
+    } catch (err: any) {
+      setError(err.message || 'Failed to load card');
+      console.error('Error loading card:', err);
+    } finally {
+      setContentLoading(false);
+    }
   };
 
   const handleCreateVersion = async () => {
@@ -290,6 +316,11 @@ export function CardDetailPage() {
         />
 
         <div className="main-content">
+          {contentLoading && (
+            <div className="content-loading-overlay">
+              Loading...
+            </div>
+          )}
           <CardDetailsForm
             cardId={selectedVersionId || cardId!}
             card={card}

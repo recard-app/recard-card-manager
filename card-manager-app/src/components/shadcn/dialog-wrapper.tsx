@@ -84,7 +84,9 @@ export function DialogWrapper({
           </div>
         )}
         <div className="px-6 py-4 flex-1 overflow-y-auto">
-          {contentChildren}
+          {contentChildren.map((child, index) => (
+            <React.Fragment key={index}>{child}</React.Fragment>
+          ))}
         </div>
         {hasFooter && (
           <div className="px-6 pb-6 flex-shrink-0">

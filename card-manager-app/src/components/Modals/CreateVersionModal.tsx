@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { DatePicker } from '@/components/ui/DatePicker';
 import type { CreditCardDetails } from '@/types';
 import { CardService } from '@/services/card.service';
 import { normalizeEffectiveTo } from '@/types';
@@ -71,17 +72,15 @@ export function CreateVersionModal({
 
     try {
       // Create a new version based on the current card data
-      const newVersionData: CreditCardDetails = {
-        ...currentCard,
+      const { id, lastUpdated, ReferenceCardId, ...baseCardData } = currentCard as any;
+
+      const newVersionData = {
+        ...baseCardData,
         VersionName: formData.VersionName.trim(),
         effectiveFrom: formData.EffectiveFrom,
         effectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
         IsActive: formData.setAsActive,
       };
-
-      // Remove the id so we can use the custom one
-      delete (newVersionData as any).id;
-      delete (newVersionData as any).lastUpdated;
 
       await CardService.createNewVersion(referenceCardId, newVersionData);
 
@@ -117,19 +116,17 @@ export function CreateVersionModal({
           <p>This will create a new version based on the current card configuration.</p>
         </div>
 
-        <FormField
+        <DatePicker
           label="Effective From"
-          type="date"
           value={formData.EffectiveFrom}
-          onChange={(e) => setFormData({ ...formData, EffectiveFrom: e.target.value })}
+          onChange={(value) => setFormData({ ...formData, EffectiveFrom: value })}
           error={errors.EffectiveFrom}
         />
 
-        <FormField
+        <DatePicker
           label="Effective To (optional)"
-          type="date"
           value={formData.EffectiveTo}
-          onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
+          onChange={(value) => setFormData({ ...formData, EffectiveTo: value })}
           placeholder="Leave empty for ongoing"
           helperText="⚠️ IMPORTANT: If this version is currently active, leave this field BLANK."
         />
@@ -152,7 +149,7 @@ export function CreateVersionModal({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" onClick={handleSubmit} disabled={submitting}>
             {submitting ? 'Creating...' : 'Create Version'}
           </Button>
         </DialogFooter>

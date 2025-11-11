@@ -1,1 +1,1 @@
-export { Button } from "@/components/shadcn/button"
+export { Button, buttonVariants } from "@/components/shadcn/button"

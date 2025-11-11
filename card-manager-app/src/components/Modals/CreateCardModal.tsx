@@ -4,6 +4,7 @@ import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { DatePicker } from '@/components/ui/DatePicker';
 import type { CreditCardDetails } from '@/types';
 import { CardService } from '@/services/card.service';
 import { normalizeEffectiveTo } from '@/types';
@@ -292,19 +293,17 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
             placeholder="V1"
           />
 
-          <FormField
+          <DatePicker
             label="Effective From"
-            type="date"
             value={formData.EffectiveFrom}
-            onChange={(e) => setFormData({ ...formData, EffectiveFrom: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, EffectiveFrom: value })}
             error={errors.EffectiveFrom}
           />
 
-          <FormField
+          <DatePicker
             label="Effective To (optional)"
-            type="date"
             value={formData.EffectiveTo}
-            onChange={(e) => setFormData({ ...formData, EffectiveTo: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, EffectiveTo: value })}
             placeholder="Leave empty for ongoing"
             helperText="⚠️ IMPORTANT: If this version is currently active, leave this field BLANK."
           />
