@@ -28,7 +28,6 @@ export function CreateVersionModal({
     VersionName: '',
     EffectiveFrom: '',
     EffectiveTo: '',
-    setAsActive: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -40,7 +39,6 @@ export function CreateVersionModal({
         VersionName: '',
         EffectiveFrom: new Date().toISOString().split('T')[0],
         EffectiveTo: '',
-        setAsActive: false,
       });
       setErrors({});
     }
@@ -88,7 +86,7 @@ export function CreateVersionModal({
         VersionName: formData.VersionName.trim(),
         effectiveFrom: formData.EffectiveFrom,
         effectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
-        IsActive: formData.setAsActive,
+        IsActive: false,
       };
 
       await CardService.createNewVersion(referenceCardId, newVersionData);
@@ -139,20 +137,6 @@ export function CreateVersionModal({
           placeholder="Leave empty for ongoing"
           helperText="⚠️ IMPORTANT: If this version is currently active, leave this field BLANK."
         />
-
-        <div className="checkbox-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={formData.setAsActive}
-              onChange={(e) => setFormData({ ...formData, setAsActive: e.target.checked })}
-            />
-            <span>Set as active version</span>
-          </label>
-          <p className="checkbox-description">
-            If checked, this version will be activated and other versions will be deactivated
-          </p>
-        </div>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>

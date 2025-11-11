@@ -36,7 +36,6 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
     VersionName: 'V1',
     EffectiveFrom: '',
     EffectiveTo: '',
-    setAsActive: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -66,7 +65,6 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
         VersionName: 'V1',
         EffectiveFrom: new Date().toISOString().split('T')[0],
         EffectiveTo: '',
-        setAsActive: false,
       });
       setErrors({});
     }
@@ -134,10 +132,10 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
         VersionName: formData.VersionName.trim(),
         effectiveFrom: formData.EffectiveFrom,
         effectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
-        IsActive: formData.setAsActive,
+        IsActive: false,
       };
 
-      const newCardId = await CardService.createCard(cardData, formData.setAsActive);
+      const newCardId = await CardService.createCard(cardData, false);
 
       onSuccess(newCardId);
       onOpenChange(false);
@@ -307,19 +305,6 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
             placeholder="Leave empty for ongoing"
             helperText="⚠️ IMPORTANT: If this version is currently active, leave this field BLANK."
           />
-          <div className="checkbox-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={formData.setAsActive}
-                onChange={(e) => setFormData({ ...formData, setAsActive: e.target.checked })}
-              />
-              <span>Set as active version</span>
-            </label>
-            <p className="checkbox-description">
-              If checked, this first version will be activated; otherwise it remains inactive.
-            </p>
-          </div>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>

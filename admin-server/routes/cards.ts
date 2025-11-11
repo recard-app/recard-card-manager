@@ -46,11 +46,13 @@ router.get('/', async (req: Request, res: Response) => {
 
     cardsMap.forEach((versions) => {
       let hasActiveVersion = false;
+      let activeVersion: any = null;
 
       for (const version of versions) {
         // Check if this version is marked as active
         if (version.IsActive === true) {
           hasActiveVersion = true;
+          activeVersion = version;
           version.status = 'active';
         }
       }
@@ -65,7 +67,15 @@ router.get('/', async (req: Request, res: Response) => {
       const mostRecent = versions.sort((a, b) =>
         b.lastUpdated.localeCompare(a.lastUpdated)
       )[0];
-      results.push(mostRecent);
+
+      // If there's an active version, include its name and set status to 'active'
+      const resultCard = {
+        ...mostRecent,
+        ActiveVersionName: activeVersion ? activeVersion.VersionName : null,
+        status: hasActiveVersion ? 'active' : 'no_active_version',
+      };
+
+      results.push(resultCard);
     });
 
     res.json(results);

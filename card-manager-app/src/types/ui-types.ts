@@ -16,6 +16,7 @@ export type CardComponent = CardCredit | CardPerk | CardMultiplier;
 export interface CardWithStatus extends CreditCardDetails {
   status: 'active' | 'inactive' | 'no_active_version';
   source: 'credit_cards' | 'credit_cards_history';
+  ActiveVersionName: string | null;
 }
 
 /**

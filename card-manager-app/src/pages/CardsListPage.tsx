@@ -132,7 +132,7 @@ export function CardsListPage() {
               <div className="col-name">Card Name</div>
               <div className="col-issuer">Issuer</div>
               <div className="col-status">Status</div>
-              <div className="col-version">Version</div>
+              <div className="col-version">Active Version</div>
               <div className="col-updated">Updated</div>
             </div>
             {filteredCards.map(card => (
@@ -157,7 +157,11 @@ export function CardsListPage() {
                     {getStatusLabel(card.status)}
                   </Badge>
                 </div>
-                <div className="col-version">{card.VersionName}</div>
+                <div className="col-version">
+                  {card.ActiveVersionName || (
+                    <span className="text-gray-400">None</span>
+                  )}
+                </div>
                 <div className="col-updated">{formatDate(card.lastUpdated)}</div>
               </Link>
             ))}
