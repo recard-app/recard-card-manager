@@ -166,6 +166,7 @@
     .version-id {
       font-size: $font-size-xs;
       color: $neutral-gray-600;
+      user-select: text;
     }
 
     .active-badge {

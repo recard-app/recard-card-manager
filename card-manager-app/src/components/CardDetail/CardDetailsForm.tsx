@@ -173,6 +173,24 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
       {!isEditing && (
         <div className="details-grid">
           <div className="detail-group">
+            <h3>Version Information</h3>
+            <div className="detail-row">
+              <span className="label">Effective From:</span>
+              <span className="value">{formatDate(card.effectiveFrom)}</span>
+            </div>
+            <div className="detail-row">
+              <span className="label">Effective To:</span>
+              <span className="value">
+                {card.effectiveTo === '9999-12-31' ? 'Ongoing' : formatDate(card.effectiveTo)}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="label">Last Updated:</span>
+              <span className="value">{formatDate(card.lastUpdated)}</span>
+            </div>
+          </div>
+
+          <div className="detail-group">
             <h3>Basic Information</h3>
             <div className="detail-row">
               <span className="label">Card Name:</span>
@@ -221,20 +239,38 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
           </div>
 
           <div className="detail-group">
-            <h3>Version Information</h3>
+            <h3>Branding</h3>
             <div className="detail-row">
-              <span className="label">Effective From:</span>
-              <span className="value">{formatDate(card.effectiveFrom)}</span>
-            </div>
-            <div className="detail-row">
-              <span className="label">Effective To:</span>
-              <span className="value">
-                {card.effectiveTo === '9999-12-31' ? 'Ongoing' : formatDate(card.effectiveTo)}
+              <span className="label">Primary Color:</span>
+              <span className="value color-display">
+                <span
+                  className="color-swatch"
+                  style={{ backgroundColor: (card as any).CardPrimaryColor || '#5A5F66' }}
+                />
+                {(card as any).CardPrimaryColor || '#5A5F66'}
               </span>
             </div>
             <div className="detail-row">
-              <span className="label">Last Updated:</span>
-              <span className="value">{formatDate(card.lastUpdated)}</span>
+              <span className="label">Secondary Color:</span>
+              <span className="value color-display">
+                <span
+                  className="color-swatch"
+                  style={{ backgroundColor: (card as any).CardSecondaryColor || '#F2F4F6' }}
+                />
+                {(card as any).CardSecondaryColor || '#F2F4F6'}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="label">Preview:</span>
+              <span className="value preview-row">
+                <CardIcon
+                  title="Card preview"
+                  size={36}
+                  primary={(card as any).CardPrimaryColor || '#5A5F66'}
+                  secondary={(card as any).CardSecondaryColor || '#F2F4F6'}
+                />
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>SVG preview</span>
+              </span>
             </div>
           </div>
 

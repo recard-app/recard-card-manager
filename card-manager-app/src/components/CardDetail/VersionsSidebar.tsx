@@ -86,10 +86,18 @@ export function VersionsSidebar({
           </div>
         ) : (
           filteredVersions.map((version) => (
-            <button
+            <div
               key={version.id}
               className={`version-item ${selectedVersionId === version.id ? 'selected' : ''}`}
               onClick={() => onVersionSelect(version.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onVersionSelect(version.id);
+                }
+              }}
             >
               <div className="version-header">
                 <div className="version-title">
@@ -113,7 +121,7 @@ export function VersionsSidebar({
                 </div>
                 <div className="updated">Updated: {formatDate(version.lastUpdated)}</div>
               </div>
-            </button>
+            </div>
           ))
         )}
       </div>

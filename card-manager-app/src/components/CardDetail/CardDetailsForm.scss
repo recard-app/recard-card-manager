@@ -56,6 +56,26 @@
       font-weight: 500;
       color: var(--text-primary);
     }
+
+    .color-display {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .color-swatch {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      border: 1px solid $neutral-gray-200;
+    }
+
+    .preview-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
   }
 
   .card-details-text {
