@@ -11,12 +11,47 @@ export type ComponentType = 'credits' | 'perks' | 'multipliers';
 export type CardComponent = CardCredit | CardPerk | CardMultiplier;
 
 /**
- * Card with status for list view
+ * Top-level card identity from credit_cards_names collection.
+ * The ReferenceCardId is the document ID in Firestore.
  */
-export interface CardWithStatus extends CreditCardDetails {
-  status: 'active' | 'inactive' | 'no_active_version';
-  source: 'credit_cards' | 'credit_cards_history';
+export interface CreditCardName {
+  ReferenceCardId: string;  // Document ID
+  CardName: string;
+  CardIssuer: string;
+}
+
+/**
+ * Card with status for list view.
+ * Can represent cards with or without versions.
+ */
+export interface CardWithStatus {
+  // Core identity (from credit_cards_names)
+  ReferenceCardId: string;
+  CardName: string;
+  CardIssuer: string;
+  
+  // Status info
+  status: 'active' | 'inactive' | 'no_active_version' | 'no_versions';
   ActiveVersionName: string | null;
+  versionCount: number;
+  
+  // Version data (optional - may not exist if no versions)
+  id?: string;  // Version ID (for navigation)
+  CardNetwork?: string;
+  CardDetails?: string;
+  CardImage?: string;
+  CardPrimaryColor?: string;
+  CardSecondaryColor?: string;
+  AnnualFee?: number | null;
+  ForeignExchangeFee?: string;
+  ForeignExchangeFeePercentage?: number | null;
+  RewardsCurrency?: string;
+  PointsPerDollar?: number | null;
+  VersionName?: string;
+  IsActive?: boolean;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  lastUpdated?: string;
 }
 
 /**

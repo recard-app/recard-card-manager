@@ -141,6 +141,8 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
     }
   };
 
+  const formId = 'credit-modal-form';
+
   return (
     <Dialog
       open={open}
@@ -148,7 +150,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
       title={isEdit ? 'Edit Credit' : 'Add New Credit'}
       description={isEdit ? 'Update credit details' : 'Create a new credit for this card version'}
     >
-      <form onSubmit={handleSubmit} className="credit-modal-form">
+      <form id={formId} onSubmit={handleSubmit} className="credit-modal-form">
         <FormField
           label="Title"
           value={formData.Title}
@@ -231,7 +233,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" form={formId} disabled={submitting}>
             {submitting ? 'Saving...' : isEdit ? 'Update Credit' : 'Create Credit'}
           </Button>
         </DialogFooter>

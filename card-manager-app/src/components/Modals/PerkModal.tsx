@@ -127,6 +127,8 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
     }
   };
 
+  const formId = 'perk-modal-form';
+
   return (
     <Dialog
       open={open}
@@ -134,7 +136,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
       title={isEdit ? 'Edit Perk' : 'Add New Perk'}
       description={isEdit ? 'Update perk details' : 'Create a new perk for this card version'}
     >
-      <form onSubmit={handleSubmit} className="perk-modal-form">
+      <form id={formId} onSubmit={handleSubmit} className="perk-modal-form">
         <FormField
           label="Title"
           value={formData.Title}
@@ -205,7 +207,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" form={formId} disabled={submitting}>
             {submitting ? 'Saving...' : isEdit ? 'Update Perk' : 'Create Perk'}
           </Button>
         </DialogFooter>

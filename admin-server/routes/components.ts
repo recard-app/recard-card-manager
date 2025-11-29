@@ -12,22 +12,20 @@ router.use(verifyAuth);
 
 /**
  * GET /admin/cards/:cardId/credits
- * Get all credits for a specific card version
+ * Get all credits for a card by ReferenceCardId (or version ID for backwards compatibility)
  */
 router.get('/cards/:cardId/credits', async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
 
-    // First, get the card to retrieve its ReferenceCardId
+    // Try to determine the ReferenceCardId
+    // First, check if cardId is a version ID in credit_cards_history
+    let referenceCardId = cardId;
     const cardDoc = await db.collection('credit_cards_history').doc(cardId).get();
-    if (!cardDoc.exists) {
-      return res.status(404).json({ error: 'Card not found' });
+    if (cardDoc.exists) {
+      referenceCardId = cardDoc.data()?.ReferenceCardId || cardId;
     }
-
-    const referenceCardId = cardDoc.data()?.ReferenceCardId;
-    if (!referenceCardId) {
-      return res.json([]);
-    }
+    // If not found as version, use cardId directly as ReferenceCardId
 
     const snapshot = await db
       .collection('credit_cards_credits')
@@ -121,22 +119,20 @@ router.delete('/credits/:creditId', async (req: Request, res: Response) => {
 
 /**
  * GET /admin/cards/:cardId/perks
- * Get all perks for a specific card version
+ * Get all perks for a card by ReferenceCardId (or version ID for backwards compatibility)
  */
 router.get('/cards/:cardId/perks', async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
 
-    // First, get the card to retrieve its ReferenceCardId
+    // Try to determine the ReferenceCardId
+    // First, check if cardId is a version ID in credit_cards_history
+    let referenceCardId = cardId;
     const cardDoc = await db.collection('credit_cards_history').doc(cardId).get();
-    if (!cardDoc.exists) {
-      return res.status(404).json({ error: 'Card not found' });
+    if (cardDoc.exists) {
+      referenceCardId = cardDoc.data()?.ReferenceCardId || cardId;
     }
-
-    const referenceCardId = cardDoc.data()?.ReferenceCardId;
-    if (!referenceCardId) {
-      return res.json([]);
-    }
+    // If not found as version, use cardId directly as ReferenceCardId
 
     const snapshot = await db
       .collection('credit_cards_perks')
@@ -228,22 +224,20 @@ router.delete('/perks/:perkId', async (req: Request, res: Response) => {
 
 /**
  * GET /admin/cards/:cardId/multipliers
- * Get all multipliers for a specific card version
+ * Get all multipliers for a card by ReferenceCardId (or version ID for backwards compatibility)
  */
 router.get('/cards/:cardId/multipliers', async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
 
-    // First, get the card to retrieve its ReferenceCardId
+    // Try to determine the ReferenceCardId
+    // First, check if cardId is a version ID in credit_cards_history
+    let referenceCardId = cardId;
     const cardDoc = await db.collection('credit_cards_history').doc(cardId).get();
-    if (!cardDoc.exists) {
-      return res.status(404).json({ error: 'Card not found' });
+    if (cardDoc.exists) {
+      referenceCardId = cardDoc.data()?.ReferenceCardId || cardId;
     }
-
-    const referenceCardId = cardDoc.data()?.ReferenceCardId;
-    if (!referenceCardId) {
-      return res.json([]);
-    }
+    // If not found as version, use cardId directly as ReferenceCardId
 
     const snapshot = await db
       .collection('credit_cards_multipliers')

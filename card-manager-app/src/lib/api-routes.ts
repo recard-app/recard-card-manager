@@ -4,7 +4,16 @@
  */
 
 export const API_ROUTES = {
-  // Card routes
+  // Card Names routes (top-level card identities in credit_cards_names collection)
+  CARD_NAMES: {
+    LIST: '/admin/cards/card-names',
+    CREATE: (referenceCardId: string) => `/admin/cards/card-names/${referenceCardId}`,
+    DETAILS: (referenceCardId: string) => `/admin/cards/card-names/${referenceCardId}`,
+    UPDATE: (referenceCardId: string) => `/admin/cards/card-names/${referenceCardId}`,
+    DELETE: (referenceCardId: string) => `/admin/cards/card-names/${referenceCardId}`,
+  },
+
+  // Card routes (for versions in credit_cards_history collection)
   CARDS: {
     LIST: '/admin/cards',
     CREATE: (cardId: string) => `/admin/cards/${cardId}`,

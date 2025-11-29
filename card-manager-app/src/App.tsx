@@ -29,7 +29,15 @@ function App() {
             }
           />
           <Route
-            path="/cards/:cardId"
+            path="/cards/:referenceCardId"
+            element={
+              <ProtectedRoute>
+                <CardDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/cards/:referenceCardId/:versionId"
             element={
               <ProtectedRoute>
                 <CardDetailPage />

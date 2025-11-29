@@ -1,23 +1,83 @@
 import { apiClient } from '@/lib/api-client';
 import { API_ROUTES } from '@/lib/api-routes';
 import type { CreditCardDetails } from '@/types';
-import type { CardWithStatus, VersionSummary } from '@/types/ui-types';
+import type { CardWithStatus, CreditCardName, VersionSummary } from '@/types/ui-types';
 
 /**
  * Card Service
  * Handles all card-related API calls to the Server admin endpoints
  */
 export class CardService {
+  // ===== CARD NAMES (credit_cards_names collection) =====
+
   /**
-   * Get all cards with their status
+   * Create a new card name entry (top-level card identity)
+   * @param referenceCardId The unique identifier for the card (will be the document ID)
+   * @param cardName The display name of the card
+   * @param cardIssuer The issuer of the card
+   * @returns The created card name data
+   */
+  static async createCardName(
+    referenceCardId: string,
+    cardName: string,
+    cardIssuer: string
+  ): Promise<CreditCardName> {
+    const response = await apiClient.post<CreditCardName>(
+      API_ROUTES.CARD_NAMES.CREATE(referenceCardId),
+      { CardName: cardName, CardIssuer: cardIssuer }
+    );
+    return response.data;
+  }
+
+  /**
+   * Get a card name entry by ReferenceCardId
+   */
+  static async getCardName(referenceCardId: string): Promise<CreditCardName | null> {
+    try {
+      const response = await apiClient.get<CreditCardName>(
+        API_ROUTES.CARD_NAMES.DETAILS(referenceCardId)
+      );
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Update a card name entry
+   */
+  static async updateCardName(
+    referenceCardId: string,
+    data: { CardName?: string; CardIssuer?: string }
+  ): Promise<void> {
+    await apiClient.put(API_ROUTES.CARD_NAMES.UPDATE(referenceCardId), data);
+  }
+
+  /**
+   * Get all card names
+   */
+  static async getAllCardNames(): Promise<CreditCardName[]> {
+    const response = await apiClient.get<CreditCardName[]>(API_ROUTES.CARD_NAMES.LIST);
+    return response.data;
+  }
+
+  // ===== CARDS WITH STATUS =====
+
+  /**
+   * Get all cards with their status (combines card names and versions)
    */
   static async getAllCardsWithStatus(): Promise<CardWithStatus[]> {
     const response = await apiClient.get<CardWithStatus[]>(API_ROUTES.CARDS.LIST);
     return response.data;
   }
 
+  // ===== CARD VERSIONS (credit_cards_history collection) =====
+
   /**
-   * Get a card by ID
+   * Get a card version by ID
    */
   static async getCardById(cardId: string): Promise<CreditCardDetails | null> {
     try {
@@ -42,7 +102,8 @@ export class CardService {
   }
 
   /**
-   * Create a new card
+   * Create a new card (legacy - creates a version in credit_cards_history)
+   * @deprecated Use createCardName() to create the card identity, then createNewVersion() to add versions
    * @param cardData The card data including ReferenceCardId which will be used as the card ID
    * @param setAsActive Whether to set this card version as active
    * @returns The created card ID (same as ReferenceCardId for the first version)

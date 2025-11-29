@@ -25,6 +25,24 @@
 
 /**
  * ------------------------------------------------------------------------------------------------
+ * CREDIT CARD NAME (Top-Level Identity)
+ * ------------------------------------------------------------------------------------------------
+ */
+
+/**
+ * Represents the top-level identity of a credit card in the credit_cards_names collection.
+ * This allows cards to exist independently from their versions.
+ * 
+ * The document ID in Firestore equals the ReferenceCardId (immutable, unique identifier).
+ */
+export interface CreditCardName {
+  CardName: string;
+  CardIssuer: string;
+  // Note: ReferenceCardId is the document ID in Firestore, not stored as a field
+}
+
+/**
+ * ------------------------------------------------------------------------------------------------
  * CREDIT CARD TYPES
  * ------------------------------------------------------------------------------------------------
  */

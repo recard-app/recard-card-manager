@@ -4,17 +4,19 @@ import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { CardService } from '@/services/card.service';
-import './CreateCardModal.scss';
+import type { CreditCardName } from '@/types/ui-types';
 
-interface CreateCardModalProps {
+interface EditCardNameModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: (referenceCardId: string) => void;
+  cardName: CreditCardName;
+  onSuccess: (updatedCardName: CreditCardName) => void;
 }
 
-export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardModalProps) {
+export function EditCardNameModal({ open, onOpenChange, cardName, onSuccess }: EditCardNameModalProps) {
+  const formId = 'edit-card-name-form';
+
   const [formData, setFormData] = useState({
-    ReferenceCardId: '',
     CardName: '',
     CardIssuer: '',
   });
@@ -23,24 +25,17 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (open) {
+    if (cardName) {
       setFormData({
-        ReferenceCardId: '',
-        CardName: '',
-        CardIssuer: '',
+        CardName: cardName.CardName,
+        CardIssuer: cardName.CardIssuer,
       });
-      setErrors({});
     }
-  }, [open]);
+    setErrors({});
+  }, [cardName, open]);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.ReferenceCardId.trim()) {
-      newErrors.ReferenceCardId = 'Reference Card ID is required';
-    } else if (!/^[a-zA-Z0-9-]+$/.test(formData.ReferenceCardId)) {
-      newErrors.ReferenceCardId = 'Card ID can only contain letters, numbers, and hyphens';
-    }
 
     if (!formData.CardName.trim()) {
       newErrors.CardName = 'Card name is required';
@@ -64,53 +59,40 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
     setSubmitting(true);
 
     try {
-      await CardService.createCardName(
-        formData.ReferenceCardId.trim(),
-        formData.CardName.trim(),
-        formData.CardIssuer.trim()
-      );
+      await CardService.updateCardName(cardName.ReferenceCardId, {
+        CardName: formData.CardName.trim(),
+        CardIssuer: formData.CardIssuer.trim(),
+      });
 
-      toast.success('Card created successfully');
-      onSuccess(formData.ReferenceCardId.trim());
+      const updatedCardName: CreditCardName = {
+        ReferenceCardId: cardName.ReferenceCardId,
+        CardName: formData.CardName.trim(),
+        CardIssuer: formData.CardIssuer.trim(),
+      };
+
+      toast.success('Card updated successfully');
+      onSuccess(updatedCardName);
       onOpenChange(false);
     } catch (err: any) {
-      console.error('Error creating card:', err);
-      if (err.response?.data?.error?.includes('already exists')) {
-        setErrors({ ReferenceCardId: 'A card with this ID already exists' });
-      } else {
-        toast.error('Failed to create card: ' + (err.response?.data?.error || err.message));
-      }
+      console.error('Error updating card:', err);
+      toast.error('Failed to update card: ' + err.message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const formId = 'create-card-modal-form';
-
   return (
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Create New Card"
-      description="Create a new credit card. You can add versions with full details after creation."
+      title="Edit Card"
+      description="Update the card name and issuer"
     >
-      <form id={formId} onSubmit={handleSubmit} className="create-card-modal-form">
-        <FormField
-          label="Reference Card ID"
-          value={formData.ReferenceCardId}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              ReferenceCardId: e.target.value.replace(/[^a-zA-Z0-9-]/g, ''),
-            })
-          }
-          error={errors.ReferenceCardId}
-          placeholder="e.g., chase-sapphire-preferred"
-        />
-        <p className="field-help">
-          Unique identifier for this card (letters, numbers, hyphens only; no spaces).
-          This cannot be changed once created.
-        </p>
+      <form id={formId} onSubmit={handleSubmit}>
+        <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f5f5f5', borderRadius: '6px' }}>
+          <span style={{ fontSize: '0.875rem', color: '#666' }}>Card ID: </span>
+          <code style={{ fontSize: '0.875rem', fontWeight: 500 }}>{cardName.ReferenceCardId}</code>
+        </div>
 
         <FormField
           label="Card Name"
@@ -133,10 +115,11 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
             Cancel
           </Button>
           <Button type="submit" form={formId} disabled={submitting}>
-            {submitting ? 'Creating...' : 'Create Card'}
+            {submitting ? 'Saving...' : 'Save Changes'}
           </Button>
         </DialogFooter>
       </form>
     </Dialog>
   );
 }
+

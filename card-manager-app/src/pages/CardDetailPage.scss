@@ -61,6 +61,12 @@
     align-items: center;
     justify-content: flex-end;
     flex: 0 0 auto;
+    gap: $spacing-sm;
+
+    // Ensure consistent icon spacing across header action buttons
+    button svg {
+      margin-right: 0.25rem;
+    }
 
     .delete-card-button {
       background-color: $error-red;
@@ -71,9 +77,6 @@
         filter: brightness(0.9);
       }
 
-      svg {
-        margin-right: 0.25rem;
-      }
     }
   }
 }
@@ -166,5 +169,43 @@
 
   p {
     margin: 0;
+  }
+}
+
+.no-versions-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  background: $neutral-gray-50;
+  border: 2px dashed $neutral-gray-300;
+  border-radius: $border-radius-lg;
+
+  .no-versions-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: $spacing-md;
+    padding: $spacing-xl;
+    max-width: 400px;
+
+    h2 {
+      font-size: $font-size-lg;
+      font-weight: 600;
+      color: $neutral-gray-800;
+      margin: 0;
+    }
+
+    p {
+      font-size: $font-size-sm;
+      color: $neutral-gray-600;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    button {
+      margin-top: $spacing-sm;
+    }
   }
 }

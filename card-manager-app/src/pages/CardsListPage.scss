@@ -7,6 +7,8 @@
   padding: $spacing-sm;
   max-width: 1600px;
   margin: 0 auto;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .page-header {
@@ -15,6 +17,7 @@
   align-items: center;
   gap: $spacing-xs;
   padding: $spacing-xs 0;
+  flex-shrink: 0;
 
   h1 {
     font-size: $font-size-base;
@@ -28,6 +31,7 @@
   @include flex-row;
   gap: $spacing-xs;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .search-box {
@@ -92,14 +96,23 @@
 }
 
 .cards-table {
+  @include flex-column;
+  flex: 1;
+  min-height: 0; // Allows flex child to shrink below content size
   border: 1px solid $neutral-gray-200;
   border-radius: $border-radius-sm;
   overflow: hidden;
 }
 
+.table-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
 .table-header {
   display: grid;
-  grid-template-columns: 60px 1fr 200px 140px 180px 120px;
+  grid-template-columns: 60px 1fr 160px 160px 160px 80px;
   gap: $spacing-sm;
   padding: $spacing-xs $spacing-sm;
   background-color: $neutral-gray-100;
@@ -107,6 +120,7 @@
   font-size: $font-size-xs;
   font-weight: 600;
   color: $neutral-gray-800;
+  flex-shrink: 0; // Prevent header from shrinking
 
   > div {
     display: flex;
@@ -116,7 +130,7 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: 60px 1fr 200px 140px 180px 120px;
+  grid-template-columns: 60px 1fr 160px 160px 160px 80px;
   gap: $spacing-sm;
   padding: $spacing-xs $spacing-sm;
   text-decoration: none;
@@ -160,8 +174,9 @@
     color: $neutral-gray-600;
   }
 
-  .col-updated {
+  .col-versions {
     color: $neutral-gray-600;
+    justify-content: center;
   }
 }
 
@@ -212,4 +227,5 @@
   font-size: $font-size-xs;
   color: $neutral-gray-600;
   padding: $spacing-xs 0;
+  flex-shrink: 0;
 }

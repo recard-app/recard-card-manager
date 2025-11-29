@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { db } from '../firebase-admin';
-import { CreditCardDetails, ONGOING_SENTINEL_DATE } from '../types';
+import { CreditCardDetails, CreditCardName, ONGOING_SENTINEL_DATE } from '../types';
 import { verifyAuth } from '../middleware/auth';
 
 const router = express.Router();
@@ -8,74 +8,292 @@ const router = express.Router();
 // Apply auth middleware to all routes
 router.use(verifyAuth);
 
-// ===== CARD MANAGEMENT =====
+// ===== CARD NAMES MANAGEMENT (credit_cards_names collection) =====
 
 /**
- * GET /admin/cards
- * Get all cards with their status
+ * GET /admin/card-names
+ * Get all card names from credit_cards_names collection
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/card-names', async (req: Request, res: Response) => {
   try {
-    const snapshot = await db.collection('credit_cards_history').get();
+    const snapshot = await db.collection('credit_cards_names').get();
 
     if (snapshot.empty) {
       return res.json([]);
     }
 
-    const cardsMap = new Map<string, any[]>();
-    const today = new Date().toISOString().split('T')[0];
-
-    // Group cards by ReferenceCardId
+    const cardNames: any[] = [];
     snapshot.forEach((doc) => {
+      const data = doc.data() as CreditCardName;
+      cardNames.push({
+        ReferenceCardId: doc.id,
+        ...data,
+      });
+    });
+
+    res.json(cardNames);
+  } catch (error) {
+    console.error('Error fetching card names:', error);
+    res.status(500).json({ error: 'Failed to fetch card names' });
+  }
+});
+
+/**
+ * GET /admin/card-names/:referenceCardId
+ * Get a single card name entry
+ */
+router.get('/card-names/:referenceCardId', async (req: Request, res: Response) => {
+  try {
+    const { referenceCardId } = req.params;
+    const doc = await db.collection('credit_cards_names').doc(referenceCardId).get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Card not found' });
+    }
+
+    const data = doc.data() as CreditCardName;
+    res.json({
+      ReferenceCardId: doc.id,
+      ...data,
+    });
+  } catch (error) {
+    console.error('Error fetching card name:', error);
+    res.status(500).json({ error: 'Failed to fetch card name' });
+  }
+});
+
+/**
+ * POST /admin/card-names/:referenceCardId
+ * Create a new card name entry (top-level card identity)
+ */
+router.post('/card-names/:referenceCardId', async (req: Request, res: Response) => {
+  try {
+    const { referenceCardId } = req.params;
+    const { CardName, CardIssuer } = req.body;
+
+    // Validate required fields
+    if (!CardName || !CardIssuer) {
+      return res.status(400).json({ error: 'CardName and CardIssuer are required' });
+    }
+
+    // Check if a card with this ID already exists
+    const existing = await db.collection('credit_cards_names').doc(referenceCardId).get();
+    if (existing.exists) {
+      return res.status(409).json({ error: 'A card with this ID already exists' });
+    }
+
+    const newCardName: CreditCardName = {
+      CardName,
+      CardIssuer,
+    };
+
+    await db.collection('credit_cards_names').doc(referenceCardId).set(newCardName);
+
+    res.status(201).json({ ReferenceCardId: referenceCardId, ...newCardName });
+  } catch (error) {
+    console.error('Error creating card name:', error);
+    res.status(500).json({ error: 'Failed to create card name' });
+  }
+});
+
+/**
+ * PUT /admin/card-names/:referenceCardId
+ * Update an existing card name entry
+ */
+router.put('/card-names/:referenceCardId', async (req: Request, res: Response) => {
+  try {
+    const { referenceCardId } = req.params;
+    const { CardName, CardIssuer } = req.body;
+
+    const doc = await db.collection('credit_cards_names').doc(referenceCardId).get();
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Card not found' });
+    }
+
+    const updateData: Partial<CreditCardName> = {};
+    if (CardName !== undefined) updateData.CardName = CardName;
+    if (CardIssuer !== undefined) updateData.CardIssuer = CardIssuer;
+
+    await db.collection('credit_cards_names').doc(referenceCardId).update(updateData);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating card name:', error);
+    res.status(500).json({ error: 'Failed to update card name' });
+  }
+});
+
+/**
+ * DELETE /admin/card-names/:referenceCardId
+ * Delete a card name entry and all associated versions/components
+ */
+router.delete('/card-names/:referenceCardId', async (req: Request, res: Response) => {
+  try {
+    const { referenceCardId } = req.params;
+
+    const batch = db.batch();
+
+    // Delete the card name entry
+    const cardNameRef = db.collection('credit_cards_names').doc(referenceCardId);
+    const cardNameDoc = await cardNameRef.get();
+    if (cardNameDoc.exists) {
+      batch.delete(cardNameRef);
+    }
+
+    // Delete all versions with this ReferenceCardId
+    const versionsSnapshot = await db
+      .collection('credit_cards_history')
+      .where('ReferenceCardId', '==', referenceCardId)
+      .get();
+
+    const versionIds: string[] = [];
+    versionsSnapshot.forEach((doc) => {
+      versionIds.push(doc.id);
+      batch.delete(doc.ref);
+    });
+
+    // Delete all associated components
+    for (const versionId of versionIds) {
+      const creditsSnapshot = await db
+        .collection('card_credits')
+        .where('CardId', '==', versionId)
+        .get();
+      creditsSnapshot.forEach((doc) => batch.delete(doc.ref));
+
+      const perksSnapshot = await db
+        .collection('card_perks')
+        .where('CardId', '==', versionId)
+        .get();
+      perksSnapshot.forEach((doc) => batch.delete(doc.ref));
+
+      const multipliersSnapshot = await db
+        .collection('card_multipliers')
+        .where('CardId', '==', versionId)
+        .get();
+      multipliersSnapshot.forEach((doc) => batch.delete(doc.ref));
+    }
+
+    await batch.commit();
+
+    res.json({ success: true, deletedVersions: versionIds.length });
+  } catch (error) {
+    console.error('Error deleting card:', error);
+    res.status(500).json({ error: 'Failed to delete card' });
+  }
+});
+
+// ===== CARD MANAGEMENT =====
+
+/**
+ * GET /admin/cards
+ * Get all cards with their status (from both credit_cards_names and credit_cards_history)
+ */
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    // Fetch all card names (top-level identities)
+    const cardNamesSnapshot = await db.collection('credit_cards_names').get();
+    
+    // Fetch all versions
+    const versionsSnapshot = await db.collection('credit_cards_history').get();
+
+    // Build a map of ReferenceCardId -> versions
+    const versionsMap = new Map<string, any[]>();
+    versionsSnapshot.forEach((doc) => {
       const data = doc.data() as CreditCardDetails;
-      const card = {
+      const version = {
         ...data,
         id: doc.id,
-        status: 'inactive',
       };
 
       const refId = data.ReferenceCardId;
-      if (!cardsMap.has(refId)) {
-        cardsMap.set(refId, []);
+      if (!versionsMap.has(refId)) {
+        versionsMap.set(refId, []);
       }
-      cardsMap.get(refId)!.push(card);
+      versionsMap.get(refId)!.push(version);
     });
 
-    // Determine status for each group
     const results: any[] = [];
 
-    cardsMap.forEach((versions) => {
+    // Process each card name entry
+    cardNamesSnapshot.forEach((doc) => {
+      const cardNameData = doc.data() as CreditCardName;
+      const referenceCardId = doc.id;
+      const versions = versionsMap.get(referenceCardId) || [];
+
+      if (versions.length === 0) {
+        // Card with no versions
+        results.push({
+          ReferenceCardId: referenceCardId,
+          CardName: cardNameData.CardName,
+          CardIssuer: cardNameData.CardIssuer,
+          status: 'no_versions',
+          ActiveVersionName: null,
+          versionCount: 0,
+        });
+      } else {
+        // Card with versions - determine status
+        let hasActiveVersion = false;
+        let activeVersion: any = null;
+
+        for (const version of versions) {
+          // Check for truthy IsActive (handles boolean true, "true", 1, etc.)
+          if (version.IsActive === true || version.IsActive === 'true') {
+            hasActiveVersion = true;
+            activeVersion = version;
+            break;
+          }
+        }
+
+        // Get most recent version for display
+        const mostRecent = versions.sort((a, b) =>
+          (b.lastUpdated || '').localeCompare(a.lastUpdated || '')
+        )[0];
+
+        results.push({
+          // Core identity from credit_cards_names
+          ReferenceCardId: referenceCardId,
+          CardName: cardNameData.CardName,
+          CardIssuer: cardNameData.CardIssuer,
+          // Version data from most recent version
+          ...mostRecent,
+          // Status info
+          status: hasActiveVersion ? 'active' : 'no_active_version',
+          ActiveVersionName: activeVersion ? activeVersion.VersionName : null,
+          versionCount: versions.length,
+        });
+      }
+
+      // Remove this referenceCardId from the map so we can track orphaned versions
+      versionsMap.delete(referenceCardId);
+    });
+
+    // Handle orphaned versions (versions without a card name entry - for backwards compatibility)
+    versionsMap.forEach((versions, referenceCardId) => {
       let hasActiveVersion = false;
       let activeVersion: any = null;
 
       for (const version of versions) {
-        // Check if this version is marked as active
-        if (version.IsActive === true) {
+        // Check for truthy IsActive (handles boolean true, "true", 1, etc.)
+        if (version.IsActive === true || version.IsActive === 'true') {
           hasActiveVersion = true;
           activeVersion = version;
-          version.status = 'active';
+          break;
         }
       }
 
-      if (!hasActiveVersion) {
-        versions.forEach((v) => {
-          v.status = 'no_active_version';
-        });
-      }
-
-      // Add the most recent version for each ReferenceCardId
       const mostRecent = versions.sort((a, b) =>
-        b.lastUpdated.localeCompare(a.lastUpdated)
+        (b.lastUpdated || '').localeCompare(a.lastUpdated || '')
       )[0];
 
-      // If there's an active version, include its name and set status to 'active'
-      const resultCard = {
+      results.push({
+        ReferenceCardId: referenceCardId,
+        CardName: mostRecent.CardName,
+        CardIssuer: mostRecent.CardIssuer,
         ...mostRecent,
-        ActiveVersionName: activeVersion ? activeVersion.VersionName : null,
         status: hasActiveVersion ? 'active' : 'no_active_version',
-      };
-
-      results.push(resultCard);
+        ActiveVersionName: activeVersion ? activeVersion.VersionName : null,
+        versionCount: versions.length,
+      });
     });
 
     res.json(results);
@@ -112,6 +330,7 @@ router.get('/:cardId', async (req: Request, res: Response) => {
 /**
  * POST /admin/cards
  * Create a new card with auto-generated ID
+ * New cards/versions are NOT active by default - must be activated manually
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
@@ -126,6 +345,8 @@ router.post('/', async (req: Request, res: Response) => {
           ? ONGOING_SENTINEL_DATE
           : cardData.effectiveTo,
       lastUpdated: now,
+      // Ensure new versions are NOT active by default
+      IsActive: cardData.IsActive === true ? true : false,
     };
 
     const docRef = await db.collection('credit_cards_history').add(newCard);
@@ -140,6 +361,7 @@ router.post('/', async (req: Request, res: Response) => {
 /**
  * POST /admin/cards/:cardId
  * Create a new card with a specific cardId (for the first version, use ReferenceCardId as the card ID)
+ * New cards/versions are NOT active by default - must be activated manually
  */
 router.post('/:cardId', async (req: Request, res: Response) => {
   try {
@@ -161,6 +383,8 @@ router.post('/:cardId', async (req: Request, res: Response) => {
           ? ONGOING_SENTINEL_DATE
           : cardData.effectiveTo,
       lastUpdated: now,
+      // Ensure new versions are NOT active by default
+      IsActive: cardData.IsActive === true ? true : false,
     };
 
     await db.collection('credit_cards_history').doc(cardId).set(newCard);
@@ -220,10 +444,20 @@ router.delete('/:cardId', async (req: Request, res: Response) => {
 /**
  * DELETE /admin/cards/reference/:referenceCardId/all
  * Delete ALL versions of a card by ReferenceCardId, plus all associated components
+ * Also deletes the entry from credit_cards_names collection
  */
 router.delete('/reference/:referenceCardId/all', async (req: Request, res: Response) => {
   try {
     const { referenceCardId } = req.params;
+
+    const batch = db.batch();
+
+    // Delete the card name entry from credit_cards_names
+    const cardNameRef = db.collection('credit_cards_names').doc(referenceCardId);
+    const cardNameDoc = await cardNameRef.get();
+    if (cardNameDoc.exists) {
+      batch.delete(cardNameRef);
+    }
 
     // Get all versions with this ReferenceCardId
     const versionsSnapshot = await db
@@ -231,11 +465,6 @@ router.delete('/reference/:referenceCardId/all', async (req: Request, res: Respo
       .where('ReferenceCardId', '==', referenceCardId)
       .get();
 
-    if (versionsSnapshot.empty) {
-      return res.status(404).json({ error: 'No versions found for this card' });
-    }
-
-    const batch = db.batch();
     const versionIds: string[] = [];
 
     // Delete all version documents
@@ -244,29 +473,27 @@ router.delete('/reference/:referenceCardId/all', async (req: Request, res: Respo
       batch.delete(doc.ref);
     });
 
-    // Delete all associated components for each version
-    for (const versionId of versionIds) {
-      // Delete credits
-      const creditsSnapshot = await db
-        .collection('card_credits')
-        .where('CardId', '==', versionId)
-        .get();
-      creditsSnapshot.forEach((doc) => batch.delete(doc.ref));
+    // Delete all associated components by ReferenceCardId
+    // Credits
+    const creditsSnapshot = await db
+      .collection('credit_cards_credits')
+      .where('ReferenceCardId', '==', referenceCardId)
+      .get();
+    creditsSnapshot.forEach((doc) => batch.delete(doc.ref));
 
-      // Delete perks
-      const perksSnapshot = await db
-        .collection('card_perks')
-        .where('CardId', '==', versionId)
-        .get();
-      perksSnapshot.forEach((doc) => batch.delete(doc.ref));
+    // Perks
+    const perksSnapshot = await db
+      .collection('credit_cards_perks')
+      .where('ReferenceCardId', '==', referenceCardId)
+      .get();
+    perksSnapshot.forEach((doc) => batch.delete(doc.ref));
 
-      // Delete multipliers
-      const multipliersSnapshot = await db
-        .collection('card_multipliers')
-        .where('CardId', '==', versionId)
-        .get();
-      multipliersSnapshot.forEach((doc) => batch.delete(doc.ref));
-    }
+    // Multipliers
+    const multipliersSnapshot = await db
+      .collection('credit_cards_multipliers')
+      .where('ReferenceCardId', '==', referenceCardId)
+      .get();
+    multipliersSnapshot.forEach((doc) => batch.delete(doc.ref));
 
     await batch.commit();
 
@@ -323,6 +550,7 @@ router.get('/:referenceCardId/versions', async (req: Request, res: Response) => 
 /**
  * POST /admin/cards/:referenceCardId/versions
  * Create a new version of a card with provided data (does not copy from existing versions)
+ * New versions are NOT active by default - must be activated manually
  */
 router.post('/:referenceCardId/versions', async (req: Request, res: Response) => {
   try {
@@ -341,6 +569,8 @@ router.post('/:referenceCardId/versions', async (req: Request, res: Response) =>
       ReferenceCardId: referenceCardId,
       effectiveTo: normalizedEffectiveTo,
       lastUpdated: now,
+      // Ensure new versions are NOT active by default
+      IsActive: newVersionData.IsActive === true ? true : false,
     };
 
     const docRef = await db.collection('credit_cards_history').add(newCard);
@@ -355,6 +585,7 @@ router.post('/:referenceCardId/versions', async (req: Request, res: Response) =>
 /**
  * POST /admin/cards/:referenceCardId/versions/:versionId
  * Create a new version with a specific versionId
+ * New versions are NOT active by default - must be activated manually
  */
 router.post('/:referenceCardId/versions/:versionId', async (req: Request, res: Response) => {
   try {
@@ -378,6 +609,8 @@ router.post('/:referenceCardId/versions/:versionId', async (req: Request, res: R
       ReferenceCardId: referenceCardId,
       effectiveTo: normalizedEffectiveTo,
       lastUpdated: now,
+      // Ensure new versions are NOT active by default
+      IsActive: newVersionData.IsActive === true ? true : false,
     };
 
     await db.collection('credit_cards_history').doc(versionId).set(newCard);

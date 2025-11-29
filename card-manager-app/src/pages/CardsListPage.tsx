@@ -2,11 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CardService } from '@/services/card.service';
 import type { CardWithStatus } from '@/types/ui-types';
-// import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Plus, Search } from 'lucide-react';
-import { formatDate } from '@/utils/date-utils';
 import { CreateCardModal } from '@/components/Modals/CreateCardModal';
 import './CardsListPage.scss';
 
@@ -45,7 +43,7 @@ export function CardsListPage() {
     // Status filter
     const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'active' && card.status === 'active') ||
-      (statusFilter === 'inactive' && card.status === 'no_active_version');
+      (statusFilter === 'inactive' && (card.status === 'no_active_version' || card.status === 'no_versions'));
 
     return matchesSearch && matchesStatus;
   });
@@ -55,6 +53,7 @@ export function CardsListPage() {
       case 'active': return 'success';
       case 'inactive': return 'default';
       case 'no_active_version': return 'warning';
+      case 'no_versions': return 'secondary';
       default: return 'default';
     }
   };
@@ -64,8 +63,18 @@ export function CardsListPage() {
       case 'active': return 'Active';
       case 'inactive': return 'Inactive';
       case 'no_active_version': return 'No Active Version';
+      case 'no_versions': return 'No Versions';
       default: return status;
     }
+  };
+
+  // Get the appropriate link for a card
+  const getCardLink = (card: CardWithStatus): string => {
+    // Always include ReferenceCardId, add version ID if available
+    if (card.id) {
+      return `/cards/${card.ReferenceCardId}/${card.id}`;
+    }
+    return `/cards/${card.ReferenceCardId}`;
   };
 
   if (loading) {
@@ -116,7 +125,7 @@ export function CardsListPage() {
         >
           <option value="all">All Cards</option>
           <option value="active">Active Only</option>
-          <option value="inactive">No Active Version</option>
+          <option value="inactive">Inactive / No Versions</option>
         </select>
       </div>
 
@@ -133,38 +142,42 @@ export function CardsListPage() {
               <div className="col-issuer">Issuer</div>
               <div className="col-status">Status</div>
               <div className="col-version">Active Version</div>
-              <div className="col-updated">Updated</div>
+              <div className="col-versions">Versions</div>
             </div>
-            {filteredCards.map(card => (
-              <Link
-                key={card.id}
-                to={`/cards/${card.id}`}
-                className="table-row"
-              >
-                <div className="col-image">
-                  {card.CardImage && (
-                    <img
-                      src={card.CardImage}
-                      alt={card.CardName}
-                      className="card-image"
-                    />
-                  )}
-                </div>
-                <div className="col-name">{card.CardName}</div>
-                <div className="col-issuer">{card.CardIssuer}</div>
-                <div className="col-status">
-                  <Badge variant={getStatusBadgeVariant(card.status)}>
-                    {getStatusLabel(card.status)}
-                  </Badge>
-                </div>
-                <div className="col-version">
-                  {card.ActiveVersionName || (
-                    <span className="text-gray-400">None</span>
-                  )}
-                </div>
-                <div className="col-updated">{formatDate(card.lastUpdated)}</div>
-              </Link>
-            ))}
+            <div className="table-body">
+              {filteredCards.map(card => (
+                <Link
+                  key={card.ReferenceCardId}
+                  to={getCardLink(card)}
+                  className="table-row"
+                >
+                  <div className="col-image">
+                    {card.CardImage && (
+                      <img
+                        src={card.CardImage}
+                        alt={card.CardName}
+                        className="card-image"
+                      />
+                    )}
+                  </div>
+                  <div className="col-name">{card.CardName}</div>
+                  <div className="col-issuer">{card.CardIssuer}</div>
+                  <div className="col-status">
+                    <Badge variant={getStatusBadgeVariant(card.status)}>
+                      {getStatusLabel(card.status)}
+                    </Badge>
+                  </div>
+                  <div className="col-version">
+                    {card.ActiveVersionName || (
+                      <span className="text-gray-400">None</span>
+                    )}
+                  </div>
+                  <div className="col-versions">
+                    {card.versionCount ?? 0}
+                  </div>
+                </Link>
+              ))}
+            </div>
           </>
         )}
       </div>
@@ -176,9 +189,9 @@ export function CardsListPage() {
       <CreateCardModal
         open={createCardModalOpen}
         onOpenChange={setCreateCardModalOpen}
-        onSuccess={(cardId) => {
+        onSuccess={(referenceCardId) => {
           loadCards();
-          navigate(`/cards/${cardId}`);
+          navigate(`/cards/${referenceCardId}`);
         }}
       />
     </div>

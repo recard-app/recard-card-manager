@@ -68,21 +68,27 @@ export function VersionsSidebar({
         </div>
       </div>
 
-      <div className="search-container">
-        <Search size={16} className="search-icon" />
-        <input
-          type="text"
-          className="search-input"
-          placeholder="Search versions..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
+      {versions.length > 0 && (
+        <div className="search-container">
+          <Search size={16} className="search-icon" />
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search versions..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      )}
 
       <div className="versions-list">
         {filteredVersions.length === 0 ? (
           <div className="empty-state">
-            {searchQuery.trim() ? 'No versions match your search' : 'No versions found'}
+            {searchQuery.trim() 
+              ? 'No versions match your search' 
+              : versions.length === 0 
+                ? 'No versions yet. Click "New" to create one.'
+                : 'No versions found'}
           </div>
         ) : (
           filteredVersions.map((version) => (

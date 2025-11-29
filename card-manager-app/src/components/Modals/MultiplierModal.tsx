@@ -139,6 +139,8 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
     }
   };
 
+  const formId = 'multiplier-modal-form';
+
   return (
     <Dialog
       open={open}
@@ -146,7 +148,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
       title={isEdit ? 'Edit Multiplier' : 'Add New Multiplier'}
       description={isEdit ? 'Update multiplier details' : 'Create a new multiplier for this card version'}
     >
-      <form onSubmit={handleSubmit} className="multiplier-modal-form">
+      <form id={formId} onSubmit={handleSubmit} className="multiplier-modal-form">
         <FormField
           label="Name"
           value={formData.Name}
@@ -227,7 +229,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" form={formId} disabled={submitting}>
             {submitting ? 'Saving...' : isEdit ? 'Update Multiplier' : 'Create Multiplier'}
           </Button>
         </DialogFooter>
