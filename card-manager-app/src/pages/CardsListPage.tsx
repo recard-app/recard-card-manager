@@ -53,7 +53,7 @@ export function CardsListPage() {
       case 'active': return 'success';
       case 'inactive': return 'default';
       case 'no_active_version': return 'warning';
-      case 'no_versions': return 'secondary';
+      case 'no_versions': return 'warning';
       default: return 'default';
     }
   };
