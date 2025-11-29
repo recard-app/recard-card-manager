@@ -53,6 +53,15 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
     EffectiveTo: '',
   });
 
+  // When switching to a different version (cardId changes), ensure we reset to view mode
+  useEffect(() => {
+    setIsEditing(false);
+    setShowDeleteConfirm(false);
+    setSubmitting(false);
+    setDeleting(false);
+    setErrors({});
+  }, [cardId]);
+
   useEffect(() => {
     if (card && isEditing) {
       setFormData({
