@@ -98,8 +98,10 @@ export function DatePicker({
   const fromYear = currentYear - 100
   const toYear = currentYear + 10
 
+  const showHelper = !!helperText && !error && !formatWarning
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn("flex flex-col gap-2", showHelper && "mb-4")}>
       {label && (
         <label className="text-sm font-medium text-gray-700">
           {label}
@@ -152,7 +154,7 @@ export function DatePicker({
       {formatWarning && !error && (
         <span className="text-sm text-amber-600">Please use format: MM/DD/YYYY</span>
       )}
-      {helperText && !error && !formatWarning && (
+      {showHelper && (
         <span className="text-sm text-gray-500">{helperText}</span>
       )}
     </div>

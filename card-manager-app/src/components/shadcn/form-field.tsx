@@ -15,7 +15,7 @@ export const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
     const fieldId = id || React.useId()
 
     return (
-      <div className="space-y-2">
+      <div className={cn("space-y-2", helperText && !error && "mb-4")}>
         {label && <Label htmlFor={fieldId}>{label}</Label>}
         <Input
           id={fieldId}
@@ -24,7 +24,9 @@ export const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
           {...props}
         />
         {helperText && (
-          <p className="text-sm text-muted-foreground">{helperText}</p>
+          <p className="text-sm text-muted-foreground">
+            {helperText}
+          </p>
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>
@@ -44,7 +46,7 @@ export const TextareaField = React.forwardRef<HTMLTextAreaElement, TextareaField
     const fieldId = id || React.useId()
 
     return (
-      <div className="space-y-2">
+      <div className={cn("space-y-2", helperText && !error && "mb-4")}>
         {label && <Label htmlFor={fieldId}>{label}</Label>}
         <Textarea
           id={fieldId}
@@ -53,7 +55,9 @@ export const TextareaField = React.forwardRef<HTMLTextAreaElement, TextareaField
           {...props}
         />
         {helperText && (
-          <p className="text-sm text-muted-foreground">{helperText}</p>
+          <p className="text-sm text-muted-foreground">
+            {helperText}
+          </p>
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}
       </div>

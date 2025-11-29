@@ -191,6 +191,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
           onChange={(e) => setFormData({ ...formData, Multiplier: sanitizeNumericInput(e.target.value) })}
           error={errors.Multiplier}
           placeholder="e.g., 3"
+          helperText="Enter the numeric value only (no 'x'). For example: 2, 1.5, 1."
         />
 
         <FormField

@@ -38,9 +38,9 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Helper to sanitize numeric input (allows digits, decimal point, negative sign, and dollar sign)
+  // Helper to sanitize numeric input (allows digits, decimal point, and negative sign)
   const sanitizeNumericInput = (value: string): string => {
-    return value.replace(/[^0-9.$-]/g, '');
+    return value.replace(/[^0-9.-]/g, '');
   };
 
   useEffect(() => {
@@ -180,7 +180,8 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           value={formData.Value}
           onChange={(e) => setFormData({ ...formData, Value: sanitizeNumericInput(e.target.value) })}
           error={errors.Value}
-          placeholder="e.g., 300 or $300"
+          placeholder="e.g., 10"
+          helperText="Put the value per time period as a number. For example, if the perk says $120 per year split monthly, enter '10'. Not '120', '$10', or '$120'."
         />
 
         <Select

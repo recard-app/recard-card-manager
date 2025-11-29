@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { TextareaField } from '@/components/shadcn/form-field';
@@ -325,6 +326,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
               label="Foreign Exchange Fee Description"
               value={formData.ForeignExchangeFee}
               onChange={(e) => setFormData({ ...formData, ForeignExchangeFee: e.target.value })}
+              helperText="If there are no fees, write 'No foreign transaction fees'."
             />
             <FormField
               label="FX Fee Percentage"
@@ -383,12 +385,14 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
                 value={formData.CardPrimaryColor}
                 onChange={(e) => setFormData({ ...formData, CardPrimaryColor: e.target.value })}
                 placeholder="#1A73E8"
+                helperText="Color Hex format. Ex: '#FFFFFF'."
               />
               <FormField
                 label="Secondary Color (optional)"
                 value={formData.CardSecondaryColor}
                 onChange={(e) => setFormData({ ...formData, CardSecondaryColor: e.target.value })}
                 placeholder="#185ABC"
+                helperText="Color Hex format. Ex: '#FFFFFF'."
               />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -405,36 +409,34 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
       )}
 
       {/* Delete Confirmation Dialog */}
-      {showDeleteConfirm && (
-        <div className="modal-overlay" onClick={() => !deleting && setShowDeleteConfirm(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Delete Version</h3>
-            <p>
-              Are you sure you want to delete version <strong>{card.VersionName}</strong>?
-              This action cannot be undone.
-            </p>
-            <div className="modal-actions">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={deleting}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleDelete}
-                disabled={deleting}
-                style={{ backgroundColor: 'var(--error-red)', color: 'white', borderColor: 'var(--error-red)' }}
-              >
-                {deleting ? 'Deleting...' : 'Delete Version'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={showDeleteConfirm}
+        onOpenChange={(open) => !deleting && setShowDeleteConfirm(open)}
+        title="Delete Version"
+        description="This action cannot be undone."
+      >
+        <p>
+          Are you sure you want to delete version <strong>{card.VersionName}</strong>?
+        </p>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setShowDeleteConfirm(false)}
+            disabled={deleting}
+            size="sm"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="delete-confirm-button"
+            size="sm"
+          >
+            {deleting ? 'Deleting...' : 'Delete Version'}
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </Card>
   );
 }
