@@ -70,19 +70,25 @@
   }
 }
 
-.component-actions {
-  width: 100%;
+.component-item-header {
   @include flex-row;
-  justify-content: flex-end;
+  align-items: flex-start;
   gap: $spacing-xs;
   margin-bottom: $spacing-xs;
+}
+
+.component-actions {
+  @include flex-row;
+  gap: $spacing-xs;
+  flex: 0 0 auto;
 }
 
 .component-title {
   @include flex-row;
   align-items: flex-start;
   gap: $spacing-xs;
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
 
   h4 {
     font-size: $font-size-sm;
@@ -95,6 +101,7 @@
     @include flex-column;
     align-items: flex-start;
     gap: 2px;
+    min-width: 0;
 
     h4 {
       margin: 0;

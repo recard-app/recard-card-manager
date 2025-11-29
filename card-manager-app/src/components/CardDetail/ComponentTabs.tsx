@@ -91,19 +91,21 @@ function CreditsList({ credits, onEdit, onDelete }: CreditsListProps) {
     <div className="components-list">
       {credits.map((credit) => (
         <div key={credit.id} className="component-item">
-          <div className="component-actions">
-            <Button variant="ghost" size="sm" onClick={() => onEdit(credit.id)}>
-              <Edit2 size={14} />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => onDelete(credit.id)}>
-              <Trash2 size={14} />
-            </Button>
-          </div>
-          <div className="component-title">
-            <div className="component-title-text">
-              <h4>{credit.Title}</h4>
-              <div className="component-id">ID: {credit.id}</div>
-              <Badge variant="info">{credit.Category}</Badge>
+          <div className="component-item-header">
+            <div className="component-title">
+              <div className="component-title-text">
+                <h4>{credit.Title}</h4>
+                <div className="component-id">ID: {credit.id}</div>
+                <Badge variant="info">{credit.Category}</Badge>
+              </div>
+            </div>
+            <div className="component-actions">
+              <Button variant="ghost" size="sm" onClick={() => onEdit(credit.id)}>
+                <Edit2 size={14} />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => onDelete(credit.id)}>
+                <Trash2 size={14} />
+              </Button>
             </div>
           </div>
 
@@ -154,19 +156,21 @@ function PerksList({ perks, onEdit, onDelete }: PerksListProps) {
     <div className="components-list">
       {perks.map((perk) => (
         <div key={perk.id} className="component-item">
-          <div className="component-actions">
-            <Button variant="ghost" size="sm" onClick={() => onEdit(perk.id)}>
-              <Edit2 size={14} />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => onDelete(perk.id)}>
-              <Trash2 size={14} />
-            </Button>
-          </div>
-          <div className="component-title">
-            <div className="component-title-text">
-              <h4>{perk.Title}</h4>
-              <div className="component-id">ID: {perk.id}</div>
-              <Badge variant="info">{perk.Category}</Badge>
+          <div className="component-item-header">
+            <div className="component-title">
+              <div className="component-title-text">
+                <h4>{perk.Title}</h4>
+                <div className="component-id">ID: {perk.id}</div>
+                <Badge variant="info">{perk.Category}</Badge>
+              </div>
+            </div>
+            <div className="component-actions">
+              <Button variant="ghost" size="sm" onClick={() => onEdit(perk.id)}>
+                <Edit2 size={14} />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => onDelete(perk.id)}>
+                <Trash2 size={14} />
+              </Button>
             </div>
           </div>
 
@@ -209,19 +213,21 @@ function MultipliersList({ multipliers, onEdit, onDelete }: MultipliersListProps
     <div className="components-list">
       {multipliers.map((multiplier) => (
         <div key={multiplier.id} className="component-item">
-          <div className="component-actions">
-            <Button variant="ghost" size="sm" onClick={() => onEdit(multiplier.id)}>
-              <Edit2 size={14} />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => onDelete(multiplier.id)}>
-              <Trash2 size={14} />
-            </Button>
-          </div>
-          <div className="component-title">
-            <div className="component-title-text">
-              <h4>{multiplier.Name}</h4>
-              <div className="component-id">ID: {multiplier.id}</div>
-              <Badge variant="success">{multiplier.Multiplier}x</Badge>
+          <div className="component-item-header">
+            <div className="component-title">
+              <div className="component-title-text">
+                <h4>{multiplier.Name}</h4>
+                <div className="component-id">ID: {multiplier.id}</div>
+                <Badge variant="success">{multiplier.Multiplier}x</Badge>
+              </div>
+            </div>
+            <div className="component-actions">
+              <Button variant="ghost" size="sm" onClick={() => onEdit(multiplier.id)}>
+                <Edit2 size={14} />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => onDelete(multiplier.id)}>
+                <Trash2 size={14} />
+              </Button>
             </div>
           </div>
 
