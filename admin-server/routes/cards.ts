@@ -111,7 +111,11 @@ router.post('/card-names/:referenceCardId', async (req: Request, res: Response) 
 router.put('/card-names/:referenceCardId', async (req: Request, res: Response) => {
   try {
     const { referenceCardId } = req.params;
-    const { CardName, CardIssuer } = req.body;
+    const parsed = parseOr400(CardNameSchema.partial(), req.body);
+    if (!parsed.ok) {
+      return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
+    }
+    const { CardName, CardIssuer } = parsed.data;
 
     const doc = await db.collection('credit_cards_names').doc(referenceCardId).get();
     if (!doc.exists) {
