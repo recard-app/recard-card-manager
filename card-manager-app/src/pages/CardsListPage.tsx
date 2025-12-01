@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Check, Filter } from 'lucide-react';
+import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Check, Filter, UserCircle, LogOut } from 'lucide-react';
 import { CreateCardModal } from '@/components/Modals/CreateCardModal';
+import { useAuth } from '@/contexts/AuthContext';
 import './CardsListPage.scss';
 
 type SortColumn = 'CardName' | 'CardIssuer' | 'status' | 'lastUpdated';
@@ -150,6 +151,7 @@ function MultiSelectFilter<T extends string>({
 
 export function CardsListPage() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [cards, setCards] = useState<CardWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -160,6 +162,43 @@ export function CardsListPage() {
   const [syncing, setSyncing] = useState(false);
   const [sortColumn, setSortColumn] = useState<SortColumn | null>('CardName');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileContentRef = useRef<HTMLDivElement>(null);
+  const profileTriggerRef = useRef<HTMLButtonElement>(null);
+
+  // Close profile dropdown on click outside
+  useEffect(() => {
+    if (!profileOpen) return;
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const isOutsideContent = profileContentRef.current && !profileContentRef.current.contains(target);
+      const isOutsideTrigger = profileTriggerRef.current && !profileTriggerRef.current.contains(target);
+      
+      if (isOutsideContent && isOutsideTrigger) {
+        setProfileOpen(false);
+      }
+    };
+    
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [profileOpen]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (err) {
+      console.error('Failed to sign out:', err);
+      toast.error('Failed to sign out');
+    }
+  };
 
   useEffect(() => {
     loadCards();
@@ -449,6 +488,39 @@ export function CardsListPage() {
             <Plus size={16} />
             New Card
           </Button>
+          
+          <Popover open={profileOpen} onOpenChange={() => {}}>
+            <PopoverTrigger asChild>
+              <button
+                ref={profileTriggerRef}
+                className="profile-trigger"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setProfileOpen(!profileOpen);
+                }}
+                aria-label="User profile"
+              >
+                <UserCircle size={28} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              ref={profileContentRef}
+              className="profile-dropdown"
+              align="end"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+              onCloseAutoFocus={(e) => e.preventDefault()}
+            >
+              <div className="profile-info">
+                <div className="profile-name">{user?.displayName || 'User'}</div>
+                <div className="profile-email">{user?.email || ''}</div>
+              </div>
+              <div className="profile-divider" />
+              <button className="profile-logout" onClick={handleSignOut}>
+                <LogOut size={16} />
+                Sign out
+              </button>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 

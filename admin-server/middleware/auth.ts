@@ -1,21 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { admin } from '../firebase-admin';
-
-// Admin email whitelist
-const adminEmailsString = process.env.ADMIN_EMAILS || '';
-const ADMIN_EMAILS = adminEmailsString
-  .split(',')
-  .map(email => email.trim())
-  .filter(email => email.length > 0);
-
-// Check if email is in whitelist
-function isAdminEmail(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return ADMIN_EMAILS.includes(email.toLowerCase());
-}
+import { isAdminEmail } from '../services/permission.service';
 
 /**
- * Middleware to verify Firebase ID token and check email whitelist
+ * Middleware to verify Firebase ID token and check email whitelist from Firestore.
+ * The email whitelist is fetched from the permissions/card-manager document.
  */
 export async function verifyAuth(req: Request, res: Response, next: NextFunction) {
   try {
@@ -30,8 +19,9 @@ export async function verifyAuth(req: Request, res: Response, next: NextFunction
     // Verify the ID token
     const decodedToken = await admin.auth().verifyIdToken(token);
 
-    // Check if email is in whitelist
-    if (!isAdminEmail(decodedToken.email)) {
+    // Check if email is in whitelist (now fetched from Firestore)
+    const authorized = await isAdminEmail(decodedToken.email);
+    if (!authorized) {
       console.warn(`Unauthorized access attempt by: ${decodedToken.email}`);
       return res.status(403).json({
         error: 'Your email is not authorized to access this admin panel'

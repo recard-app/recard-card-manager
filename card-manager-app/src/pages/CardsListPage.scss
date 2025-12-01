@@ -323,3 +323,81 @@
   padding: $spacing-xs 0;
   flex-shrink: 0;
 }
+
+// Profile dropdown styles
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: $neutral-gray-600;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: $neutral-gray-100;
+    color: $neutral-gray-800;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba($raw-primary-blue, 0.2);
+  }
+}
+
+.profile-dropdown {
+  width: 240px;
+  padding: 0;
+  
+  .profile-info {
+    padding: $spacing-sm;
+    
+    .profile-name {
+      font-size: $font-size-sm;
+      font-weight: 600;
+      color: $neutral-gray-800;
+      margin-bottom: 2px;
+      word-break: break-word;
+    }
+    
+    .profile-email {
+      font-size: $font-size-xs;
+      color: $neutral-gray-600;
+      word-break: break-all;
+    }
+  }
+  
+  .profile-divider {
+    height: 1px;
+    background-color: $neutral-gray-200;
+  }
+  
+  .profile-logout {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    width: 100%;
+    padding: $spacing-xs $spacing-sm;
+    border: none;
+    background: transparent;
+    font-size: $font-size-xs;
+    font-family: $font-family-base;
+    color: $neutral-gray-600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    
+    &:hover {
+      background-color: $neutral-gray-100;
+      color: $error-red;
+    }
+    
+    &:focus {
+      outline: none;
+      background-color: $neutral-gray-100;
+    }
+  }
+}

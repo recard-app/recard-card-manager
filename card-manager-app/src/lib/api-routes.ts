@@ -4,6 +4,11 @@
  */
 
 export const API_ROUTES = {
+  // Permission check (public endpoint, no auth required)
+  PERMISSIONS: {
+    CHECK: (email: string) => `/admin/check-permission/${encodeURIComponent(email)}`,
+  },
+
   // Card Names routes (top-level card identities in credit_cards_names collection)
   CARD_NAMES: {
     LIST: '/admin/cards/card-names',

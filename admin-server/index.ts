@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import cardsRoutes from './routes/cards';
 import componentsRoutes from './routes/components';
+import { isAdminEmail } from './services/permission.service';
 
 dotenv.config();
 
@@ -19,7 +20,19 @@ app.use(express.json());
 // Handle preflight requests
 app.options('*', cors());
 
-// Routes
+// Public endpoint to check if an email is authorized (no auth required)
+app.get('/admin/check-permission/:email', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+    const allowed = await isAdminEmail(email);
+    res.json({ allowed });
+  } catch (error) {
+    console.error('Error checking permission:', error);
+    res.status(500).json({ error: 'Failed to check permission', allowed: false });
+  }
+});
+
+// Routes (protected by auth middleware)
 app.use('/admin/cards', cardsRoutes);
 app.use('/admin', componentsRoutes);
 
