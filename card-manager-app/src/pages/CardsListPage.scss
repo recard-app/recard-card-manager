@@ -131,7 +131,7 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: 60px 1fr 160px 160px 160px 80px;
+  grid-template-columns: 24px 2fr 1fr 1fr 2fr 1fr 0.5fr;
   gap: $spacing-sm;
   padding: $spacing-xs $spacing-sm;
   background-color: $neutral-gray-100;
@@ -145,11 +145,45 @@
     display: flex;
     align-items: center;
   }
+
+  .sortable-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: $primary-blue;
+    }
+
+    &.active {
+      color: $primary-blue;
+      font-weight: 700;
+    }
+
+    .sort-icon {
+      display: flex;
+      align-items: center;
+      opacity: 0.4;
+      transition: opacity 0.15s ease;
+
+      .inactive {
+        opacity: 0.3;
+      }
+    }
+
+    &:hover .sort-icon,
+    &.active .sort-icon {
+      opacity: 1;
+    }
+  }
 }
 
 .table-row {
   display: grid;
-  grid-template-columns: 60px 1fr 160px 160px 160px 80px;
+  grid-template-columns: 24px 2fr 1fr 1fr 2fr 1fr 0.5fr;
   gap: $spacing-sm;
   padding: $spacing-xs $spacing-sm;
   text-decoration: none;
@@ -191,6 +225,11 @@
 
   .col-version {
     color: $neutral-gray-600;
+  }
+
+  .col-last-updated {
+    color: $neutral-gray-600;
+    font-variant-numeric: tabular-nums;
   }
 
   .col-versions {

@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CardService } from '@/services/card.service';
 import type { CardWithStatus } from '@/types/ui-types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Plus, Search, RefreshCw } from 'lucide-react';
+import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { CreateCardModal } from '@/components/Modals/CreateCardModal';
 import './CardsListPage.scss';
+
+type SortColumn = 'CardName' | 'CardIssuer' | 'status' | 'lastUpdated';
+type SortDirection = 'asc' | 'desc';
 
 export function CardsListPage() {
   const navigate = useNavigate();
@@ -18,6 +21,8 @@ export function CardsListPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [createCardModalOpen, setCreateCardModalOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>('CardName');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     loadCards();
@@ -54,19 +59,92 @@ export function CardsListPage() {
     }
   };
 
-  const filteredCards = cards.filter(card => {
-    // Search filter
-    const matchesSearch = searchQuery === '' ||
-      card.CardName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      card.CardIssuer.toLowerCase().includes(searchQuery.toLowerCase());
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      // Cycle: asc -> desc -> cleared
+      setSortDirection(prev => {
+        if (prev === 'asc') return 'desc';
+        // Was desc: clear sort
+        setSortColumn(null);
+        return 'asc';
+      });
+    } else {
+      // Set new column with ascending as default
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
 
-    // Status filter
-    const matchesStatus = statusFilter === 'all' ||
-      (statusFilter === 'active' && card.status === 'active') ||
-      (statusFilter === 'inactive' && (card.status === 'no_active_version' || card.status === 'no_versions'));
+  const getStatusSortValue = (status: string): number => {
+    switch (status) {
+      case 'active': return 1;
+      case 'no_active_version': return 2;
+      case 'no_versions': return 3;
+      case 'inactive': return 4;
+      default: return 5;
+    }
+  };
 
-    return matchesSearch && matchesStatus;
-  });
+  const formatLastUpdated = (dateString?: string): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    // Format without leading zeros on month [[memory:7251081]]
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  };
+
+  const filteredAndSortedCards = useMemo(() => {
+    // First filter
+    const filtered = cards.filter(card => {
+      // Search filter
+      const matchesSearch = searchQuery === '' ||
+        card.CardName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        card.CardIssuer.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Status filter
+      const matchesStatus = statusFilter === 'all' ||
+        (statusFilter === 'active' && card.status === 'active') ||
+        (statusFilter === 'inactive' && (card.status === 'no_active_version' || card.status === 'no_versions'));
+
+      return matchesSearch && matchesStatus;
+    });
+
+    // If no sort is applied, keep the existing natural order
+    if (!sortColumn) {
+      return filtered;
+    }
+
+    // Then sort
+    return [...filtered].sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortColumn) {
+        case 'CardName':
+          comparison = a.CardName.localeCompare(b.CardName);
+          break;
+        case 'CardIssuer':
+          comparison = a.CardIssuer.localeCompare(b.CardIssuer);
+          break;
+        case 'status':
+          comparison = getStatusSortValue(a.status) - getStatusSortValue(b.status);
+          break;
+        case 'lastUpdated':
+          // Cards without lastUpdated go to the end
+          const aDate = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
+          const bDate = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
+          if (!a.lastUpdated && !b.lastUpdated) comparison = 0;
+          else if (!a.lastUpdated) comparison = 1;
+          else if (!b.lastUpdated) comparison = -1;
+          else comparison = aDate - bDate;
+          break;
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [cards, searchQuery, statusFilter, sortColumn, sortDirection]);
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -96,6 +174,20 @@ export function CardsListPage() {
     }
     return `/cards/${card.ReferenceCardId}`;
   };
+
+  const SortableHeader = ({ column, label }: { column: SortColumn; label: string }) => (
+    <div 
+      className={`sortable-header ${sortColumn === column ? 'active' : ''}`}
+      onClick={() => handleSort(column)}
+    >
+      <span>{label}</span>
+      <span className="sort-icon">
+        {sortColumn === column
+          ? (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)
+          : <ChevronsUpDown size={14} className="inactive" />}
+      </span>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -161,7 +253,7 @@ export function CardsListPage() {
       </div>
 
       <div className="cards-table">
-        {filteredCards.length === 0 ? (
+        {filteredAndSortedCards.length === 0 ? (
           <div className="empty-state">
             <p>No cards found matching your filters</p>
           </div>
@@ -169,14 +261,23 @@ export function CardsListPage() {
           <>
             <div className="table-header">
               <div className="col-image"></div>
-              <div className="col-name">Card Name</div>
-              <div className="col-issuer">Issuer</div>
-              <div className="col-status">Status</div>
+              <div className="col-name">
+                <SortableHeader column="CardName" label="Card Name" />
+              </div>
+              <div className="col-issuer">
+                <SortableHeader column="CardIssuer" label="Issuer" />
+              </div>
+              <div className="col-status">
+                <SortableHeader column="status" label="Status" />
+              </div>
               <div className="col-version">Active Version</div>
+              <div className="col-last-updated">
+                <SortableHeader column="lastUpdated" label="Last Updated" />
+              </div>
               <div className="col-versions">Versions</div>
             </div>
             <div className="table-body">
-              {filteredCards.map(card => (
+              {filteredAndSortedCards.map(card => (
                 <Link
                   key={card.ReferenceCardId}
                   to={getCardLink(card)}
@@ -203,6 +304,13 @@ export function CardsListPage() {
                       <span className="text-gray-400">None</span>
                     )}
                   </div>
+                  <div className="col-last-updated">
+                    {card.status === 'active' && card.lastUpdated ? (
+                      formatLastUpdated(card.lastUpdated)
+                    ) : (
+                      <span className="text-gray-400"></span>
+                    )}
+                  </div>
                   <div className="col-versions">
                     {card.versionCount ?? 0}
                   </div>
@@ -214,7 +322,7 @@ export function CardsListPage() {
       </div>
 
       <div className="summary">
-        Showing {filteredCards.length} of {cards.length} cards
+        Showing {filteredAndSortedCards.length} of {cards.length} cards
       </div>
 
       <CreateCardModal
