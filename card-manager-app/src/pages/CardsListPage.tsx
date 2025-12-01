@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Check, Filter, UserCircle, LogOut } from 'lucide-react';
+import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Check, Filter, CircleUser, LogOut } from 'lucide-react';
 import { CreateCardModal } from '@/components/Modals/CreateCardModal';
 import { useAuth } from '@/contexts/AuthContext';
 import './CardsListPage.scss';
@@ -500,7 +500,7 @@ export function CardsListPage() {
                 }}
                 aria-label="User profile"
               >
-                <UserCircle size={28} />
+                <CircleUser size={24} />
               </button>
             </PopoverTrigger>
             <PopoverContent

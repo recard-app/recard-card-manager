@@ -331,12 +331,17 @@
   justify-content: center;
   width: 36px;
   height: 36px;
+  line-height: 0;
   border: none;
   background: transparent;
   color: $neutral-gray-600;
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s ease;
+
+  svg {
+    display: block;
+  }
 
   &:hover {
     background-color: $neutral-gray-100;
