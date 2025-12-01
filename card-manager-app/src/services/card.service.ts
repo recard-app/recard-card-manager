@@ -147,7 +147,7 @@ export class CardService {
    */
   static async createNewVersion(
     referenceCardId: string,
-    newVersionData: Omit<CreditCardDetails, 'id' | 'ReferenceCardId' | 'lastUpdated'>
+    newVersionData: Partial<Omit<CreditCardDetails, 'id' | 'ReferenceCardId' | 'lastUpdated'>>
   ): Promise<string> {
     const response = await apiClient.post<{ id: string }>(
       API_ROUTES.VERSIONS.CREATE_AUTO(referenceCardId),

@@ -86,24 +86,22 @@ export function CreateVersionModal({
       const cardIssuer = currentCard?.CardIssuer || cardNameData?.CardIssuer || '';
 
       // Create a new version
-      const newVersionData = {
-        CardName: cardName,
-        CardIssuer: cardIssuer,
-        CardNetwork: currentCard?.CardNetwork || '',
-        CardDetails: '',
-        CardImage: currentCard?.CardImage,
-        CardPrimaryColor: currentCard?.CardPrimaryColor,
-        CardSecondaryColor: currentCard?.CardSecondaryColor,
-        AnnualFee: null,
-        ForeignExchangeFee: '',
-        ForeignExchangeFeePercentage: null,
-        RewardsCurrency: '',
-        PointsPerDollar: null,
+      const newVersionData: Partial<Omit<CreditCardDetails, 'id' | 'ReferenceCardId' | 'lastUpdated'>> = {
         VersionName: formData.VersionName.trim(),
         effectiveFrom: formData.EffectiveFrom,
-        effectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
         IsActive: false,
       };
+      // Only include fields if we have meaningful values to avoid failing server validation
+      if (formData.EffectiveTo) {
+        const normalized = normalizeEffectiveTo(formData.EffectiveTo);
+        if (normalized) newVersionData.effectiveTo = normalized;
+      }
+      if (cardName) newVersionData.CardName = cardName;
+      if (cardIssuer) newVersionData.CardIssuer = cardIssuer;
+      if (currentCard?.CardNetwork) newVersionData.CardNetwork = currentCard.CardNetwork;
+      if (currentCard?.CardImage) newVersionData.CardImage = currentCard.CardImage;
+      if (currentCard?.CardPrimaryColor) newVersionData.CardPrimaryColor = currentCard.CardPrimaryColor;
+      if (currentCard?.CardSecondaryColor) newVersionData.CardSecondaryColor = currentCard.CardSecondaryColor;
 
       const newVersionId = await CardService.createNewVersion(referenceCardId, newVersionData);
 
