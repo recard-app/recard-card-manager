@@ -19,11 +19,39 @@
   padding: $spacing-xs 0;
   flex-shrink: 0;
 
+  .header-left {
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
   h1 {
-    font-size: $font-size-base;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
     color: $neutral-gray-800;
     margin: 0;
+  }
+
+  .staleness-summary {
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: 4px 8px;
+    background-color: $neutral-gray-100;
+    border-radius: $border-radius-sm;
+
+    .staleness-item {
+      @include flex-row;
+      align-items: center;
+      gap: 4px;
+      font-size: $font-size-xs;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+
+      svg {
+        flex-shrink: 0;
+      }
+    }
   }
 
   .header-actions {
@@ -71,7 +99,8 @@
 
   .search-input {
     width: 100%;
-    padding: 6px $spacing-xs 6px 28px;
+    height: 36px;
+    padding: 0 $spacing-xs 0 28px;
     border: 1px solid $neutral-gray-200;
     border-radius: $border-radius-sm;
     font-size: $font-size-xs;
@@ -193,7 +222,7 @@
   font-size: $font-size-xs;
 
   &:last-child {
-    border-bottom: none;
+    border-bottom: 1px solid $neutral-gray-200;
   }
 
   &:hover {
@@ -230,6 +259,13 @@
   .col-last-updated {
     color: $neutral-gray-600;
     font-variant-numeric: tabular-nums;
+    gap: 6px;
+
+    .staleness-icon {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
   }
 
   .col-versions {

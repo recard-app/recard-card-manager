@@ -1,16 +1,151 @@
-import { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CardService } from '@/services/card.service';
 import type { CardWithStatus } from '@/types/ui-types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Check, Filter } from 'lucide-react';
 import { CreateCardModal } from '@/components/Modals/CreateCardModal';
 import './CardsListPage.scss';
 
 type SortColumn = 'CardName' | 'CardIssuer' | 'status' | 'lastUpdated';
 type SortDirection = 'asc' | 'desc';
+type LastUpdatedTier = 'all' | 'lt30' | 'gt30' | 'gt60' | 'gt90';
+
+// Moved outside CardsListPage to prevent re-creation on parent re-renders
+function MultiSelectFilter<T extends string>({
+  label,
+  options,
+  selected,
+  onChange
+}: {
+  label: string;
+  options: { value: T, label: React.ReactNode }[];
+  selected: T[];
+  onChange: (values: T[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return;
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      // Check if click is outside both the content and the trigger
+      const isOutsideContent = contentRef.current && !contentRef.current.contains(target);
+      const isOutsideTrigger = triggerRef.current && !triggerRef.current.contains(target);
+      
+      if (isOutsideContent && isOutsideTrigger) {
+        setOpen(false);
+      }
+    };
+    
+    // Use setTimeout to avoid the click that opened it from immediately closing it
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open]);
+  
+  return (
+    <Popover open={open} onOpenChange={() => {}}>
+      <PopoverTrigger asChild>
+        <Button 
+          ref={triggerRef}
+          variant="outline" 
+          className={cn(
+            "h-9 gap-1.5",
+            selected.length > 0
+              ? "border border-slate-300 bg-slate-50 hover:bg-slate-100"
+              : "border-dashed"
+          )}
+          onClick={(e) => {
+            e.preventDefault();
+            setOpen(!open);
+          }}
+        >
+          <Filter size={14} className="text-slate-500" />
+          <span className="text-xs text-slate-600">{label}</span>
+          <ChevronDown size={14} className="text-slate-400" />
+          {selected.length > 0 && (
+            <>
+              <span className="mx-1 h-4 w-[1px] bg-slate-200" />
+              <Badge variant="secondary" className="rounded-sm px-1.5 font-normal text-xs">
+                {selected.length}
+              </Badge>
+            </>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent 
+        ref={contentRef}
+        className="w-[220px] p-0" 
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
+        <div className="p-1">
+          {options.map((option) => {
+            const isSelected = selected.includes(option.value);
+
+            return (
+              <div
+                key={option.value}
+                className={cn(
+                  "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 hover:text-slate-900",
+                  isSelected && "bg-slate-100"
+                )}
+                onClick={() => {
+                  if (selected.includes(option.value)) {
+                    const next = selected.filter(v => v !== option.value);
+                    onChange(next);
+                  } else {
+                    onChange([...selected, option.value]);
+                  }
+                }}
+              >
+                <div className={cn(
+                  "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-slate-400",
+                  isSelected ? "bg-slate-900 text-slate-50 border-slate-900" : "[&_svg]:invisible"
+                )}>
+                  <Check className="h-3 w-3" />
+                </div>
+                {option.label}
+              </div>
+            );
+          })}
+        </div>
+        {selected.length > 0 && (
+          <>
+            <div className="h-px bg-slate-200 my-1" />
+            <div className="p-1">
+              <Button
+                variant="ghost"
+                className="w-full justify-center h-8 text-xs"
+                onClick={() => {
+                  onChange([]);
+                  setOpen(false);
+                }}
+              >
+                Clear filters
+              </Button>
+            </div>
+          </>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function CardsListPage() {
   const navigate = useNavigate();
@@ -18,7 +153,8 @@ export function CardsListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [lastUpdatedFilter, setLastUpdatedFilter] = useState<Exclude<LastUpdatedTier, 'all'>[]>([]);
   const [createCardModalOpen, setCreateCardModalOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [sortColumn, setSortColumn] = useState<SortColumn | null>('CardName');
@@ -96,6 +232,57 @@ export function CardsListPage() {
     return `${month}/${day}/${year}`;
   };
 
+  const getStalenessInfo = (dateString?: string): { icon: React.ReactNode; color: string } | null => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return null;
+    
+    const now = new Date();
+    const diffTime = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 90) {
+      // Red: more than 90 days
+      return { icon: <AlertOctagon size={14} />, color: '#dc2626' };
+    } else if (diffDays > 60) {
+      // Yellow: more than 60 days
+      return { icon: <AlertTriangle size={14} />, color: '#ca8a04' };
+    } else if (diffDays > 30) {
+      // Gray: more than 30 days
+      return { icon: <Clock size={14} />, color: '#6b7280' };
+    } else {
+      // Green: less than 30 days
+      return { icon: <CheckCircle2 size={14} />, color: '#16a34a' };
+    }
+  };
+
+  const getLastUpdatedTier = (dateString?: string): Exclude<LastUpdatedTier, 'all'> | null => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return null;
+    const now = new Date();
+    const diffTime = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays > 90) return 'gt90';
+    if (diffDays > 60) return 'gt60';
+    if (diffDays > 30) return 'gt30';
+    return 'lt30';
+  };
+
+  // Compute staleness tier counts for all cards (not just filtered)
+  const stalenessCounts = useMemo(() => {
+    const counts = { lt30: 0, gt30: 0, gt60: 0, gt90: 0 };
+    cards.forEach(card => {
+      if (card.status === 'active' && card.lastUpdated) {
+        const tier = getLastUpdatedTier(card.lastUpdated);
+        if (tier) {
+          counts[tier]++;
+        }
+      }
+    });
+    return counts;
+  }, [cards]);
+
   const filteredAndSortedCards = useMemo(() => {
     // First filter
     const filtered = cards.filter(card => {
@@ -105,11 +292,26 @@ export function CardsListPage() {
         card.CardIssuer.toLowerCase().includes(searchQuery.toLowerCase());
 
       // Status filter
-      const matchesStatus = statusFilter === 'all' ||
-        (statusFilter === 'active' && card.status === 'active') ||
-        (statusFilter === 'inactive' && (card.status === 'no_active_version' || card.status === 'no_versions'));
+      const matchesStatus = (() => {
+        if (statusFilter.length === 0) return true; // no filter applied
+        const includeActive = statusFilter.includes('active');
+        const includeInactive = statusFilter.includes('inactive');
+        if (includeActive && card.status === 'active') return true;
+        if (includeInactive && (card.status === 'no_active_version' || card.status === 'no_versions')) return true;
+        return false;
+      })();
 
-      return matchesSearch && matchesStatus;
+      // Last updated filter
+      const matchesLastUpdated = (() => {
+        if (lastUpdatedFilter.length === 0) return true; // no filter applied
+        // Only consider active versions with a lastUpdated timestamp
+        if (card.status !== 'active' || !card.lastUpdated) return false;
+        const tier = getLastUpdatedTier(card.lastUpdated);
+        if (!tier) return false;
+        return lastUpdatedFilter.includes(tier);
+      })();
+
+      return matchesSearch && matchesStatus && matchesLastUpdated;
     });
 
     // If no sort is applied, keep the existing natural order
@@ -144,7 +346,7 @@ export function CardsListPage() {
 
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [cards, searchQuery, statusFilter, sortColumn, sortDirection]);
+  }, [cards, searchQuery, statusFilter, lastUpdatedFilter, sortColumn, sortDirection]);
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -211,7 +413,27 @@ export function CardsListPage() {
   return (
     <div className="cards-list-page">
       <div className="page-header">
-        <h1>Credit Cards</h1>
+        <div className="header-left">
+          <h1>Credit Cards</h1>
+          <div className="staleness-summary">
+            <div className="staleness-item" style={{ color: '#16a34a' }}>
+              <CheckCircle2 size={14} />
+              <span>{stalenessCounts.lt30}</span>
+            </div>
+            <div className="staleness-item" style={{ color: '#6b7280' }}>
+              <Clock size={14} />
+              <span>{stalenessCounts.gt30}</span>
+            </div>
+            <div className="staleness-item" style={{ color: '#ca8a04' }}>
+              <AlertTriangle size={14} />
+              <span>{stalenessCounts.gt60}</span>
+            </div>
+            <div className="staleness-item" style={{ color: '#dc2626' }}>
+              <AlertOctagon size={14} />
+              <span>{stalenessCounts.gt90}</span>
+            </div>
+          </div>
+        </div>
         <div className="header-actions">
           <Button
             size="sm"
@@ -241,15 +463,27 @@ export function CardsListPage() {
           />
         </div>
 
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="status-filter"
-        >
-          <option value="all">All Cards</option>
-          <option value="active">Active Only</option>
-          <option value="inactive">Inactive / No Versions</option>
-        </select>
+        <MultiSelectFilter
+          label="Status"
+          selected={statusFilter}
+          onChange={setStatusFilter}
+          options={[
+            { value: 'active', label: 'Active only' },
+            { value: 'inactive', label: 'Inactive or no versions' }
+          ]}
+        />
+
+        <MultiSelectFilter
+          label="Last Updated"
+          selected={lastUpdatedFilter}
+          onChange={setLastUpdatedFilter}
+          options={[
+            { value: 'lt30', label: <span className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-600" /> &lt; 30 days</span> },
+            { value: 'gt30', label: <span className="flex items-center gap-2"><Clock size={14} className="text-gray-500" /> 31-60 days</span> },
+            { value: 'gt60', label: <span className="flex items-center gap-2"><AlertTriangle size={14} className="text-yellow-600" /> 61-90 days</span> },
+            { value: 'gt90', label: <span className="flex items-center gap-2"><AlertOctagon size={14} className="text-red-600" /> &gt; 90 days</span> },
+          ]}
+        />
       </div>
 
       <div className="cards-table">
@@ -306,7 +540,17 @@ export function CardsListPage() {
                   </div>
                   <div className="col-last-updated">
                     {card.status === 'active' && card.lastUpdated ? (
-                      formatLastUpdated(card.lastUpdated)
+                      <>
+                        {(() => {
+                          const stalenessInfo = getStalenessInfo(card.lastUpdated);
+                          return stalenessInfo ? (
+                            <span className="staleness-icon" style={{ color: stalenessInfo.color }}>
+                              {stalenessInfo.icon}
+                            </span>
+                          ) : null;
+                        })()}
+                        <span>{formatLastUpdated(card.lastUpdated)}</span>
+                      </>
                     ) : (
                       <span className="text-gray-400"></span>
                     )}
