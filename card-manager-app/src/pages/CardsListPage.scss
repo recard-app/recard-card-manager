@@ -25,6 +25,25 @@
     color: $neutral-gray-800;
     margin: 0;
   }
+
+  .header-actions {
+    @include flex-row;
+    gap: $spacing-xs;
+    align-items: center;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
 }
 
 .filters {

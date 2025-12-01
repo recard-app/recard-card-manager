@@ -21,6 +21,7 @@ export const API_ROUTES = {
     UPDATE: (cardId: string) => `/admin/cards/${cardId}`,
     DELETE: (cardId: string) => `/admin/cards/${cardId}`,
     DELETE_ENTIRE: (referenceCardId: string) => `/admin/cards/reference/${referenceCardId}/all`,
+    SYNC_ALL: '/admin/cards/sync-all',
   },
 
   // Version management routes

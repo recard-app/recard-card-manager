@@ -182,4 +182,27 @@ export class CardService {
       {}
     );
   }
+
+  /**
+   * Sync all active versions to credit_cards collection
+   * Also removes any orphaned entries that shouldn't exist
+   */
+  static async syncAllToProduction(): Promise<{
+    success: boolean;
+    message: string;
+    synced: number;
+    removed: number;
+    syncedCards: string[];
+    removedCards: string[];
+  }> {
+    const response = await apiClient.post<{
+      success: boolean;
+      message: string;
+      synced: number;
+      removed: number;
+      syncedCards: string[];
+      removedCards: string[];
+    }>(API_ROUTES.CARDS.SYNC_ALL, {});
+    return response.data;
+  }
 }

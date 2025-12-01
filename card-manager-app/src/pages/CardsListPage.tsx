@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { CardService } from '@/services/card.service';
 import type { CardWithStatus } from '@/types/ui-types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, RefreshCw } from 'lucide-react';
 import { CreateCardModal } from '@/components/Modals/CreateCardModal';
 import './CardsListPage.scss';
 
@@ -16,10 +17,29 @@ export function CardsListPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [createCardModalOpen, setCreateCardModalOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     loadCards();
   }, []);
+
+  const handleSyncAll = async () => {
+    try {
+      setSyncing(true);
+      const result = await CardService.syncAllToProduction();
+      
+      if (result.synced > 0 || result.removed > 0) {
+        toast.success(result.message);
+      } else {
+        toast.info('All cards are already in sync');
+      }
+    } catch (err: any) {
+      console.error('Error syncing cards:', err);
+      toast.error('Failed to sync cards: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const loadCards = async () => {
     try {
@@ -80,7 +100,7 @@ export function CardsListPage() {
   if (loading) {
     return (
       <div className="cards-list-page">
-        <div className="loading">Loading cards...</div>
+        <div className="loading">Resyncing...</div>
       </div>
     );
   }
@@ -100,10 +120,21 @@ export function CardsListPage() {
     <div className="cards-list-page">
       <div className="page-header">
         <h1>Credit Cards</h1>
-        <Button size="sm" onClick={() => setCreateCardModalOpen(true)}>
-          <Plus size={16} />
-          New Card
-        </Button>
+        <div className="header-actions">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleSyncAll}
+            disabled={syncing}
+          >
+            <RefreshCw size={16} className={syncing ? 'spinning' : ''} />
+            {syncing ? 'Resyncing...' : 'Manual Resync'}
+          </Button>
+          <Button size="sm" onClick={() => setCreateCardModalOpen(true)}>
+            <Plus size={16} />
+            New Card
+          </Button>
+        </div>
       </div>
 
       <div className="filters">

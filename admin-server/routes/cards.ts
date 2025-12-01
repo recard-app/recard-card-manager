@@ -2,6 +2,11 @@ import express, { Request, Response } from 'express';
 import { db } from '../firebase-admin';
 import { CreditCardDetails, CreditCardName, ONGOING_SENTINEL_DATE } from '../types';
 import { verifyAuth } from '../middleware/auth';
+import {
+  syncActiveVersionToCreditCards,
+  removeFromCreditCards,
+  syncAllCards,
+} from '../services/credit-cards-sync';
 
 const router = express.Router();
 
@@ -126,6 +131,7 @@ router.put('/card-names/:referenceCardId', async (req: Request, res: Response) =
 /**
  * DELETE /admin/card-names/:referenceCardId
  * Delete a card name entry and all associated versions/components
+ * Also removes from credit_cards collection
  */
 router.delete('/card-names/:referenceCardId', async (req: Request, res: Response) => {
   try {
@@ -175,10 +181,35 @@ router.delete('/card-names/:referenceCardId', async (req: Request, res: Response
 
     await batch.commit();
 
+    // Remove from credit_cards collection (production)
+    await removeFromCreditCards(referenceCardId);
+
     res.json({ success: true, deletedVersions: versionIds.length });
   } catch (error) {
     console.error('Error deleting card:', error);
     res.status(500).json({ error: 'Failed to delete card' });
+  }
+});
+
+// ===== SYNC OPERATIONS =====
+
+/**
+ * POST /admin/cards/sync-all
+ * Sync all active versions to credit_cards collection and remove orphaned entries.
+ * This ensures the production credit_cards collection matches the active versions in the dashboard.
+ */
+router.post('/sync-all', async (req: Request, res: Response) => {
+  try {
+    const result = await syncAllCards();
+    
+    res.json({
+      success: true,
+      message: `Synced ${result.synced} cards, removed ${result.removed} orphaned entries`,
+      ...result,
+    });
+  } catch (error) {
+    console.error('Error syncing all cards:', error);
+    res.status(500).json({ error: 'Failed to sync cards' });
   }
 });
 
@@ -399,6 +430,7 @@ router.post('/:cardId', async (req: Request, res: Response) => {
 /**
  * PUT /admin/cards/:cardId
  * Update an existing card
+ * Also syncs to credit_cards collection if the updated version is active
  */
 router.put('/:cardId', async (req: Request, res: Response) => {
   try {
@@ -418,6 +450,18 @@ router.put('/:cardId', async (req: Request, res: Response) => {
 
     await db.collection('credit_cards_history').doc(cardId).update(updateData);
 
+    // If this version is active, sync the updated data to credit_cards collection
+    const updatedDoc = await db.collection('credit_cards_history').doc(cardId).get();
+    if (updatedDoc.exists) {
+      const updatedData = updatedDoc.data() as CreditCardDetails;
+      if (updatedData.IsActive === true) {
+        await syncActiveVersionToCreditCards(updatedData.ReferenceCardId, {
+          ...updatedData,
+          id: cardId,
+        } as CreditCardDetails);
+      }
+    }
+
     res.json({ success: true });
   } catch (error) {
     console.error('Error updating card:', error);
@@ -428,11 +472,23 @@ router.put('/:cardId', async (req: Request, res: Response) => {
 /**
  * DELETE /admin/cards/:cardId
  * Delete a card version
+ * Also removes from credit_cards collection if the deleted version was active
  */
 router.delete('/:cardId', async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
+
+    // Get the version before deleting to check if it was active
+    const versionDoc = await db.collection('credit_cards_history').doc(cardId).get();
+    const wasActive = versionDoc.exists && (versionDoc.data() as CreditCardDetails).IsActive === true;
+    const referenceCardId = versionDoc.exists ? (versionDoc.data() as CreditCardDetails).ReferenceCardId : null;
+
     await db.collection('credit_cards_history').doc(cardId).delete();
+
+    // If the deleted version was active, remove from credit_cards
+    if (wasActive && referenceCardId) {
+      await removeFromCreditCards(referenceCardId);
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -444,7 +500,7 @@ router.delete('/:cardId', async (req: Request, res: Response) => {
 /**
  * DELETE /admin/cards/reference/:referenceCardId/all
  * Delete ALL versions of a card by ReferenceCardId, plus all associated components
- * Also deletes the entry from credit_cards_names collection
+ * Also deletes the entry from credit_cards_names collection and credit_cards collection
  */
 router.delete('/reference/:referenceCardId/all', async (req: Request, res: Response) => {
   try {
@@ -496,6 +552,9 @@ router.delete('/reference/:referenceCardId/all', async (req: Request, res: Respo
     multipliersSnapshot.forEach((doc) => batch.delete(doc.ref));
 
     await batch.commit();
+
+    // Remove from credit_cards collection (production)
+    await removeFromCreditCards(referenceCardId);
 
     res.json({ success: true, deletedVersions: versionIds.length });
   } catch (error) {
@@ -625,6 +684,7 @@ router.post('/:referenceCardId/versions/:versionId', async (req: Request, res: R
 /**
  * POST /admin/cards/:referenceCardId/versions/:versionId/activate
  * Activate a specific version by setting IsActive to true
+ * Also syncs the active version to the credit_cards collection
  */
 router.post('/:referenceCardId/versions/:versionId/activate', async (req: Request, res: Response) => {
   try {
@@ -637,10 +697,12 @@ router.post('/:referenceCardId/versions/:versionId/activate', async (req: Reques
       return res.status(404).json({ error: 'Version not found' });
     }
 
+    const now = new Date().toISOString();
+
     // Set IsActive to true
     await db.collection('credit_cards_history').doc(versionId).update({
       IsActive: true,
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: now,
     });
 
     // Deactivate other versions if requested
@@ -655,13 +717,21 @@ router.post('/:referenceCardId/versions/:versionId/activate', async (req: Reques
         if (doc.id !== versionId) {
           batch.update(doc.ref, {
             IsActive: false,
-            lastUpdated: new Date().toISOString(),
+            lastUpdated: now,
           });
         }
       });
 
       await batch.commit();
     }
+
+    // Sync the activated version to credit_cards collection
+    const activatedVersionData = {
+      ...versionDoc.data(),
+      IsActive: true,
+      lastUpdated: now,
+    } as CreditCardDetails;
+    await syncActiveVersionToCreditCards(referenceCardId, activatedVersionData);
 
     res.json({ success: true });
   } catch (error) {
@@ -673,10 +743,11 @@ router.post('/:referenceCardId/versions/:versionId/activate', async (req: Reques
 /**
  * POST /admin/cards/:referenceCardId/versions/:versionId/deactivate
  * Deactivate a specific version by setting IsActive to false
+ * Also removes from credit_cards collection (only active versions are in credit_cards)
  */
 router.post('/:referenceCardId/versions/:versionId/deactivate', async (req: Request, res: Response) => {
   try {
-    const { versionId } = req.params;
+    const { referenceCardId, versionId } = req.params;
 
     const versionDoc = await db.collection('credit_cards_history').doc(versionId).get();
     if (!versionDoc.exists) {
@@ -687,6 +758,9 @@ router.post('/:referenceCardId/versions/:versionId/deactivate', async (req: Requ
       IsActive: false,
       lastUpdated: new Date().toISOString(),
     });
+
+    // Remove from credit_cards since only active versions should be there
+    await removeFromCreditCards(referenceCardId);
 
     res.json({ success: true });
   } catch (error) {
