@@ -7,6 +7,7 @@ import {
   removeFromCreditCards,
   syncAllCards,
 } from '../services/credit-cards-sync';
+import { CardNameSchema, CreditCardCreateSchema, CreditCardUpdateSchema, parseOr400 } from '../validation/schemas';
 
 const router = express.Router();
 
@@ -74,12 +75,14 @@ router.get('/card-names/:referenceCardId', async (req: Request, res: Response) =
 router.post('/card-names/:referenceCardId', async (req: Request, res: Response) => {
   try {
     const { referenceCardId } = req.params;
-    const { CardName, CardIssuer } = req.body;
+    const parsed = parseOr400(CardNameSchema, req.body);
+    if (!parsed.ok) {
+      return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
+    }
+    const { CardName, CardIssuer } = parsed.data;
 
     // Validate required fields
-    if (!CardName || !CardIssuer) {
-      return res.status(400).json({ error: 'CardName and CardIssuer are required' });
-    }
+    // (Already validated above)
 
     // Check if a card with this ID already exists
     const existing = await db.collection('credit_cards_names').doc(referenceCardId).get();
@@ -365,7 +368,12 @@ router.get('/:cardId', async (req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const cardData = req.body;
+    // Lenient server-side validation: allow partial but enforce types/dates if present
+    const parsed = parseOr400(CreditCardUpdateSchema, req.body);
+    if (!parsed.ok) {
+      return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
+    }
+    const cardData = parsed.data;
     const now = new Date().toISOString();
 
     const newCard = {
@@ -397,7 +405,11 @@ router.post('/', async (req: Request, res: Response) => {
 router.post('/:cardId', async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
-    const cardData = req.body;
+    const parsed = parseOr400(CreditCardUpdateSchema, req.body);
+    if (!parsed.ok) {
+      return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
+    }
+    const cardData = parsed.data;
     const now = new Date().toISOString();
 
     // Check if a card with this ID already exists
@@ -435,7 +447,11 @@ router.post('/:cardId', async (req: Request, res: Response) => {
 router.put('/:cardId', async (req: Request, res: Response) => {
   try {
     const { cardId } = req.params;
-    const cardData = req.body;
+    const parsed = parseOr400(CreditCardUpdateSchema, req.body);
+    if (!parsed.ok) {
+      return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
+    }
+    const cardData = parsed.data;
     const now = new Date().toISOString();
 
     // Build update payload, normalizing effectiveTo if provided blank/null
@@ -614,7 +630,11 @@ router.get('/:referenceCardId/versions', async (req: Request, res: Response) => 
 router.post('/:referenceCardId/versions', async (req: Request, res: Response) => {
   try {
     const { referenceCardId } = req.params;
-    const newVersionData = req.body;
+    const parseCreate = parseOr400(CreditCardCreateSchema.partial(), req.body);
+    if (!parseCreate.ok) {
+      return res.status(400).json({ error: 'Invalid request body', details: parseCreate.errors });
+    }
+    const newVersionData = parseCreate.data;
     const now = new Date().toISOString();
 
     // Create new version with the provided data
@@ -649,7 +669,11 @@ router.post('/:referenceCardId/versions', async (req: Request, res: Response) =>
 router.post('/:referenceCardId/versions/:versionId', async (req: Request, res: Response) => {
   try {
     const { referenceCardId, versionId } = req.params;
-    const newVersionData = req.body as Partial<CreditCardDetails>;
+    const parseCreate = parseOr400(CreditCardCreateSchema.partial(), req.body);
+    if (!parseCreate.ok) {
+      return res.status(400).json({ error: 'Invalid request body', details: parseCreate.errors });
+    }
+    const newVersionData = parseCreate.data as Partial<CreditCardDetails>;
     const now = new Date().toISOString();
 
     // Disallow overwriting an existing version with the same ID

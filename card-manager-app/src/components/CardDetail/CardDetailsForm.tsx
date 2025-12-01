@@ -15,6 +15,7 @@ import { REWARDS_CURRENCIES } from '@/constants/form-options';
 import { Edit2, Trash2 } from 'lucide-react';
 import './CardDetailsForm.scss';
 import { CardIcon } from '@/components/icons/CardIcon';
+import { CardDetailsFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
 
 interface CardDetailsFormProps {
   cardId: string;
@@ -64,6 +65,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
 
   useEffect(() => {
     if (card && isEditing) {
+      const toYMD = (d?: string) => (d ? d.split('T')[0] : '');
       setFormData({
         CardName: card.CardName || '',
         CardIssuer: card.CardIssuer || '',
@@ -81,22 +83,57 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
         RewardsCurrency: card.RewardsCurrency || '',
         PointsPerDollar: card.PointsPerDollar != null ? String(card.PointsPerDollar) : '',
         VersionName: card.VersionName || '',
-        EffectiveFrom: card.effectiveFrom || '',
-        EffectiveTo: card.effectiveTo === '9999-12-31' ? '' : card.effectiveTo || '',
+        EffectiveFrom: toYMD(card.effectiveFrom) || '',
+        EffectiveTo:
+          card.effectiveTo === '9999-12-31'
+            ? ''
+            : toYMD(card.effectiveTo) || '',
       });
       setErrors({});
     }
   }, [card, isEditing]);
 
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.CardName.trim()) newErrors.CardName = 'Card name is required';
-    if (!formData.CardIssuer.trim()) newErrors.CardIssuer = 'Card issuer is required';
-    if (!formData.CardNetwork.trim()) newErrors.CardNetwork = 'Card network is required';
-    if (!formData.VersionName.trim()) newErrors.VersionName = 'Version name is required';
-    if (!formData.EffectiveFrom) newErrors.EffectiveFrom = 'Effective from date is required';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const fieldLabels: Record<string, string> = {
+      CardName: 'Card Name',
+      CardIssuer: 'Card Issuer',
+      CardNetwork: 'Card Network',
+      AnnualFee: 'Annual Fee',
+      ForeignExchangeFeePercentage: 'FX Fee Percentage',
+      PointsPerDollar: 'Points Per Dollar',
+      VersionName: 'Version Name',
+      EffectiveFrom: 'Effective From',
+      RewardsCurrency: 'Rewards Currency',
+      ForeignExchangeFee: 'Foreign Exchange Fee',
+    };
+    const parsed = CardDetailsFormSchema.safeParse({
+      CardName: formData.CardName,
+      CardIssuer: formData.CardIssuer,
+      CardNetwork: formData.CardNetwork,
+      CardDetails: formData.CardDetails,
+      CardImage: formData.CardImage,
+      CardPrimaryColor: formData.CardPrimaryColor,
+      CardSecondaryColor: formData.CardSecondaryColor,
+      AnnualFee: formData.AnnualFee,
+      ForeignExchangeFee: formData.ForeignExchangeFee,
+      ForeignExchangeFeePercentage: formData.ForeignExchangeFeePercentage,
+      RewardsCurrency: formData.RewardsCurrency,
+      PointsPerDollar: formData.PointsPerDollar,
+      VersionName: formData.VersionName,
+      EffectiveFrom: formData.EffectiveFrom,
+      EffectiveTo: formData.EffectiveTo,
+    });
+    if (!parsed.success) {
+      setErrors(zodErrorsToFieldMap(parsed.error));
+      const keys = Object.keys(zodErrorsToFieldMap(parsed.error));
+      const missing = keys.map(k => fieldLabels[k] || k).join(', ');
+      if (missing) {
+        toast.warning(`Missing required fields: ${missing}`);
+      }
+      return false;
+    }
+    setErrors({});
+    return true;
   };
 
   const handleSave = async () => {
@@ -299,24 +336,28 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
             <h3>Basic Information</h3>
             <FormField
               label="Card Name"
+              required
               value={formData.CardName}
               onChange={(e) => setFormData({ ...formData, CardName: e.target.value })}
               error={errors.CardName}
             />
             <FormField
               label="Card Issuer"
+              required
               value={formData.CardIssuer}
               onChange={(e) => setFormData({ ...formData, CardIssuer: e.target.value })}
               error={errors.CardIssuer}
             />
             <FormField
               label="Card Network"
+              required
               value={formData.CardNetwork}
               onChange={(e) => setFormData({ ...formData, CardNetwork: e.target.value })}
               error={errors.CardNetwork}
             />
             <FormField
               label="Version Name"
+              required
               value={formData.VersionName}
               onChange={(e) => setFormData({ ...formData, VersionName: e.target.value })}
               error={errors.VersionName}
@@ -327,23 +368,28 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
             <h3>Fees</h3>
             <FormField
               label="Annual Fee"
+              required
               type="text"
               value={formData.AnnualFee}
               onChange={(e) => setFormData({ ...formData, AnnualFee: sanitizeNumericInput(e.target.value) })}
+              error={errors.AnnualFee}
             />
             <FormField
               label="Foreign Exchange Fee Description"
+              required
               value={formData.ForeignExchangeFee}
               onChange={(e) => setFormData({ ...formData, ForeignExchangeFee: e.target.value })}
               helperText="If there are no fees, write 'No foreign transaction fees'."
             />
             <FormField
               label="FX Fee Percentage"
+              required
               type="text"
               value={formData.ForeignExchangeFeePercentage}
               onChange={(e) =>
                 setFormData({ ...formData, ForeignExchangeFeePercentage: sanitizeNumericInput(e.target.value) })
               }
+              error={errors.ForeignExchangeFeePercentage}
             />
           </div>
 
@@ -351,15 +397,18 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
             <h3>Rewards</h3>
             <Select
               label="Rewards Currency"
+              required
               value={formData.RewardsCurrency}
               onChange={(value) => setFormData({ ...formData, RewardsCurrency: value })}
               options={REWARDS_CURRENCIES.map(currency => ({ value: currency, label: currency }))}
             />
             <FormField
               label="Points Per Dollar"
+              required
               type="text"
               value={formData.PointsPerDollar}
               onChange={(e) => setFormData({ ...formData, PointsPerDollar: sanitizeNumericInput(e.target.value) })}
+              error={errors.PointsPerDollar}
             />
           </div>
 
@@ -367,6 +416,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
             <h3>Version Information</h3>
             <DatePicker
               label="Effective From"
+              required
               value={formData.EffectiveFrom}
               onChange={(value) => setFormData({ ...formData, EffectiveFrom: value })}
               error={errors.EffectiveFrom}

@@ -20,15 +20,21 @@ interface SelectFieldProps {
   disabled?: boolean
   className?: string
   id?: string
+  required?: boolean
 }
 
 export const SelectField = React.forwardRef<HTMLButtonElement, SelectFieldProps>(
-  ({ label, error, helperText, options, value, onChange, placeholder = "Select...", disabled, className, id }, ref) => {
+  ({ label, error, helperText, options, value, onChange, placeholder = "Select...", disabled, className, id, required }, ref) => {
     const fieldId = id || React.useId()
 
     return (
       <div className="space-y-2">
-        {label && <Label htmlFor={fieldId}>{label}</Label>}
+        {label && (
+          <Label htmlFor={fieldId}>
+            {label}
+            {required && <span aria-hidden="true" className="ml-1 text-destructive">*</span>}
+          </Label>
+        )}
         <Select value={value} onValueChange={onChange} disabled={disabled}>
           <SelectTrigger
             ref={ref}

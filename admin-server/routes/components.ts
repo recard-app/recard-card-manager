@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { db } from '../firebase-admin';
 import { CardCredit, CardPerk, CardMultiplier, ONGOING_SENTINEL_DATE } from '../types';
 import { verifyAuth } from '../middleware/auth';
+import { CreditSchema, PerkSchema, MultiplierSchema, parseOr400 } from '../validation/schemas';
 
 const router = express.Router();
 
@@ -57,7 +58,11 @@ router.get('/cards/:cardId/credits', async (req: Request, res: Response) => {
  */
 router.post('/credits', async (req: Request, res: Response) => {
   try {
-    const creditData = req.body;
+    const parsed = parseOr400(CreditSchema, req.body);
+    if (!parsed.ok) {
+      return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
+    }
+    const creditData = parsed.data;
     // Normalize EffectiveTo if blank/null/undefined
     if (Object.prototype.hasOwnProperty.call(creditData, 'EffectiveTo')) {
       creditData.EffectiveTo =
@@ -81,7 +86,11 @@ router.post('/credits', async (req: Request, res: Response) => {
 router.put('/credits/:creditId', async (req: Request, res: Response) => {
   try {
     const { creditId } = req.params;
-    const creditData = req.body;
+    const parsed = parseOr400(CreditSchema.partial(), req.body);
+    if (!parsed.ok) {
+      return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
+    }
+    const creditData = parsed.data;
     // Normalize EffectiveTo if explicitly provided
     if (Object.prototype.hasOwnProperty.call(creditData, 'EffectiveTo')) {
       creditData.EffectiveTo =
@@ -164,7 +173,9 @@ router.get('/cards/:cardId/perks', async (req: Request, res: Response) => {
  */
 router.post('/perks', async (req: Request, res: Response) => {
   try {
-    const perkData = req.body;
+    const parsed = parseOr400(PerkSchema, req.body);
+    if (!parsed.ok) return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
+    const perkData = parsed.data;
     if (Object.prototype.hasOwnProperty.call(perkData, 'EffectiveTo')) {
       perkData.EffectiveTo =
         perkData.EffectiveTo === '' || perkData.EffectiveTo == null
@@ -187,7 +198,9 @@ router.post('/perks', async (req: Request, res: Response) => {
 router.put('/perks/:perkId', async (req: Request, res: Response) => {
   try {
     const { perkId } = req.params;
-    const perkData = req.body;
+    const parsed = parseOr400(PerkSchema.partial(), req.body);
+    if (!parsed.ok) return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
+    const perkData = parsed.data;
     if (Object.prototype.hasOwnProperty.call(perkData, 'EffectiveTo')) {
       perkData.EffectiveTo =
         perkData.EffectiveTo === '' || perkData.EffectiveTo == null
@@ -269,7 +282,9 @@ router.get('/cards/:cardId/multipliers', async (req: Request, res: Response) => 
  */
 router.post('/multipliers', async (req: Request, res: Response) => {
   try {
-    const multiplierData = req.body;
+    const parsed = parseOr400(MultiplierSchema, req.body);
+    if (!parsed.ok) return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
+    const multiplierData = parsed.data;
     if (Object.prototype.hasOwnProperty.call(multiplierData, 'EffectiveTo')) {
       multiplierData.EffectiveTo =
         multiplierData.EffectiveTo === '' || multiplierData.EffectiveTo == null
@@ -292,7 +307,9 @@ router.post('/multipliers', async (req: Request, res: Response) => {
 router.put('/multipliers/:multiplierId', async (req: Request, res: Response) => {
   try {
     const { multiplierId } = req.params;
-    const multiplierData = req.body;
+    const parsed = parseOr400(MultiplierSchema.partial(), req.body);
+    if (!parsed.ok) return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
+    const multiplierData = parsed.data;
     if (Object.prototype.hasOwnProperty.call(multiplierData, 'EffectiveTo')) {
       multiplierData.EffectiveTo =
         multiplierData.EffectiveTo === '' || multiplierData.EffectiveTo == null

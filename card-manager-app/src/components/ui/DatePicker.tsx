@@ -19,6 +19,7 @@ interface DatePickerProps {
   error?: string
   helperText?: string
   disabled?: boolean
+  required?: boolean
 }
 
 export function DatePicker({
@@ -29,6 +30,7 @@ export function DatePicker({
   error,
   helperText,
   disabled = false,
+  required = false,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("")
@@ -105,6 +107,7 @@ export function DatePicker({
       {label && (
         <label className="text-sm font-medium text-gray-700">
           {label}
+          {required && <span aria-hidden="true" className="ml-1 text-red-600">*</span>}
         </label>
       )}
       <Popover open={open} onOpenChange={setOpen}>

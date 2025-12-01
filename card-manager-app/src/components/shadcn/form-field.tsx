@@ -16,7 +16,12 @@ export const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
 
     return (
       <div className={cn("space-y-2", helperText && !error && "mb-4")}>
-        {label && <Label htmlFor={fieldId}>{label}</Label>}
+        {label && (
+          <Label htmlFor={fieldId}>
+            {label}
+            {props.required && <span aria-hidden="true" className="ml-1 text-destructive">*</span>}
+          </Label>
+        )}
         <Input
           id={fieldId}
           ref={ref}
@@ -47,7 +52,12 @@ export const TextareaField = React.forwardRef<HTMLTextAreaElement, TextareaField
 
     return (
       <div className={cn("space-y-2", helperText && !error && "mb-4")}>
-        {label && <Label htmlFor={fieldId}>{label}</Label>}
+        {label && (
+          <Label htmlFor={fieldId}>
+            {label}
+            {(props as any).required && <span aria-hidden="true" className="ml-1 text-destructive">*</span>}
+          </Label>
+        )}
         <Textarea
           id={fieldId}
           ref={ref}

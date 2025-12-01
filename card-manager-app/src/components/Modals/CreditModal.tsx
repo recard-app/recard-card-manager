@@ -10,6 +10,7 @@ import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
 import { CATEGORIES, SUBCATEGORIES, TIME_PERIODS } from '@/constants/form-options';
 import './CreditModal.scss';
+import { CreditFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
 
 interface CreditModalProps {
   open: boolean;
@@ -76,26 +77,34 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
   }, [credit, open]);
 
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.Title.trim()) {
-      newErrors.Title = 'Title is required';
+    const parsed = CreditFormSchema.safeParse({
+      Title: formData.Title,
+      Category: formData.Category,
+      SubCategory: formData.SubCategory,
+      Description: formData.Description,
+      Value: formData.Value,
+      TimePeriod: formData.TimePeriod,
+      Requirements: formData.Requirements,
+      Details: formData.Details,
+      EffectiveFrom: formData.EffectiveFrom,
+      EffectiveTo: formData.EffectiveTo,
+    });
+    if (!parsed.success) {
+      const fieldLabels: Record<string, string> = {
+        Title: 'Title',
+        Category: 'Category',
+        Value: 'Value',
+        TimePeriod: 'Time Period',
+        EffectiveFrom: 'Effective From',
+      };
+      const fieldErrors = zodErrorsToFieldMap(parsed.error);
+      setErrors(fieldErrors);
+      const missing = Object.keys(fieldErrors).map(k => fieldLabels[k] || k).join(', ');
+      if (missing) toast.warning(`Missing required fields: ${missing}`);
+      return false;
     }
-
-    if (!formData.Category.trim()) {
-      newErrors.Category = 'Category is required';
-    }
-
-    if (!formData.Value.trim()) {
-      newErrors.Value = 'Value is required';
-    }
-
-    if (!formData.EffectiveFrom) {
-      newErrors.EffectiveFrom = 'Effective from date is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -153,6 +162,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
       <form id={formId} onSubmit={handleSubmit} className="credit-modal-form">
         <FormField
           label="Title"
+          required
           value={formData.Title}
           onChange={(e) => setFormData({ ...formData, Title: e.target.value })}
           error={errors.Title}
@@ -161,6 +171,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
 
         <Select
           label="Category"
+          required
           value={formData.Category}
           onChange={(value) => setFormData({ ...formData, Category: value, SubCategory: '' })}
           error={errors.Category}
@@ -178,6 +189,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
 
         <FormField
           label="Value ($)"
+          required
           type="text"
           value={formData.Value}
           onChange={(e) => setFormData({ ...formData, Value: sanitizeNumericInput(e.target.value) })}
@@ -188,6 +200,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
 
         <Select
           label="Time Period"
+          required
           value={formData.TimePeriod}
           onChange={(value) => setFormData({ ...formData, TimePeriod: value })}
           options={TIME_PERIODS.map(tp => ({ value: tp, label: tp }))}
@@ -216,6 +229,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
 
         <DatePicker
           label="Effective From"
+          required
           value={formData.EffectiveFrom}
           onChange={(value) => setFormData({ ...formData, EffectiveFrom: value })}
           error={errors.EffectiveFrom}

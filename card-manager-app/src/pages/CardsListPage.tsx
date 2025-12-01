@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CardService } from '@/services/card.service';
 import type { CardWithStatus } from '@/types/ui-types';
+import { CardStatus } from '@/types/ui-types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -211,12 +212,12 @@ export function CardsListPage() {
     }
   };
 
-  const getStatusSortValue = (status: string): number => {
+  const getStatusSortValue = (status: CardStatus | string): number => {
     switch (status) {
-      case 'active': return 1;
-      case 'no_active_version': return 2;
-      case 'no_versions': return 3;
-      case 'inactive': return 4;
+      case CardStatus.Active: return 1;
+      case CardStatus.NoActiveVersion: return 2;
+      case CardStatus.NoVersions: return 3;
+      case CardStatus.Inactive: return 4;
       default: return 5;
     }
   };
@@ -273,7 +274,7 @@ export function CardsListPage() {
   const stalenessCounts = useMemo(() => {
     const counts = { lt30: 0, gt30: 0, gt60: 0, gt90: 0 };
     cards.forEach(card => {
-      if (card.status === 'active' && card.lastUpdated) {
+      if (card.status === CardStatus.Active && card.lastUpdated) {
         const tier = getLastUpdatedTier(card.lastUpdated);
         if (tier) {
           counts[tier]++;
@@ -294,10 +295,10 @@ export function CardsListPage() {
       // Status filter
       const matchesStatus = (() => {
         if (statusFilter.length === 0) return true; // no filter applied
-        const includeActive = statusFilter.includes('active');
-        const includeInactive = statusFilter.includes('inactive');
-        if (includeActive && card.status === 'active') return true;
-        if (includeInactive && (card.status === 'no_active_version' || card.status === 'no_versions')) return true;
+        const includeActive = statusFilter.includes(CardStatus.Active);
+        const includeInactive = statusFilter.includes(CardStatus.Inactive);
+        if (includeActive && card.status === CardStatus.Active) return true;
+        if (includeInactive && (card.status === CardStatus.NoActiveVersion || card.status === CardStatus.NoVersions)) return true;
         return false;
       })();
 
@@ -305,7 +306,7 @@ export function CardsListPage() {
       const matchesLastUpdated = (() => {
         if (lastUpdatedFilter.length === 0) return true; // no filter applied
         // Only consider active versions with a lastUpdated timestamp
-        if (card.status !== 'active' || !card.lastUpdated) return false;
+        if (card.status !== CardStatus.Active || !card.lastUpdated) return false;
         const tier = getLastUpdatedTier(card.lastUpdated);
         if (!tier) return false;
         return lastUpdatedFilter.includes(tier);
@@ -348,22 +349,22 @@ export function CardsListPage() {
     });
   }, [cards, searchQuery, statusFilter, lastUpdatedFilter, sortColumn, sortDirection]);
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: CardStatus | string) => {
     switch (status) {
-      case 'active': return 'success';
-      case 'inactive': return 'default';
-      case 'no_active_version': return 'warning';
-      case 'no_versions': return 'warning';
+      case CardStatus.Active: return 'success';
+      case CardStatus.Inactive: return 'default';
+      case CardStatus.NoActiveVersion: return 'warning';
+      case CardStatus.NoVersions: return 'warning';
       default: return 'default';
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (status: CardStatus | string) => {
     switch (status) {
-      case 'active': return 'Active';
-      case 'inactive': return 'Inactive';
-      case 'no_active_version': return 'No Active Version';
-      case 'no_versions': return 'No Versions';
+      case CardStatus.Active: return 'Active';
+      case CardStatus.Inactive: return 'Inactive';
+      case CardStatus.NoActiveVersion: return 'No Active Version';
+      case CardStatus.NoVersions: return 'No Versions';
       default: return status;
     }
   };
@@ -468,8 +469,8 @@ export function CardsListPage() {
           selected={statusFilter}
           onChange={setStatusFilter}
           options={[
-            { value: 'active', label: 'Active only' },
-            { value: 'inactive', label: 'Inactive or no versions' }
+            { value: CardStatus.Active, label: 'Active only' },
+            { value: CardStatus.Inactive, label: 'Inactive or no versions' }
           ]}
         />
 
@@ -539,7 +540,7 @@ export function CardsListPage() {
                     )}
                   </div>
                   <div className="col-last-updated">
-                    {card.status === 'active' && card.lastUpdated ? (
+                    {card.status === CardStatus.Active && card.lastUpdated ? (
                       <>
                         {(() => {
                           const stalenessInfo = getStalenessInfo(card.lastUpdated);

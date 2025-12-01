@@ -11,6 +11,16 @@ export type ComponentType = 'credits' | 'perks' | 'multipliers';
 export type CardComponent = CardCredit | CardPerk | CardMultiplier;
 
 /**
+ * Canonical card status values
+ */
+export const enum CardStatus {
+  Active = 'active',
+  Inactive = 'inactive',
+  NoActiveVersion = 'no_active_version',
+  NoVersions = 'no_versions',
+}
+
+/**
  * Top-level card identity from credit_cards_names collection.
  * The ReferenceCardId is the document ID in Firestore.
  */
@@ -31,7 +41,7 @@ export interface CardWithStatus {
   CardIssuer: string;
   
   // Status info
-  status: 'active' | 'inactive' | 'no_active_version' | 'no_versions';
+  status: CardStatus;
   ActiveVersionName: string | null;
   versionCount: number;
   

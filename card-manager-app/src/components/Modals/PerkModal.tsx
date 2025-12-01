@@ -10,6 +10,7 @@ import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
 import { CATEGORIES, SUBCATEGORIES } from '@/constants/form-options';
 import './PerkModal.scss';
+import { PerkFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
 
 interface PerkModalProps {
   open: boolean;
@@ -64,26 +65,31 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
   }, [perk, open]);
 
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.Title.trim()) {
-      newErrors.Title = 'Title is required';
+    const parsed = PerkFormSchema.safeParse({
+      Title: formData.Title,
+      Category: formData.Category,
+      SubCategory: formData.SubCategory,
+      Description: formData.Description,
+      Requirements: formData.Requirements,
+      Details: formData.Details,
+      EffectiveFrom: formData.EffectiveFrom,
+      EffectiveTo: formData.EffectiveTo,
+    });
+    if (!parsed.success) {
+      const fieldLabels: Record<string, string> = {
+        Title: 'Title',
+        Category: 'Category',
+        Description: 'Description',
+        EffectiveFrom: 'Effective From',
+      };
+      const fieldErrors = zodErrorsToFieldMap(parsed.error);
+      setErrors(fieldErrors);
+      const missing = Object.keys(fieldErrors).map(k => fieldLabels[k] || k).join(', ');
+      if (missing) toast.warning(`Missing required fields: ${missing}`);
+      return false;
     }
-
-    if (!formData.Category.trim()) {
-      newErrors.Category = 'Category is required';
-    }
-
-    if (!formData.Description.trim()) {
-      newErrors.Description = 'Description is required';
-    }
-
-    if (!formData.EffectiveFrom) {
-      newErrors.EffectiveFrom = 'Effective from date is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,6 +145,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
       <form id={formId} onSubmit={handleSubmit} className="perk-modal-form">
         <FormField
           label="Title"
+          required
           value={formData.Title}
           onChange={(e) => setFormData({ ...formData, Title: e.target.value })}
           error={errors.Title}
@@ -147,6 +154,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
 
         <Select
           label="Category"
+          required
           value={formData.Category}
           onChange={(value) => setFormData({ ...formData, Category: value, SubCategory: '' })}
           error={errors.Category}
@@ -165,6 +173,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
         <div className="textarea-wrapper">
           <label className="textarea-label">Description</label>
           <textarea
+            required
             className={`textarea ${errors.Description ? 'textarea--error' : ''}`}
             value={formData.Description}
             onChange={(e) => setFormData({ ...formData, Description: e.target.value })}

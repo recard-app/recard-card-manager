@@ -5,6 +5,7 @@ import { FormField } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { CardService } from '@/services/card.service';
 import './CreateCardModal.scss';
+import { CardNameFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
 
 interface CreateCardModalProps {
   open: boolean;
@@ -34,24 +35,25 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
   }, [open]);
 
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.ReferenceCardId.trim()) {
-      newErrors.ReferenceCardId = 'Reference Card ID is required';
-    } else if (!/^[a-zA-Z0-9-]+$/.test(formData.ReferenceCardId)) {
-      newErrors.ReferenceCardId = 'Card ID can only contain letters, numbers, and hyphens';
+    const parsed = CardNameFormSchema.safeParse({
+      ReferenceCardId: formData.ReferenceCardId.trim(),
+      CardName: formData.CardName.trim(),
+      CardIssuer: formData.CardIssuer.trim(),
+    });
+    if (!parsed.success) {
+      const fieldLabels: Record<string, string> = {
+        ReferenceCardId: 'Reference Card ID',
+        CardName: 'Card Name',
+        CardIssuer: 'Card Issuer',
+      };
+      const fieldErrors = zodErrorsToFieldMap(parsed.error);
+      setErrors(fieldErrors);
+      const missing = Object.keys(fieldErrors).map(k => fieldLabels[k] || k).join(', ');
+      if (missing) toast.warning(`Missing required fields: ${missing}`);
+      return false;
     }
-
-    if (!formData.CardName.trim()) {
-      newErrors.CardName = 'Card name is required';
-    }
-
-    if (!formData.CardIssuer.trim()) {
-      newErrors.CardIssuer = 'Card issuer is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,6 +99,7 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
       <form id={formId} onSubmit={handleSubmit} className="create-card-modal-form">
         <FormField
           label="Reference Card ID"
+          required
           value={formData.ReferenceCardId}
           onChange={(e) =>
             setFormData({
@@ -114,6 +117,7 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
 
         <FormField
           label="Card Name"
+          required
           value={formData.CardName}
           onChange={(e) => setFormData({ ...formData, CardName: e.target.value })}
           error={errors.CardName}
@@ -122,6 +126,7 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
 
         <FormField
           label="Card Issuer"
+          required
           value={formData.CardIssuer}
           onChange={(e) => setFormData({ ...formData, CardIssuer: e.target.value })}
           error={errors.CardIssuer}

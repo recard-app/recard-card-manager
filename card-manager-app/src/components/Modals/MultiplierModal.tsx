@@ -10,6 +10,7 @@ import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
 import { CATEGORIES, SUBCATEGORIES } from '@/constants/form-options';
 import './MultiplierModal.scss';
+import { MultiplierFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
 
 interface MultiplierModalProps {
   open: boolean;
@@ -72,30 +73,33 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
   }, [multiplier, open]);
 
   const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.Name.trim()) {
-      newErrors.Name = 'Name is required';
+    const parsed = MultiplierFormSchema.safeParse({
+      Name: formData.Name,
+      Category: formData.Category,
+      SubCategory: formData.SubCategory,
+      Description: formData.Description,
+      Multiplier: formData.Multiplier,
+      Requirements: formData.Requirements,
+      Details: formData.Details,
+      EffectiveFrom: formData.EffectiveFrom,
+      EffectiveTo: formData.EffectiveTo,
+    });
+    if (!parsed.success) {
+      const fieldLabels: Record<string, string> = {
+        Name: 'Name',
+        Category: 'Category',
+        Description: 'Description',
+        Multiplier: 'Multiplier',
+        EffectiveFrom: 'Effective From',
+      };
+      const fieldErrors = zodErrorsToFieldMap(parsed.error);
+      setErrors(fieldErrors);
+      const missing = Object.keys(fieldErrors).map(k => fieldLabels[k] || k).join(', ');
+      if (missing) toast.warning(`Missing required fields: ${missing}`);
+      return false;
     }
-
-    if (!formData.Category.trim()) {
-      newErrors.Category = 'Category is required';
-    }
-
-    if (!formData.Description.trim()) {
-      newErrors.Description = 'Description is required';
-    }
-
-    if (!formData.Multiplier || parseFloat(formData.Multiplier) <= 0) {
-      newErrors.Multiplier = 'Multiplier must be greater than 0';
-    }
-
-    if (!formData.EffectiveFrom) {
-      newErrors.EffectiveFrom = 'Effective from date is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors({});
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -151,6 +155,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
       <form id={formId} onSubmit={handleSubmit} className="multiplier-modal-form">
         <FormField
           label="Name"
+          required
           value={formData.Name}
           onChange={(e) => setFormData({ ...formData, Name: e.target.value })}
           error={errors.Name}
@@ -159,6 +164,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
 
         <Select
           label="Category"
+          required
           value={formData.Category}
           onChange={(value) => setFormData({ ...formData, Category: value, SubCategory: '' })}
           error={errors.Category}
@@ -177,6 +183,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
         <div className="textarea-wrapper">
           <label className="textarea-label">Description</label>
           <textarea
+            required
             className={`textarea ${errors.Description ? 'textarea--error' : ''}`}
             value={formData.Description}
             onChange={(e) => setFormData({ ...formData, Description: e.target.value })}
@@ -188,6 +195,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
 
         <FormField
           label="Multiplier (x)"
+          required
           type="text"
           value={formData.Multiplier}
           onChange={(e) => setFormData({ ...formData, Multiplier: sanitizeNumericInput(e.target.value) })}
@@ -212,6 +220,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
 
         <DatePicker
           label="Effective From"
+          required
           value={formData.EffectiveFrom}
           onChange={(value) => setFormData({ ...formData, EffectiveFrom: value })}
           error={errors.EffectiveFrom}
