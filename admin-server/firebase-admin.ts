@@ -1,58 +1,25 @@
-import * as admin from 'firebase-admin';
-import { readFileSync, existsSync } from 'fs';
-import { join, resolve } from 'path';
+import admin from 'firebase-admin';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-function loadServiceAccount(): admin.ServiceAccount | null {
-  const pathFromEnv = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+// Support both file path (local dev) and env var (production)
+let serviceAccount;
 
-  if (pathFromEnv) {
-    const resolved = resolve(pathFromEnv);
-    if (existsSync(resolved)) {
-      try {
-        return JSON.parse(readFileSync(resolved, 'utf8')) as admin.ServiceAccount;
-      } catch (error) {
-        console.error('Failed to read service account from file:', error);
-      }
-    }
-  }
-
-  // Fallback paths
-  const candidates = [
-    join(__dirname, '../../Server/config/firebase-service-account.json'),
-    join(__dirname, '../../../Server/config/firebase-service-account.json'),
-    '/etc/secrets/firebase-service-account.json',
-  ];
-
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) {
-      try {
-        return JSON.parse(readFileSync(candidate, 'utf8')) as admin.ServiceAccount;
-      } catch (error) {
-        console.error(`Failed to read service account from ${candidate}:`, error);
-      }
-    }
-  }
-
-  return null;
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  // Production: parse from environment variable
+  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+} else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+  // Local development: read from file
+  serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
+} else {
+  throw new Error('Firebase service account not configured');
 }
 
-// Initialize Admin SDK
-if (!admin.apps.length) {
-  const serviceAccount = loadServiceAccount();
-
-  if (serviceAccount) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    console.log('Firebase Admin SDK initialized successfully');
-  } else {
-    console.warn('No Firebase service account found, using Application Default Credentials');
-    admin.initializeApp();
-  }
-}
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 export const db = admin.firestore();
-export { admin };
+export const auth = admin.auth();
+export default admin;
