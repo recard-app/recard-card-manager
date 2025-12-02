@@ -75,8 +75,9 @@ export function zodErrorsToFieldMap(error: z.ZodError): Record<string, string> {
   const fieldErrors: Record<string, string> = {};
   const flat = error.flatten().fieldErrors;
   Object.entries(flat).forEach(([key, messages]) => {
-    if (messages && messages.length > 0) {
-      fieldErrors[key] = messages[0]!;
+    const msgArray = messages as string[] | undefined;
+    if (msgArray && msgArray.length > 0) {
+      fieldErrors[key] = msgArray[0]!;
     }
   });
   return fieldErrors;

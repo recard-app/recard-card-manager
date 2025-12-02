@@ -29,14 +29,14 @@ function findDialogFooter(children: React.ReactNode): { footer: React.ReactNode;
         footer = child
       }
       // If it's a form or other container, search its children
-      else if (child.props && child.props.children) {
-        const result = findDialogFooter(child.props.children)
+      else if (child.props && 'children' in child.props) {
+        const childProps = child.props as { children?: React.ReactNode }
+        const result = findDialogFooter(childProps.children)
         if (result.footer && !footer) {
           footer = result.footer
           // Clone the element without the footer
           otherChildren.push(
-            React.cloneElement(child, {
-              ...child.props,
+            React.cloneElement(child as React.ReactElement<{ children?: React.ReactNode }>, {
               children: result.otherChildren,
             })
           )

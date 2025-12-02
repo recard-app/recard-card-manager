@@ -1,4 +1,4 @@
-import type { CreditCardDetails, CardCredit, CardPerk, CardMultiplier } from './index';
+import type { CardCredit, CardPerk, CardMultiplier } from './index';
 
 /**
  * Component type discriminator
@@ -13,12 +13,14 @@ export type CardComponent = CardCredit | CardPerk | CardMultiplier;
 /**
  * Canonical card status values
  */
-export const enum CardStatus {
-  Active = 'active',
-  Inactive = 'inactive',
-  NoActiveVersion = 'no_active_version',
-  NoVersions = 'no_versions',
-}
+export const CardStatus = {
+  Active: 'active',
+  Inactive: 'inactive',
+  NoActiveVersion: 'no_active_version',
+  NoVersions: 'no_versions',
+} as const;
+
+export type CardStatus = typeof CardStatus[keyof typeof CardStatus];
 
 /**
  * Top-level card identity from credit_cards_names collection.

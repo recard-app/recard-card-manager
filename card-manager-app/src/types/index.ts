@@ -1,4 +1,4 @@
-// Re-export types from Server
+// Re-export types (local copies for deployment independence)
 export type {
   CreditCard,
   CreditCardDetails,
@@ -6,8 +6,7 @@ export type {
   CardCredit,
   CardPerk,
   CardMultiplier
-} from '../../../../Server/types/credit-card-types';
+} from './credit-card-types';
 
 // Re-export constants
-export { ONGOING_SENTINEL_DATE } from '../../../../Server/constants/dates';
-export { isOngoingDate, normalizeEffectiveTo, denormalizeEffectiveTo } from '../../../../Server/constants/dates';
+export { ONGOING_SENTINEL_DATE, isOngoingDate, normalizeEffectiveTo, denormalizeEffectiveTo } from '../constants/dates';

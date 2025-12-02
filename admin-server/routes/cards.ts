@@ -647,14 +647,14 @@ router.post('/:referenceCardId/versions', async (req: Request, res: Response) =>
         ? ONGOING_SENTINEL_DATE
         : newVersionData.effectiveTo;
 
-    const newCard: CreditCardDetails = {
+    const newCard = {
       ...newVersionData,
       ReferenceCardId: referenceCardId,
       effectiveTo: normalizedEffectiveTo,
       lastUpdated: now,
       // Ensure new versions are NOT active by default
       IsActive: newVersionData.IsActive === true ? true : false,
-    };
+    } as Omit<CreditCardDetails, 'id'>;
 
     const docRef = await db.collection('credit_cards_history').add(newCard);
 
