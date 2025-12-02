@@ -124,6 +124,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
       }
 
       onSuccess();
+      toast.success(isEdit ? 'Perk updated' : 'Perk created');
       onOpenChange(false);
     } catch (err: any) {
       console.error('Error saving perk:', err);

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { toast } from 'sonner';
 import './LoginPage.scss';
 
 export function LoginPage() {
@@ -19,6 +20,7 @@ export function LoginPage() {
       navigate('/cards');
     } catch (err: any) {
       setError(err.message);
+      toast.error(err?.message || 'Failed to sign in');
     } finally {
       setLoading(false);
     }

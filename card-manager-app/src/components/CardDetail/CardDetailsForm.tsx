@@ -161,6 +161,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
       });
       setIsEditing(false);
       onSaved?.();
+      toast.success('Changes saved');
     } catch (err: any) {
       toast.error('Failed to save changes: ' + (err?.message || 'Unknown error'));
     } finally {

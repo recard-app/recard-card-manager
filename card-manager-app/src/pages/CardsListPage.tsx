@@ -230,6 +230,7 @@ export function CardsListPage() {
     } catch (err: any) {
       setError(err.message || 'Failed to load cards');
       console.error('Error loading cards:', err);
+      toast.error('Failed to load cards' + (err?.message ? `: ${err.message}` : ''));
     } finally {
       setLoading(false);
     }

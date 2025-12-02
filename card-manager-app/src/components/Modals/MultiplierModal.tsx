@@ -134,6 +134,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
       }
 
       onSuccess();
+      toast.success(isEdit ? 'Multiplier updated' : 'Multiplier created');
       onOpenChange(false);
     } catch (err: any) {
       console.error('Error saving multiplier:', err);

@@ -141,6 +141,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
       }
 
       onSuccess();
+      toast.success(isEdit ? 'Credit updated' : 'Credit created');
       onOpenChange(false);
     } catch (err: any) {
       console.error('Error saving credit:', err);

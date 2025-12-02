@@ -128,6 +128,7 @@ export function CardDetailPage() {
     } catch (err: any) {
       setError(err.message || 'Failed to load card');
       console.error('Error loading card:', err);
+      toast.error('Failed to load card' + (err?.message ? `: ${err.message}` : ''));
     } finally {
       setLoading(false);
     }
@@ -145,6 +146,7 @@ export function CardDetailPage() {
       }
     } catch (err: any) {
       console.error('Error loading versions:', err);
+      toast.error('Failed to load versions');
     }
   };
 
@@ -177,6 +179,7 @@ export function CardDetailPage() {
       setMultipliers(sortComponents(multipliersData));
     } catch (err: any) {
       console.error('Error loading components:', err);
+      toast.error('Failed to load components');
     }
   };
 
@@ -200,6 +203,7 @@ export function CardDetailPage() {
     } catch (err: any) {
       setError(err.message || 'Failed to load version');
       console.error('Error loading version:', err);
+      toast.error('Failed to load version' + (err?.message ? `: ${err.message}` : ''));
     } finally {
       setContentLoading(false);
     }
@@ -229,6 +233,7 @@ export function CardDetailPage() {
         const data = await CardService.getCardById(versionId);
         if (data) setCard(data);
       }
+      toast.success('Version activated');
     } catch (err: any) {
       console.error('Error activating version:', err);
       toast.error('Failed to activate version: ' + err.message);
@@ -245,6 +250,7 @@ export function CardDetailPage() {
         const data = await CardService.getCardById(versionId);
         if (data) setCard(data);
       }
+      toast.success('Version deactivated');
     } catch (err: any) {
       console.error('Error deactivating version:', err);
       toast.error('Failed to deactivate version: ' + err.message);
@@ -335,6 +341,11 @@ export function CardDetailPage() {
         case 'multipliers':
           await ComponentService.deleteMultiplier(id);
           break;
+      }
+
+      {
+        const label = type === 'credits' ? 'Credit' : type === 'perks' ? 'Perk' : 'Multiplier';
+        toast.success(`${label} deleted`);
       }
 
       if (referenceCardId) {
