@@ -29,7 +29,7 @@ function findDialogFooter(children: React.ReactNode): { footer: React.ReactNode;
         footer = child
       }
       // If it's a form or other container, search its children
-      else if (child.props && 'children' in child.props) {
+      else if (child.props && typeof child.props === 'object' && 'children' in (child.props as object)) {
         const childProps = child.props as { children?: React.ReactNode }
         const result = findDialogFooter(childProps.children)
         if (result.footer && !footer) {
