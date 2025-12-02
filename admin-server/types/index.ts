@@ -1,13 +1,13 @@
-// Re-export types from Server
+// Re-export types (local copies for deployment independence)
 export type {
   CreditCard,
   CreditCardDetails,
   CardCredit,
   CardPerk,
   CardMultiplier
-} from '../../../Server/types/credit-card-types';
+} from './credit-card-types';
 
-export { ONGOING_SENTINEL_DATE } from '../../../Server/constants/dates';
+export { ONGOING_SENTINEL_DATE } from '../constants/dates';
 
 /**
  * Top-level card identity from credit_cards_names collection.
