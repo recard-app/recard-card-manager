@@ -59,6 +59,13 @@ export function CardDetailPage() {
   const [editingCredit, setEditingCredit] = useState<CardCredit | null>(null);
   const [editingPerk, setEditingPerk] = useState<CardPerk | null>(null);
   const [editingMultiplier, setEditingMultiplier] = useState<CardMultiplier | null>(null);
+  // Key counters to force modal/form remount when opening (ensures fresh state)
+  const [creditModalKey, setCreditModalKey] = useState(0);
+  const [perkModalKey, setPerkModalKey] = useState(0);
+  const [multiplierModalKey, setMultiplierModalKey] = useState(0);
+  const [createVersionModalKey, setCreateVersionModalKey] = useState(0);
+  const [editCardNameModalKey, setEditCardNameModalKey] = useState(0);
+  const [cardDetailsFormKey, setCardDetailsFormKey] = useState(0);
   const [showDeleteCardConfirm, setShowDeleteCardConfirm] = useState(false);
   const [deletingCard, setDeletingCard] = useState(false);
   const [editCardNameModalOpen, setEditCardNameModalOpen] = useState(false);
@@ -151,7 +158,9 @@ export function CardDetailPage() {
   };
 
   const sortComponents = <T extends { EffectiveFrom: string; EffectiveTo: string }>(components: T[]): T[] => {
-    const today = new Date().toISOString().split('T')[0];
+    // Use local date for today to avoid timezone shift
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const ONGOING = '9999-12-31';
 
     return components.sort((a, b) => {
@@ -210,6 +219,7 @@ export function CardDetailPage() {
   };
 
   const handleCreateVersion = async () => {
+    setCreateVersionModalKey(k => k + 1);
     setCreateVersionModalOpen(true);
   };
 
@@ -286,14 +296,17 @@ export function CardDetailPage() {
     switch (type) {
       case 'credits':
         setEditingCredit(null);
+        setCreditModalKey(k => k + 1);
         setCreditModalOpen(true);
         break;
       case 'perks':
         setEditingPerk(null);
+        setPerkModalKey(k => k + 1);
         setPerkModalOpen(true);
         break;
       case 'multipliers':
         setEditingMultiplier(null);
+        setMultiplierModalKey(k => k + 1);
         setMultiplierModalOpen(true);
         break;
     }
@@ -305,6 +318,7 @@ export function CardDetailPage() {
         const credit = credits.find(c => c.id === id);
         if (credit) {
           setEditingCredit(credit);
+          setCreditModalKey(k => k + 1);
           setCreditModalOpen(true);
         }
         break;
@@ -312,6 +326,7 @@ export function CardDetailPage() {
         const perk = perks.find(p => p.id === id);
         if (perk) {
           setEditingPerk(perk);
+          setPerkModalKey(k => k + 1);
           setPerkModalOpen(true);
         }
         break;
@@ -319,6 +334,7 @@ export function CardDetailPage() {
         const multiplier = multipliers.find(m => m.id === id);
         if (multiplier) {
           setEditingMultiplier(multiplier);
+          setMultiplierModalKey(k => k + 1);
           setMultiplierModalOpen(true);
         }
         break;
@@ -426,7 +442,10 @@ export function CardDetailPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setEditCardNameModalOpen(true)}
+              onClick={() => {
+                setEditCardNameModalKey(k => k + 1);
+                setEditCardNameModalOpen(true);
+              }}
             >
               <Pencil size={14} />
               Edit Card
@@ -466,6 +485,7 @@ export function CardDetailPage() {
           {hasVersions && card ? (
             <>
               <CardDetailsForm
+                key={`card-details-${selectedVersionId}-${cardDetailsFormKey}`}
                 cardId={selectedVersionId!}
                 card={card}
                 onSaved={async () => {
@@ -477,6 +497,8 @@ export function CardDetailPage() {
                     await loadVersions(referenceCardId);
                     await loadComponents(referenceCardId);
                   }
+                  // Increment key to force form to pick up fresh data on next edit
+                  setCardDetailsFormKey(k => k + 1);
                 }}
                 onDeleted={handleVersionDeleted}
               />
@@ -516,6 +538,7 @@ export function CardDetailPage() {
       </div>
 
       <CreditModal
+        key={`credit-modal-${creditModalKey}`}
         open={creditModalOpen}
         onOpenChange={setCreditModalOpen}
         referenceCardId={referenceCardId || ''}
@@ -523,6 +546,7 @@ export function CardDetailPage() {
         onSuccess={() => referenceCardId && loadComponents(referenceCardId)}
       />
       <PerkModal
+        key={`perk-modal-${perkModalKey}`}
         open={perkModalOpen}
         onOpenChange={setPerkModalOpen}
         referenceCardId={referenceCardId || ''}
@@ -530,6 +554,7 @@ export function CardDetailPage() {
         onSuccess={() => referenceCardId && loadComponents(referenceCardId)}
       />
       <MultiplierModal
+        key={`multiplier-modal-${multiplierModalKey}`}
         open={multiplierModalOpen}
         onOpenChange={setMultiplierModalOpen}
         referenceCardId={referenceCardId || ''}
@@ -538,6 +563,7 @@ export function CardDetailPage() {
       />
 
       <CreateVersionModal
+        key={`create-version-modal-${createVersionModalKey}`}
         open={createVersionModalOpen}
         onOpenChange={setCreateVersionModalOpen}
         referenceCardId={referenceCardId || ''}
@@ -583,6 +609,7 @@ export function CardDetailPage() {
       {/* Edit Card Name Modal */}
       {cardName && (
         <EditCardNameModal
+          key={`edit-card-name-modal-${editCardNameModalKey}`}
           open={editCardNameModalOpen}
           onOpenChange={setEditCardNameModalOpen}
           cardName={cardName}

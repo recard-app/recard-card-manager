@@ -8,6 +8,7 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import type { CardPerk } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
+import { getCurrentDate } from '@/utils/date-utils';
 import { CATEGORIES, SUBCATEGORIES } from '@/constants/form-options';
 import './PerkModal.scss';
 import { PerkFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
@@ -37,6 +38,8 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Initialize form data when component mounts
+  // The parent uses a key prop to force remount when editing different perks
   useEffect(() => {
     if (perk) {
       setFormData({
@@ -57,12 +60,13 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
         Description: '',
         Requirements: '',
         Details: '',
-        EffectiveFrom: new Date().toISOString().split('T')[0],
+        EffectiveFrom: getCurrentDate(),
         EffectiveTo: '',
       });
     }
     setErrors({});
-  }, [perk, open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const validate = (): boolean => {
     const parsed = PerkFormSchema.safeParse({

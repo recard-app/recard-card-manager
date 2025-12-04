@@ -264,18 +264,19 @@ export function CardsListPage() {
 
   const formatLastUpdated = (dateString?: string): string => {
     if (!dateString) return '';
-    const date = new Date(dateString);
+    // Parse as local date to avoid timezone shift
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     if (isNaN(date.getTime())) return '';
     // Format without leading zeros on month [[memory:7251081]]
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const year = date.getFullYear();
     return `${month}/${day}/${year}`;
   };
 
   const getStalenessInfo = (dateString?: string): { icon: React.ReactNode; color: string } | null => {
     if (!dateString) return null;
-    const date = new Date(dateString);
+    // Parse as local date to avoid timezone shift
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     if (isNaN(date.getTime())) return null;
     
     const now = new Date();
@@ -299,7 +300,9 @@ export function CardsListPage() {
 
   const getLastUpdatedTier = (dateString?: string): Exclude<LastUpdatedTier, 'all'> | null => {
     if (!dateString) return null;
-    const date = new Date(dateString);
+    // Parse as local date to avoid timezone shift
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     if (isNaN(date.getTime())) return null;
     const now = new Date();
     const diffTime = now.getTime() - date.getTime();

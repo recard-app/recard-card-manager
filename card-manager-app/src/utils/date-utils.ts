@@ -1,6 +1,14 @@
 import { ONGOING_SENTINEL_DATE, isOngoingDate } from '@/types';
 
 /**
+ * Parse a YYYY-MM-DD date string as a local calendar date (no timezone shift)
+ */
+export function parseLocalDate(dateString: string): Date {
+  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
  * Format date for display
  */
 export function formatDate(dateString: string): string {
@@ -13,7 +21,8 @@ export function formatDate(dateString: string): string {
   }
 
   try {
-    const date = new Date(dateString);
+    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -39,10 +48,14 @@ export function formatDateRange(from: string, to: string): string {
 }
 
 /**
- * Get current date in ISO format (YYYY-MM-DD)
+ * Get current date in ISO format (YYYY-MM-DD) using local timezone
  */
 export function getCurrentDate(): string {
-  return new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -61,10 +74,10 @@ export function datesOverlap(
   start2: string,
   end2: string
 ): boolean {
-  const s1 = new Date(start1);
-  const e1 = new Date(end1 || ONGOING_SENTINEL_DATE);
-  const s2 = new Date(start2);
-  const e2 = new Date(end2 || ONGOING_SENTINEL_DATE);
+  const s1 = parseLocalDate(start1);
+  const e1 = parseLocalDate(end1 || ONGOING_SENTINEL_DATE);
+  const s2 = parseLocalDate(start2);
+  const e2 = parseLocalDate(end2 || ONGOING_SENTINEL_DATE);
 
   return s1 <= e2 && s2 <= e1;
 }

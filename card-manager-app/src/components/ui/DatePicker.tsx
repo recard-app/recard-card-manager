@@ -42,15 +42,21 @@ export function DatePicker({
   // Check if the date is valid
   const isValidDate = dateValue && !isNaN(dateValue.getTime())
 
-  // Update input value when value prop changes from picker or external source
+  // Track previous value to detect external changes
+  const prevValueRef = React.useRef(value)
+  
+  // Update input value when value prop changes from external source
   React.useEffect(() => {
-    if (isValidDate && document.activeElement?.tagName !== 'INPUT') {
-      // Only update if not currently typing in the input
-      setInputValue(format(dateValue, "MM/dd/yyyy"))
-      setFormatWarning(false)
-    } else if (!value) {
-      setInputValue("")
-      setFormatWarning(false)
+    // Always sync when value changes from outside (different from what we last knew)
+    if (value !== prevValueRef.current) {
+      prevValueRef.current = value
+      if (isValidDate) {
+        setInputValue(format(dateValue, "MM/dd/yyyy"))
+        setFormatWarning(false)
+      } else if (!value) {
+        setInputValue("")
+        setFormatWarning(false)
+      }
     }
   }, [value, isValidDate, dateValue])
 

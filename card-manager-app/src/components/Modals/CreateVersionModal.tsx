@@ -7,6 +7,7 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import type { CreditCardDetails } from '@/types';
 import { CardService } from '@/services/card.service';
 import { normalizeEffectiveTo } from '@/types';
+import { getCurrentDate } from '@/utils/date-utils';
 import './CreateVersionModal.scss';
 
 interface CreateVersionModalProps {
@@ -36,25 +37,26 @@ export function CreateVersionModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Initialize form data when component mounts
+  // The parent uses a key prop to force remount when opening the modal
   useEffect(() => {
-    if (open) {
-      setFormData({
-        VersionName: currentCard ? '' : 'V1',  // Default to V1 for first version
-        EffectiveFrom: new Date().toISOString().split('T')[0],
-        EffectiveTo: '',
-      });
-      setErrors({});
+    setFormData({
+      VersionName: currentCard ? '' : 'V1',  // Default to V1 for first version
+      EffectiveFrom: getCurrentDate(),
+      EffectiveTo: '',
+    });
+    setErrors({});
 
-      // If no current card, fetch the card name data
-      if (!currentCard && referenceCardId) {
-        CardService.getCardName(referenceCardId).then((data) => {
-          if (data) {
-            setCardNameData({ CardName: data.CardName, CardIssuer: data.CardIssuer });
-          }
-        });
-      }
+    // If no current card, fetch the card name data
+    if (!currentCard && referenceCardId) {
+      CardService.getCardName(referenceCardId).then((data) => {
+        if (data) {
+          setCardNameData({ CardName: data.CardName, CardIssuer: data.CardIssuer });
+        }
+      });
     }
-  }, [open, currentCard, referenceCardId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -85,23 +87,39 @@ export function CreateVersionModal({
       const cardName = currentCard?.CardName || cardNameData?.CardName || '';
       const cardIssuer = currentCard?.CardIssuer || cardNameData?.CardIssuer || '';
 
-      // Create a new version
-      const newVersionData: Partial<Omit<CreditCardDetails, 'id' | 'ReferenceCardId' | 'lastUpdated'>> = {
-        VersionName: formData.VersionName.trim(),
-        effectiveFrom: formData.EffectiveFrom,
-        IsActive: false,
-      };
-      // Only include fields if we have meaningful values to avoid failing server validation
-      if (formData.EffectiveTo) {
-        const normalized = normalizeEffectiveTo(formData.EffectiveTo);
-        if (normalized) newVersionData.effectiveTo = normalized;
+      // Build the new version data
+      let newVersionData: Partial<Omit<CreditCardDetails, 'id' | 'ReferenceCardId' | 'lastUpdated'>>;
+      
+      if (currentCard) {
+        // Clone ALL fields from current card, then override specific fields
+        // Destructure out fields we don't want to clone
+        const { id, ReferenceCardId, lastUpdated, selected, isDefaultCard, ...clonedFields } = currentCard;
+        
+        newVersionData = {
+          ...clonedFields,
+          // Override with form values
+          VersionName: formData.VersionName.trim(),
+          effectiveFrom: formData.EffectiveFrom,
+          effectiveTo: formData.EffectiveTo 
+            ? normalizeEffectiveTo(formData.EffectiveTo) || clonedFields.effectiveTo
+            : undefined, // Let server use sentinel value
+          IsActive: false,
+        };
+      } else {
+        // First version - minimal data, no card to clone from
+        newVersionData = {
+          VersionName: formData.VersionName.trim(),
+          effectiveFrom: formData.EffectiveFrom,
+          IsActive: false,
+          CardName: cardName,
+          CardIssuer: cardIssuer,
+        };
+        
+        if (formData.EffectiveTo) {
+          const normalized = normalizeEffectiveTo(formData.EffectiveTo);
+          if (normalized) newVersionData.effectiveTo = normalized;
+        }
       }
-      if (cardName) newVersionData.CardName = cardName;
-      if (cardIssuer) newVersionData.CardIssuer = cardIssuer;
-      if (currentCard?.CardNetwork) newVersionData.CardNetwork = currentCard.CardNetwork;
-      if (currentCard?.CardImage) newVersionData.CardImage = currentCard.CardImage;
-      if (currentCard?.CardPrimaryColor) newVersionData.CardPrimaryColor = currentCard.CardPrimaryColor;
-      if (currentCard?.CardSecondaryColor) newVersionData.CardSecondaryColor = currentCard.CardSecondaryColor;
 
       const newVersionId = await CardService.createNewVersion(referenceCardId, newVersionData);
 

@@ -24,6 +24,8 @@ export function EditCardNameModal({ open, onOpenChange, cardName, onSuccess }: E
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Initialize form data when component mounts
+  // The parent uses a key prop to force remount when opening the modal
   useEffect(() => {
     if (cardName) {
       setFormData({
@@ -32,7 +34,8 @@ export function EditCardNameModal({ open, onOpenChange, cardName, onSuccess }: E
       });
     }
     setErrors({});
-  }, [cardName, open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};

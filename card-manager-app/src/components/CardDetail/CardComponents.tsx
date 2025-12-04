@@ -26,12 +26,21 @@ interface ComponentWithStatus {
 export function CardComponents({ card: _card, credits, perks, multipliers }: CardComponentsProps) {
   // Helper to check if a component is currently active (today is within range)
   const isCurrentlyActive = (effectiveFrom: string, effectiveTo: string): boolean => {
-    const today = new Date().toISOString().split('T')[0];
-    const start = new Date(effectiveFrom).getTime();
-    const end = effectiveTo === '9999-12-31' ? Infinity : new Date(effectiveTo).getTime();
-    const now = new Date(today).getTime();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    return now >= start && now <= end;
+    const [sy, sm, sd] = effectiveFrom.split('-').map(Number);
+    const start = new Date(sy, sm - 1, sd);
+
+    let end: Date;
+    if (effectiveTo === '9999-12-31') {
+      end = new Date(9999, 11, 31);
+    } else {
+      const [ey, em, ed] = effectiveTo.split('-').map(Number);
+      end = new Date(ey, em - 1, ed);
+    }
+
+    return today >= start && today <= end;
   };
 
   // Filter and transform credits
