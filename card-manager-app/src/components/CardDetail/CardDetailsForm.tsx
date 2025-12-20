@@ -380,7 +380,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
               required
               value={formData.ForeignExchangeFee}
               onChange={(e) => setFormData({ ...formData, ForeignExchangeFee: e.target.value })}
-              helperText="If there are no fees, write 'No foreign transaction fees'."
+              helperText="If there are no fees, write 'None'."
             />
             <FormField
               label="FX Fee Percentage"
