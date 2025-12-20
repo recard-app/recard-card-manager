@@ -12,10 +12,11 @@ import type { CreditCardDetails } from '@/types';
 import { normalizeEffectiveTo } from '@/types';
 import { formatDate } from '@/utils/date-utils';
 import { REWARDS_CURRENCIES } from '@/constants/form-options';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2, FileJson } from 'lucide-react';
 import './CardDetailsForm.scss';
 import { CardIcon } from '@/components/icons/CardIcon';
 import { CardDetailsFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
+import { JsonImportModal } from '@/components/Modals/JsonImportModal';
 
 interface CardDetailsFormProps {
   cardId: string;
@@ -30,10 +31,21 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [jsonImportModalOpen, setJsonImportModalOpen] = useState(false);
 
   // Helper to sanitize numeric input (allows digits, decimal point, and negative sign)
   const sanitizeNumericInput = (value: string): string => {
     return value.replace(/[^0-9.-]/g, '');
+  };
+
+  const normalizeRewardsCurrency = (value?: string): string => {
+    return value?.trim().toLowerCase() || '';
+  };
+
+  const formatRewardsCurrencyForDisplay = (value?: string): string => {
+    const normalized = normalizeRewardsCurrency(value);
+    if (!normalized) return '';
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
   };
 
   const [formData, setFormData] = useState({
@@ -80,7 +92,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
           card.ForeignExchangeFeePercentage != null
             ? String(card.ForeignExchangeFeePercentage)
             : '',
-        RewardsCurrency: card.RewardsCurrency || '',
+        RewardsCurrency: normalizeRewardsCurrency(card.RewardsCurrency),
         PointsPerDollar: card.PointsPerDollar != null ? String(card.PointsPerDollar) : '',
         VersionName: card.VersionName || '',
         EffectiveFrom: toYMD(card.effectiveFrom) || '',
@@ -153,7 +165,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
         ForeignExchangeFeePercentage: formData.ForeignExchangeFeePercentage
           ? parseFloat(formData.ForeignExchangeFeePercentage)
           : null,
-        RewardsCurrency: formData.RewardsCurrency.trim(),
+        RewardsCurrency: formData.RewardsCurrency.trim().toLowerCase(),
         PointsPerDollar: formData.PointsPerDollar ? parseFloat(formData.PointsPerDollar) : null,
         VersionName: formData.VersionName.trim(),
         effectiveFrom: formData.EffectiveFrom,
@@ -186,6 +198,47 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
     }
   };
 
+  const handleJsonImport = (fields: Record<string, unknown>) => {
+    // Map imported fields to form data, converting types as needed
+    const updates: Partial<typeof formData> = {};
+    
+    if ('CardName' in fields && typeof fields.CardName === 'string') {
+      updates.CardName = fields.CardName;
+    }
+    if ('CardIssuer' in fields && typeof fields.CardIssuer === 'string') {
+      updates.CardIssuer = fields.CardIssuer;
+    }
+    if ('CardNetwork' in fields && typeof fields.CardNetwork === 'string') {
+      updates.CardNetwork = fields.CardNetwork;
+    }
+    if ('CardDetails' in fields && typeof fields.CardDetails === 'string') {
+      updates.CardDetails = fields.CardDetails;
+    }
+    if ('CardPrimaryColor' in fields && typeof fields.CardPrimaryColor === 'string') {
+      updates.CardPrimaryColor = fields.CardPrimaryColor;
+    }
+    if ('CardSecondaryColor' in fields && typeof fields.CardSecondaryColor === 'string') {
+      updates.CardSecondaryColor = fields.CardSecondaryColor;
+    }
+    if ('AnnualFee' in fields && typeof fields.AnnualFee === 'number') {
+      updates.AnnualFee = String(fields.AnnualFee);
+    }
+    if ('ForeignExchangeFee' in fields && typeof fields.ForeignExchangeFee === 'string') {
+      updates.ForeignExchangeFee = fields.ForeignExchangeFee;
+    }
+    if ('ForeignExchangeFeePercentage' in fields && typeof fields.ForeignExchangeFeePercentage === 'number') {
+      updates.ForeignExchangeFeePercentage = String(fields.ForeignExchangeFeePercentage);
+    }
+    if ('RewardsCurrency' in fields && typeof fields.RewardsCurrency === 'string') {
+      updates.RewardsCurrency = normalizeRewardsCurrency(fields.RewardsCurrency);
+    }
+    if ('PointsPerDollar' in fields && typeof fields.PointsPerDollar === 'number') {
+      updates.PointsPerDollar = String(fields.PointsPerDollar);
+    }
+
+    setFormData(prev => ({ ...prev, ...updates }));
+  };
+
   return (
     <Card className="card-details-form">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -208,6 +261,10 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
           </div>
         ) : (
           <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <Button variant="outline" size="sm" onClick={() => setJsonImportModalOpen(true)} disabled={submitting}>
+              <FileJson size={16} />
+              Import JSON
+            </Button>
             <Button variant="outline" size="sm" onClick={handleCancel} disabled={submitting}>
               Cancel
             </Button>
@@ -278,7 +335,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
             <h3>Rewards</h3>
             <div className="detail-row">
               <span className="label">Rewards Currency:</span>
-              <span className="value">{card.RewardsCurrency}</span>
+              <span className="value">{formatRewardsCurrencyForDisplay(card.RewardsCurrency)}</span>
             </div>
             <div className="detail-row">
               <span className="label">Points Per Dollar:</span>
@@ -400,8 +457,13 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
               label="Rewards Currency"
               required
               value={formData.RewardsCurrency}
-              onChange={(value) => setFormData({ ...formData, RewardsCurrency: value })}
-              options={REWARDS_CURRENCIES.map(currency => ({ value: currency, label: currency }))}
+              onChange={(value) =>
+                setFormData({ ...formData, RewardsCurrency: value.toLowerCase() })
+              }
+              options={REWARDS_CURRENCIES.map((currency) => ({
+                value: currency.toLowerCase(),
+                label: formatRewardsCurrencyForDisplay(currency),
+              }))}
             />
             <FormField
               label="Points Per Dollar"
@@ -497,6 +559,14 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
           </Button>
         </DialogFooter>
       </Dialog>
+
+      {/* JSON Import Modal */}
+      <JsonImportModal
+        open={jsonImportModalOpen}
+        onOpenChange={setJsonImportModalOpen}
+        type="card"
+        onImport={handleJsonImport}
+      />
     </Card>
   );
 }

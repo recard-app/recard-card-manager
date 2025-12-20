@@ -10,8 +10,10 @@ import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
 import { getCurrentDate } from '@/utils/date-utils';
 import { CATEGORIES, SUBCATEGORIES } from '@/constants/form-options';
+import { FileJson } from 'lucide-react';
 import './MultiplierModal.scss';
 import { MultiplierFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
+import { JsonImportModal } from '@/components/Modals/JsonImportModal';
 
 interface MultiplierModalProps {
   open: boolean;
@@ -38,6 +40,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [jsonImportModalOpen, setJsonImportModalOpen] = useState(false);
 
   // Helper to sanitize numeric input (allows digits, decimal point, and negative sign)
   const sanitizeNumericInput = (value: string): string => {
@@ -106,6 +109,39 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
     return true;
   };
 
+  const handleJsonImport = (fields: Record<string, unknown>) => {
+    const updates: Partial<typeof formData> = {};
+    
+    if ('Name' in fields && typeof fields.Name === 'string') {
+      updates.Name = fields.Name;
+    }
+    if ('Category' in fields && typeof fields.Category === 'string') {
+      // Only set if it's a valid category
+      if (Object.keys(CATEGORIES).includes(fields.Category)) {
+        updates.Category = fields.Category;
+        // Reset subcategory if category changes
+        updates.SubCategory = '';
+      }
+    }
+    if ('SubCategory' in fields && typeof fields.SubCategory === 'string') {
+      updates.SubCategory = fields.SubCategory;
+    }
+    if ('Description' in fields && typeof fields.Description === 'string') {
+      updates.Description = fields.Description;
+    }
+    if ('Multiplier' in fields && typeof fields.Multiplier === 'number') {
+      updates.Multiplier = String(fields.Multiplier);
+    }
+    if ('Requirements' in fields && typeof fields.Requirements === 'string') {
+      updates.Requirements = fields.Requirements;
+    }
+    if ('Details' in fields && typeof fields.Details === 'string') {
+      updates.Details = fields.Details;
+    }
+
+    setFormData(prev => ({ ...prev, ...updates }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -158,6 +194,17 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
       description={isEdit ? 'Update multiplier details' : 'Create a new multiplier for this card version'}
     >
       <form id={formId} onSubmit={handleSubmit} className="multiplier-modal-form">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setJsonImportModalOpen(true)}
+          style={{ alignSelf: 'flex-start', marginBottom: '0.5rem' }}
+        >
+          <FileJson size={16} />
+          Import from JSON
+        </Button>
+
         <FormField
           label="Name"
           required
@@ -248,6 +295,13 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
           </Button>
         </DialogFooter>
       </form>
+
+      <JsonImportModal
+        open={jsonImportModalOpen}
+        onOpenChange={setJsonImportModalOpen}
+        type="multiplier"
+        onImport={handleJsonImport}
+      />
     </Dialog>
   );
 }

@@ -10,8 +10,10 @@ import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
 import { getCurrentDate } from '@/utils/date-utils';
 import { CATEGORIES, SUBCATEGORIES, TIME_PERIODS } from '@/constants/form-options';
+import { FileJson } from 'lucide-react';
 import './CreditModal.scss';
 import { CreditFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
+import { JsonImportModal } from '@/components/Modals/JsonImportModal';
 
 interface CreditModalProps {
   open: boolean;
@@ -39,6 +41,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [jsonImportModalOpen, setJsonImportModalOpen] = useState(false);
 
   // Helper to sanitize numeric input (allows digits, decimal point, and negative sign)
   const sanitizeNumericInput = (value: string): string => {
@@ -111,6 +114,46 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
     return true;
   };
 
+  const handleJsonImport = (fields: Record<string, unknown>) => {
+    const updates: Partial<typeof formData> = {};
+    
+    if ('Title' in fields && typeof fields.Title === 'string') {
+      updates.Title = fields.Title;
+    }
+    if ('Category' in fields && typeof fields.Category === 'string') {
+      // Only set if it's a valid category
+      if (Object.keys(CATEGORIES).includes(fields.Category)) {
+        updates.Category = fields.Category;
+        // Reset subcategory if category changes
+        updates.SubCategory = '';
+      }
+    }
+    if ('SubCategory' in fields && typeof fields.SubCategory === 'string') {
+      updates.SubCategory = fields.SubCategory;
+    }
+    if ('Description' in fields && typeof fields.Description === 'string') {
+      updates.Description = fields.Description;
+    }
+    if ('Value' in fields && typeof fields.Value === 'string') {
+      updates.Value = fields.Value;
+    }
+    if ('TimePeriod' in fields && typeof fields.TimePeriod === 'string') {
+      // Capitalize first letter to match TIME_PERIODS format
+      const capitalized = fields.TimePeriod.charAt(0).toUpperCase() + fields.TimePeriod.slice(1).toLowerCase();
+      if (TIME_PERIODS.includes(capitalized as typeof TIME_PERIODS[number])) {
+        updates.TimePeriod = capitalized;
+      }
+    }
+    if ('Requirements' in fields && typeof fields.Requirements === 'string') {
+      updates.Requirements = fields.Requirements;
+    }
+    if ('Details' in fields && typeof fields.Details === 'string') {
+      updates.Details = fields.Details;
+    }
+
+    setFormData(prev => ({ ...prev, ...updates }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -165,6 +208,17 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
       description={isEdit ? 'Update credit details' : 'Create a new credit for this card version'}
     >
       <form id={formId} onSubmit={handleSubmit} className="credit-modal-form">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setJsonImportModalOpen(true)}
+          style={{ alignSelf: 'flex-start', marginBottom: '0.5rem' }}
+        >
+          <FileJson size={16} />
+          Import from JSON
+        </Button>
+
         <FormField
           label="Title"
           required
@@ -257,6 +311,13 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           </Button>
         </DialogFooter>
       </form>
+
+      <JsonImportModal
+        open={jsonImportModalOpen}
+        onOpenChange={setJsonImportModalOpen}
+        type="credit"
+        onImport={handleJsonImport}
+      />
     </Dialog>
   );
 }

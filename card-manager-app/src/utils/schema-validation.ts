@@ -331,3 +331,63 @@ export function isValidResponse(
   return validateResponse(type, obj).valid;
 }
 
+// ============================================
+// JSON IMPORT UTILITIES
+// ============================================
+
+export interface ExtractedFieldsResult {
+  /** Fields with valid values that were extracted */
+  validFields: Record<string, unknown>;
+  /** Fields that were skipped due to invalid values */
+  skippedFields: Array<{ field: string; reason: string }>;
+  /** Count of valid fields extracted */
+  validCount: number;
+  /** Count of fields that were skipped */
+  skippedCount: number;
+}
+
+/**
+ * Extracts valid fields from a JSON object based on the schema type.
+ * Only fields defined in SCHEMA_FIELDS for the type are considered.
+ * Invalid values are skipped and reported.
+ * 
+ * @param type - The generation type (card, credit, perk, multiplier)
+ * @param obj - The JSON object to extract fields from
+ * @returns Object containing valid fields and information about skipped fields
+ */
+export function extractValidFieldsFromJson(
+  type: GenerationType,
+  obj: Record<string, unknown>
+): ExtractedFieldsResult {
+  const expectedFields = SCHEMA_FIELDS[type];
+  const validFields: Record<string, unknown> = {};
+  const skippedFields: Array<{ field: string; reason: string }> = [];
+
+  // Only iterate through expected fields for this type
+  for (const field of expectedFields) {
+    // Skip if field is not present in the input object
+    if (!(field in obj)) {
+      continue;
+    }
+
+    const value = obj[field];
+    const validationResult = validateField(type, field, value);
+
+    if (validationResult.valid) {
+      validFields[field] = value;
+    } else {
+      skippedFields.push({
+        field,
+        reason: validationResult.reason || 'Invalid value',
+      });
+    }
+  }
+
+  return {
+    validFields,
+    skippedFields,
+    validCount: Object.keys(validFields).length,
+    skippedCount: skippedFields.length,
+  };
+}
+
