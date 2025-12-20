@@ -11,7 +11,10 @@ const GenerateRequestSchema = z.object({
   generationType: z.enum(['card', 'credit', 'perk', 'multiplier']),
   batchMode: z.boolean().optional(),
   refinementPrompt: z.string().optional(),
-  previousOutput: z.record(z.unknown()).optional(),
+  previousOutput: z.union([
+    z.record(z.string(), z.unknown()),
+    z.array(z.record(z.string(), z.unknown())),
+  ]).optional(),
 });
 
 // POST /admin/ai/generate - Generate structured data from raw text using AI
@@ -22,7 +25,7 @@ router.post('/generate', verifyAuth, async (req: Request, res: Response) => {
     if (!parsed.success) {
       return res.status(400).json({
         error: 'Invalid request',
-        details: parsed.error.errors,
+        details: parsed.error.issues,
       });
     }
 
@@ -39,6 +42,7 @@ router.post('/generate', verifyAuth, async (req: Request, res: Response) => {
     res.json(result);
   } catch (error: any) {
     console.error('AI generation error:', error);
+    console.error('Error stack:', error.stack);
     
     // Handle specific error types
     if (error.message?.includes('GEMINI_API_KEY')) {
@@ -50,6 +54,7 @@ router.post('/generate', verifyAuth, async (req: Request, res: Response) => {
     if (error.message?.includes('JSON')) {
       return res.status(500).json({
         error: 'Failed to parse AI response. Please try again.',
+        message: error.message,
       });
     }
 

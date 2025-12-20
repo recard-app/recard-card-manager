@@ -29,7 +29,7 @@ export interface GenerateParams {
   generationType: GenerationType;
   batchMode?: boolean;
   refinementPrompt?: string;
-  previousOutput?: Record<string, unknown>;
+  previousOutput?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 // Model constants
@@ -573,7 +573,9 @@ export async function generateData(params: GenerateParams): Promise<GenerationRe
 
   const ai = new GoogleGenAI({ apiKey });
   const isRefinement = !!(params.refinementPrompt && params.previousOutput);
-  const batchMode = params.batchMode ?? false;
+  // If previousOutput is an array, we're refining batch results
+  const isBatchRefinement = isRefinement && Array.isArray(params.previousOutput);
+  const batchMode = isBatchRefinement || (params.batchMode ?? false);
   const modelsToTry = getModelsForGeneration(params.generationType, batchMode, isRefinement);
 
   const systemPrompt = getSystemPrompt(params.generationType, batchMode);
@@ -581,7 +583,10 @@ export async function generateData(params: GenerateParams): Promise<GenerationRe
   let userPrompt = `Extract and structure the following credit card information:\n\n${params.rawData}`;
   
   if (params.refinementPrompt && params.previousOutput) {
-    userPrompt = `Previous output:\n${JSON.stringify(params.previousOutput, null, 2)}\n\nRefinement instructions: ${params.refinementPrompt}\n\nPlease update the output according to the refinement instructions. Output ONLY the updated JSON.`;
+    const outputFormat = Array.isArray(params.previousOutput) 
+      ? 'Output ONLY the updated JSON array.'
+      : 'Output ONLY the updated JSON object.';
+    userPrompt = `Previous output:\n${JSON.stringify(params.previousOutput, null, 2)}\n\nRefinement instructions: ${params.refinementPrompt}\n\nPlease update the output according to the refinement instructions. ${outputFormat}`;
   }
 
   let lastError: Error | null = null;

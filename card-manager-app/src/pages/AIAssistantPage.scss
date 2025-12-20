@@ -50,6 +50,7 @@
   gap: $spacing-lg;
   flex: 1;
   padding: $spacing-md 0;
+  padding-bottom: 70px; // Space for sticky refinement bar
 }
 
 .input-section,
@@ -299,14 +300,20 @@
   gap: $spacing-sm;
   width: 100%;
   padding: $spacing-sm $spacing-md;
-  border: none;
   background-color: $neutral-gray-100;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-  text-align: left;
 
-  &:hover {
-    background-color: $neutral-gray-200;
+  .item-header-clickable {
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-sm;
+    flex: 1;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    min-width: 0; // Allow text truncation
+
+    &:hover {
+      opacity: 0.8;
+    }
   }
 
   .item-expand-icon {
@@ -354,21 +361,41 @@
   }
 }
 
-// Refinement section
+// Refinement section - sticky at bottom
 .refinement-section {
-  margin-top: $spacing-lg;
-  padding-top: $spacing-lg;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: $neutral-white;
   border-top: 1px solid $neutral-gray-200;
+  padding: $spacing-sm;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 100;
+  margin: 0 (-$spacing-sm); // Extend to edges
+  width: calc(100% + #{$spacing-sm} * 2);
 
-  h3 {
-    font-size: $font-size-sm;
-    font-weight: 600;
-    color: $neutral-gray-800;
-    margin: 0 0 $spacing-sm 0;
+  .refinement-content {
+    @include flex-row;
+    align-items: flex-end;
+    gap: $spacing-sm;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 
   .refinement-input {
-    margin-bottom: $spacing-sm;
+    flex: 1;
+    min-height: 36px;
+    max-height: 120px;
+    padding: $spacing-xs $spacing-sm;
+    resize: none;
+    overflow-y: auto;
+    line-height: 1.4;
+  }
+
+  .regenerate-button {
+    flex-shrink: 0;
+    height: 36px;
   }
 }
 

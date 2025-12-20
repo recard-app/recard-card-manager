@@ -113,26 +113,38 @@ export function AIAssistantPage() {
       return;
     }
 
+    if (!result?.items || result.items.length === 0) {
+      toast.warning('No previous output to refine');
+      return;
+    }
+
     setLoading(true);
 
     try {
       // For refinement, pass all items as previous output
-      const previousOutput = result?.items && result.items.length === 1 
-        ? result.items[0].json 
-        : result?.items.map(item => item.json);
+      // Single item: pass the object directly
+      // Multiple items: pass as array
+      const previousOutput = result.items.length === 1
+        ? result.items[0].json
+        : result.items.map(item => item.json);
       
       const data = await AIService.generate({
         rawData,
         generationType,
-        batchMode: canBatch && batchMode,
+        batchMode: result.items.length > 1, // Use batch mode if we're refining multiple items
         refinementPrompt,
-        previousOutput: previousOutput as Record<string, unknown>,
+        previousOutput,
       });
       setResult(data);
       setRefinementPrompt('');
+      // Reset textarea height
+      const textarea = document.querySelector('.refinement-input') as HTMLTextAreaElement;
+      if (textarea) {
+        textarea.style.height = 'auto';
+      }
     } catch (err: any) {
       console.error('Regeneration error:', err);
-      const errorMessage = err.response?.data?.error || err.message || 'Unknown error';
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown error';
       toast.error('Failed to regenerate: ' + errorMessage);
     } finally {
       setLoading(false);
@@ -304,23 +316,25 @@ export function AIAssistantPage() {
               {result.items.map((item, index) => (
                 <div key={index} className="item-card">
                   {result.items.length > 1 && (
-                    <button 
-                      className="item-header"
-                      onClick={() => toggleItemExpanded(index)}
-                    >
-                      <span className="item-expand-icon">
-                        {expandedItems.has(index) ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                      </span>
-                      <span className="item-number">[{index + 1}]</span>
-                      <span className="item-title">{getItemTitle(item)}</span>
+                    <div className="item-header">
+                      <div 
+                        className="item-header-clickable"
+                        onClick={() => toggleItemExpanded(index)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => e.key === 'Enter' && toggleItemExpanded(index)}
+                      >
+                        <span className="item-expand-icon">
+                          {expandedItems.has(index) ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        </span>
+                        <span className="item-number">[{index + 1}]</span>
+                        <span className="item-title">{getItemTitle(item)}</span>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
                         className="item-copy-button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyItemJson(item, index);
-                        }}
+                        onClick={() => copyItemJson(item, index)}
                       >
                         {copiedField === `json-${index}` ? (
                           <>
@@ -334,7 +348,7 @@ export function AIAssistantPage() {
                           </>
                         )}
                       </Button>
-                    </button>
+                    </div>
                   )}
                   
                   {(result.items.length === 1 || expandedItems.has(index)) && (
@@ -396,35 +410,42 @@ export function AIAssistantPage() {
               ))}
             </div>
 
-            {showRefinement && (
-              <div className="refinement-section">
-                <h3>Refine Output</h3>
-                <textarea
-                  className="refinement-input"
-                  placeholder="Enter additional instructions to refine the output (e.g., 'Change the category to travel', 'The annual fee should be $95')..."
-                  value={refinementPrompt}
-                  onChange={(e) => setRefinementPrompt(e.target.value)}
-                  rows={3}
-                />
-                <Button
-                  onClick={handleRegenerate}
-                  disabled={loading || !refinementPrompt.trim()}
-                  variant="outline"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 size={16} className="spinning" />
-                      Regenerating...
-                    </>
-                  ) : (
-                    'Regenerate'
-                  )}
-                </Button>
-              </div>
-            )}
           </div>
         )}
       </div>
+
+      {showRefinement && (
+        <div className="refinement-section">
+          <div className="refinement-content">
+            <textarea
+              className="refinement-input"
+              placeholder="Enter refinement instructions..."
+              value={refinementPrompt}
+              onChange={(e) => {
+                setRefinementPrompt(e.target.value);
+                // Auto-resize textarea
+                e.target.style.height = 'auto';
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+              }}
+              rows={1}
+            />
+            <Button
+              onClick={handleRegenerate}
+              disabled={loading || !refinementPrompt.trim()}
+              className="regenerate-button"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={16} className="spinning" />
+                  Regenerating...
+                </>
+              ) : (
+                'Regenerate'
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

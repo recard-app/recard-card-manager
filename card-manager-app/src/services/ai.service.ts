@@ -24,7 +24,7 @@ export interface GenerateRequest {
   generationType: GenerationType;
   batchMode?: boolean;
   refinementPrompt?: string;
-  previousOutput?: Record<string, unknown>;
+  previousOutput?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 export const AIService = {
