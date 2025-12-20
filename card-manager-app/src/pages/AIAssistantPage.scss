@@ -496,3 +496,47 @@
   }
 }
 
+// Schema validation indicators
+.validation-icon {
+  flex-shrink: 0;
+  margin-right: 6px;
+
+  &.valid {
+    color: #22c55e;
+  }
+
+  &.invalid {
+    color: #ef4444;
+  }
+}
+
+.validation-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+
+.json-validation-status {
+  display: flex;
+  align-items: center;
+  font-size: $font-size-xs;
+  font-weight: 500;
+  flex: 1;
+
+  .validation-icon {
+    margin-right: 6px;
+  }
+
+  .valid-text {
+    color: #22c55e;
+  }
+
+  .invalid-text {
+    color: #ef4444;
+  }
+}
+
+.json-header {
+  justify-content: space-between;
+}
+

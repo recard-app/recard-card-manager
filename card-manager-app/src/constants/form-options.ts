@@ -6,12 +6,12 @@ export const CATEGORIES = {
   gas: 'gas',
   entertainment: 'entertainment',
   transportation: 'transportation',
-  Transit: 'Transit',
+  transit: 'transit',
   general: 'general',
   'custom category': 'custom category',
   insurance: 'insurance',
   rent: 'rent',
-  'Rewards Boost': 'Rewards Boost',
+  'rewards boost': 'rewards boost',
 } as const;
 
 export const SUBCATEGORIES: Record<string, string[]> = {
@@ -30,11 +30,11 @@ export const SUBCATEGORIES: Record<string, string[]> = {
   transportation: ['rideshare'],
   insurance: ['purchase', 'travel', 'car rental', 'cell phone protection', 'rental car protection'],
   dining: [],
-  Transit: [],
+  transit: [],
   general: [],
   'custom category': [],
   rent: [],
-  'Rewards Boost': [],
+  'rewards boost': [],
 };
 
 // Time periods for credits

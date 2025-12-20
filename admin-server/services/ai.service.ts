@@ -1,4 +1,11 @@
 import { GoogleGenAI } from '@google/genai';
+import { getCondensedRules } from './schema-rules.service';
+import {
+  AI_CARD_SCHEMA,
+  AI_CREDIT_SCHEMA,
+  AI_PERK_SCHEMA,
+  AI_MULTIPLIER_SCHEMA,
+} from '../constants/ai-response-schema';
 
 // Types
 export type GenerationType = 'card' | 'credit' | 'perk' | 'multiplier';
@@ -68,96 +75,31 @@ function isRateLimitError(error: Error): boolean {
          message.includes('rate limit');
 }
 
-// Sample data structures for prompts
-const CARD_SCHEMA = {
-  id: 'string (kebab-case, e.g., chase-sapphire-preferred)',
-  VersionName: 'string (e.g., "2024 Version")',
-  ReferenceCardId: 'string (same as id for base cards)',
-  IsActive: 'boolean',
-  CardName: 'string',
-  CardIssuer: 'string (e.g., "Chase", "American Express", "Capital One")',
-  CardNetwork: 'string (e.g., "Visa", "Mastercard", "Amex")',
-  CardDetails: 'string (brief description)',
-  CardImage: 'string (URL or empty)',
-  CardPrimaryColor: 'string (hex color, e.g., "#1A1F71")',
-  CardSecondaryColor: 'string (hex color)',
-  effectiveFrom: 'ISO date string',
-  effectiveTo: 'ISO date string',
-  lastUpdated: 'ISO date string',
-  AnnualFee: 'number or null',
-  ForeignExchangeFee: 'string (e.g., "3%" or "None")',
-  ForeignExchangeFeePercentage: 'number or null',
-  RewardsCurrency: 'string (e.g., "Ultimate Rewards", "Membership Rewards")',
-  PointsPerDollar: 'number or null',
-  Perks: '[{id: "perk-id"}]',
-  Credits: '[{id: "credit-id"}]',
-  Multipliers: '[{id: "multiplier-id"}]',
-};
-
-const CREDIT_SCHEMA = {
-  id: 'string (kebab-case)',
-  ReferenceCardId: 'string',
-  Title: 'string',
-  Category: 'string (e.g., "travel", "dining", "entertainment", "shopping")',
-  SubCategory: 'string (e.g., "streaming", "hotels", "flights")',
-  Description: 'string',
-  Value: 'string (e.g., "$200", "$100/year")',
-  TimePeriod: 'string (e.g., "annual", "monthly", "quarterly")',
-  Requirements: 'string',
-  Details: 'string',
-  EffectiveFrom: 'ISO date string',
-  EffectiveTo: 'ISO date string',
-  LastUpdated: 'ISO date string',
-};
-
-const PERK_SCHEMA = {
-  id: 'string (kebab-case)',
-  ReferenceCardId: 'string',
-  Title: 'string',
-  Category: 'string (e.g., "travel", "insurance", "shopping")',
-  SubCategory: 'string',
-  Description: 'string',
-  Requirements: 'string',
-  Details: 'string',
-  EffectiveFrom: 'ISO date string',
-  EffectiveTo: 'ISO date string',
-  LastUpdated: 'ISO date string',
-};
-
-const MULTIPLIER_SCHEMA = {
-  id: 'string (kebab-case)',
-  ReferenceCardId: 'string',
-  Name: 'string (e.g., "3X on Dining")',
-  Category: 'string',
-  SubCategory: 'string',
-  Description: 'string',
-  Multiplier: 'number (e.g., 3 for 3X points)',
-  Requirements: 'string',
-  Details: 'string',
-  EffectiveFrom: 'ISO date string',
-  EffectiveTo: 'ISO date string',
-  LastUpdated: 'ISO date string',
-};
+// Schema aliases for prompt generation (imported from ai-response-schema)
+const CARD_SCHEMA = AI_CARD_SCHEMA;
+const CREDIT_SCHEMA = AI_CREDIT_SCHEMA;
+const PERK_SCHEMA = AI_PERK_SCHEMA;
+const MULTIPLIER_SCHEMA = AI_MULTIPLIER_SCHEMA;
 
 const CATEGORIES = {
   travel: ['flights', 'hotels', 'portal', 'lounge access', 'ground transportation', 'car rental', 'tsa'],
   dining: [],
-  shopping: ['supermarkets', 'online shopping', 'online grocery', 'drugstores', 'retail'],
+  shopping: ['supermarkets', 'online shopping', 'online grocery', 'drugstores', 'retail', 'department stores'],
   gas: ['gas stations', 'ev charging'],
   entertainment: ['streaming'],
   transportation: ['rideshare'],
-  Transit: [],
-  general: [],
-  'custom category': [],
-  insurance: ['purchase', 'travel', 'car rental', 'cell phone protection', 'rental car protection'],
+  transit: [],
+  general: ['entertainment'],
+  portal: [],
   rent: [],
-  'Rewards Boost': [],
+  insurance: ['purchase', 'travel', 'car rental', 'cell phone protection', 'rental car protection'],
+  'rewards boost': [],
 };
 
 function getSystemPrompt(generationType: GenerationType, batchMode: boolean = false): string {
   const baseInstructions = `You are a credit card data extraction assistant. 
 
-CRITICAL REQUIREMENTS:
+CRITICAL JSON REQUIREMENTS:
 1. Output ONLY valid, complete JSON - no text before or after
 2. Do NOT wrap JSON in code blocks, backticks, or markdown
 3. Do NOT include explanations, comments, or any prose text
@@ -172,6 +114,9 @@ Available categories and subcategories:
 ${Object.entries(CATEGORIES).map(([cat, subs]) => `- ${cat}${subs.length > 0 ? `: ${subs.join(', ')}` : ''}`).join('\n')}
 `;
 
+  // Load condensed schema rules for this generation type
+  const schemaRules = getCondensedRules(generationType);
+
   switch (generationType) {
     case 'card':
       return `${baseInstructions}
@@ -179,120 +124,95 @@ ${Object.entries(CATEGORIES).map(([cat, subs]) => `- ${cat}${subs.length > 0 ? `
 Extract credit card details and output a JSON object with the following schema:
 ${JSON.stringify(CARD_SCHEMA, null, 2)}
 
-Important notes:
-- Generate a unique kebab-case id from the card name (e.g., "chase-sapphire-preferred")
-- ReferenceCardId should be the same as id for base cards
-- Use current date for lastUpdated
-- Set effectiveFrom to current date and effectiveTo to end of next year
-- IsActive should be true by default
-- For colors, try to match the card's actual brand colors if known
-- Leave Perks, Credits, and Multipliers as empty arrays - they will be added separately
+${categoryInfo}
 
-${categoryInfo}`;
+=== SCHEMA RULES (FOLLOW EXACTLY) ===
+${schemaRules}
+=====================================`;
 
     case 'credit':
       if (batchMode) {
         return `${baseInstructions}
 
-Extract ONLY credits/statement credits from the data and output a JSON ARRAY of objects. Each object should follow this schema:
+Extract ONLY credits/statement credits from the data and output a JSON ARRAY of objects.
+Each object should follow this schema:
 ${JSON.stringify(CREDIT_SCHEMA, null, 2)}
 
-CRITICAL - ONLY EXTRACT CREDITS:
-- A credit is a statement credit, reimbursement, or dollar-value benefit (e.g., "$200 travel credit", "$10/month streaming credit")
-- Do NOT include multipliers/rewards rates (like "3X on dining") - those are NOT credits
-- Do NOT include perks/benefits without a specific dollar value (like "lounge access") - those are NOT credits
-- If something doesn't clearly fit as a credit, SKIP IT entirely
-- If no credits are found, return an empty array: []
+Output format: JSON array, e.g., [{...}, {...}, {...}]
+If no credits are found, return an empty array: []
 
-Important notes:
-- Output a JSON array, e.g., [{...}, {...}, {...}]
-- Generate a descriptive kebab-case id for each credit (e.g., "dining-credit-200-annual")
-- Value should include the dollar sign and amount
-- TimePeriod should be: annual, monthly, quarterly, or one-time
-- Match Category and SubCategory to available options
+${categoryInfo}
 
-${categoryInfo}`;
+=== SCHEMA RULES (FOLLOW EXACTLY) ===
+${schemaRules}
+=====================================`;
       }
       return `${baseInstructions}
 
 Extract credit/benefit details and output a JSON object with the following schema:
 ${JSON.stringify(CREDIT_SCHEMA, null, 2)}
 
-Important notes:
-- Generate a descriptive kebab-case id (e.g., "dining-credit-200-annual")
-- Value should include the dollar sign and amount
-- TimePeriod should be: annual, monthly, quarterly, or one-time
-- Match Category and SubCategory to available options
+${categoryInfo}
 
-${categoryInfo}`;
+=== SCHEMA RULES (FOLLOW EXACTLY) ===
+${schemaRules}
+=====================================`;
 
     case 'perk':
       if (batchMode) {
         return `${baseInstructions}
 
-Extract ONLY perks/benefits from the data and output a JSON ARRAY of objects. Each object should follow this schema:
+Extract ONLY perks/benefits from the data and output a JSON ARRAY of objects.
+Each object should follow this schema:
 ${JSON.stringify(PERK_SCHEMA, null, 2)}
 
-CRITICAL - ONLY EXTRACT PERKS:
-- A perk is a non-monetary benefit or feature (e.g., "lounge access", "travel insurance", "priority boarding", "concierge service")
-- Do NOT include multipliers/rewards rates (like "3X on dining") - those are NOT perks
-- Do NOT include statement credits with dollar values (like "$200 travel credit") - those are credits, NOT perks
-- If something doesn't clearly fit as a perk, SKIP IT entirely
-- If no perks are found, return an empty array: []
+Output format: JSON array, e.g., [{...}, {...}, {...}]
+If no perks are found, return an empty array: []
 
-Important notes:
-- Output a JSON array, e.g., [{...}, {...}, {...}]
-- Generate a descriptive kebab-case id for each perk (e.g., "priority-pass-lounge-access")
-- Match Category and SubCategory to available options
+${categoryInfo}
 
-${categoryInfo}`;
+=== SCHEMA RULES (FOLLOW EXACTLY) ===
+${schemaRules}
+=====================================`;
       }
       return `${baseInstructions}
 
 Extract perk/benefit details and output a JSON object with the following schema:
 ${JSON.stringify(PERK_SCHEMA, null, 2)}
 
-Important notes:
-- Generate a descriptive kebab-case id (e.g., "priority-pass-lounge-access")
-- Match Category and SubCategory to available options
+${categoryInfo}
 
-${categoryInfo}`;
+=== SCHEMA RULES (FOLLOW EXACTLY) ===
+${schemaRules}
+=====================================`;
 
     case 'multiplier':
       if (batchMode) {
         return `${baseInstructions}
 
-Extract ONLY multipliers/rewards rates from the data and output a JSON ARRAY of objects. Each object should follow this schema:
+Extract ONLY multipliers/rewards rates from the data and output a JSON ARRAY of objects.
+Each object should follow this schema:
 ${JSON.stringify(MULTIPLIER_SCHEMA, null, 2)}
 
-CRITICAL - ONLY EXTRACT MULTIPLIERS:
-- A multiplier is a rewards rate or points multiplier (e.g., "3X on dining", "5X on flights", "2% cashback on groceries")
-- Do NOT include statement credits with dollar values (like "$200 travel credit") - those are credits, NOT multipliers
-- Do NOT include perks/benefits (like "lounge access") - those are NOT multipliers
-- If something doesn't clearly fit as a multiplier/rewards rate, SKIP IT entirely
-- If no multipliers are found, return an empty array: []
+Output format: JSON array, e.g., [{...}, {...}, {...}]
+If no multipliers are found, return an empty array: []
 
-Important notes:
-- Output a JSON array, e.g., [{...}, {...}, {...}]
-- Generate a descriptive kebab-case id for each multiplier (e.g., "3x-dining")
-- Multiplier should be a number (e.g., 3 for 3X, 5 for 5X)
-- Name should be descriptive (e.g., "3X on Dining", "5X on Flights")
-- Match Category and SubCategory to available options
+${categoryInfo}
 
-${categoryInfo}`;
+=== SCHEMA RULES (FOLLOW EXACTLY) ===
+${schemaRules}
+=====================================`;
       }
       return `${baseInstructions}
 
 Extract multiplier/rewards rate details and output a JSON object with the following schema:
 ${JSON.stringify(MULTIPLIER_SCHEMA, null, 2)}
 
-Important notes:
-- Generate a descriptive kebab-case id (e.g., "3x-dining")
-- Multiplier should be a number (e.g., 3 for 3X, 5 for 5X)
-- Name should be descriptive (e.g., "3X on Dining", "5X on Flights")
-- Match Category and SubCategory to available options
+${categoryInfo}
 
-${categoryInfo}`;
+=== SCHEMA RULES (FOLLOW EXACTLY) ===
+${schemaRules}
+=====================================`;
 
     default:
       return baseInstructions;

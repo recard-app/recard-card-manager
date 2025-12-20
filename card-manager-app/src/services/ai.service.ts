@@ -7,11 +7,14 @@ export interface GeneratedField {
   key: string;
   label: string;
   value: string | number | null;
+  isValid?: boolean;
+  validationError?: string;
 }
 
 export interface GeneratedItem {
   fields: GeneratedField[];
   json: Record<string, unknown>;
+  isValid?: boolean;
 }
 
 export interface GenerationResult {

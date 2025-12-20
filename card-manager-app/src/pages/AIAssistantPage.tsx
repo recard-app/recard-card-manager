@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, CircleUser, LogOut, Copy, Check, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Home, CircleUser, LogOut, Copy, Check, Loader2, ChevronDown, ChevronRight, CheckCircle, XCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -8,7 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { AIService } from '@/services/ai.service';
-import type { GenerationType, GenerationResult, GeneratedItem } from '@/services/ai.service';
+import type { GenerationType, GenerationResult, GeneratedItem, GeneratedField } from '@/services/ai.service';
+import { validateField, validateResponse } from '@/utils/schema-validation';
 import './AIAssistantPage.scss';
 
 type DisplayMode = 'fields' | 'json';
@@ -96,7 +97,9 @@ export function AIAssistantPage() {
         generationType,
         batchMode: canBatch && batchMode,
       });
-      setResult(data);
+      // Validate the result and add validation status
+      const validatedData = validateGenerationResult(data, generationType);
+      setResult(validatedData);
       setShowRefinement(true);
     } catch (err: any) {
       console.error('Generation error:', err);
@@ -135,7 +138,9 @@ export function AIAssistantPage() {
         refinementPrompt,
         previousOutput,
       });
-      setResult(data);
+      // Validate the result and add validation status
+      const validatedData = validateGenerationResult(data, generationType);
+      setResult(validatedData);
       setRefinementPrompt('');
       // Reset textarea height
       const textarea = document.querySelector('.refinement-input') as HTMLTextAreaElement;
@@ -188,6 +193,40 @@ export function AIAssistantPage() {
   const renderFieldValue = (value: string | number | null): string => {
     if (value === null) return '';
     return String(value);
+  };
+
+  /**
+   * Validates a GenerationResult and adds validation status to each field and item
+   */
+  const validateGenerationResult = (
+    resultData: GenerationResult,
+    type: GenerationType
+  ): GenerationResult => {
+    const validatedItems = resultData.items.map((item) => {
+      // Validate the entire JSON object
+      const objectValidation = validateResponse(type, item.json);
+      
+      // Validate each field
+      const validatedFields: GeneratedField[] = item.fields.map((field) => {
+        const fieldValidation = validateField(type, field.key, field.value);
+        return {
+          ...field,
+          isValid: fieldValidation.valid,
+          validationError: fieldValidation.reason,
+        };
+      });
+      
+      return {
+        ...item,
+        fields: validatedFields,
+        isValid: objectValidation.valid,
+      };
+    });
+    
+    return {
+      ...resultData,
+      items: validatedItems,
+    };
   };
 
   return (
@@ -357,7 +396,18 @@ export function AIAssistantPage() {
                         <div className="fields-output">
                           {item.fields.map((field) => (
                             <div key={field.key} className="field-row">
-                              <div className="field-label">{field.label}</div>
+                              <div className="field-label">
+                                {field.isValid !== undefined && (
+                                  field.isValid ? (
+                                    <CheckCircle size={14} className="validation-icon valid" />
+                                  ) : (
+                                    <span className="validation-icon-wrapper" title={field.validationError}>
+                                      <XCircle size={14} className="validation-icon invalid" />
+                                    </span>
+                                  )
+                                )}
+                                {field.label}
+                              </div>
                               <div className="field-value">
                                 <span>{renderFieldValue(field.value)}</span>
                                 <button
@@ -377,8 +427,23 @@ export function AIAssistantPage() {
                         </div>
                       ) : (
                         <div className="json-output">
-                          {result.items.length === 1 && (
-                            <div className="json-header">
+                          <div className="json-header">
+                            <div className="json-validation-status">
+                              {item.isValid !== undefined && (
+                                item.isValid ? (
+                                  <>
+                                    <CheckCircle size={14} className="validation-icon valid" />
+                                    <span className="valid-text">valid schema</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle size={14} className="validation-icon invalid" />
+                                    <span className="invalid-text">invalid schema</span>
+                                  </>
+                                )
+                              )}
+                            </div>
+                            {result.items.length === 1 && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -397,8 +462,8 @@ export function AIAssistantPage() {
                                   </>
                                 )}
                               </Button>
-                            </div>
-                          )}
+                            )}
+                          </div>
                           <pre className="json-content">
                             {JSON.stringify(item.json, null, 2)}
                           </pre>
