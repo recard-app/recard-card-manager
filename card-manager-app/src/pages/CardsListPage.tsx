@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Check, Filter, CircleUser, LogOut } from 'lucide-react';
+import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Check, Filter, CircleUser, LogOut, Home } from 'lucide-react';
 import { CreateCardModal } from '@/components/Modals/CreateCardModal';
 import { useAuth } from '@/contexts/AuthContext';
 import './CardsListPage.scss';
@@ -458,6 +458,9 @@ export function CardsListPage() {
     <div className="cards-list-page">
       <div className="page-header">
         <div className="header-left">
+          <Link to="/" className="home-link" aria-label="Back to home">
+            <Home size={20} />
+          </Link>
           <h1>Credit Cards</h1>
           <div className="staleness-summary">
             <div className="staleness-item" style={{ color: '#16a34a' }}>

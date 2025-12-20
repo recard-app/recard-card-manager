@@ -1,9 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { LoginPage } from '@/pages/LoginPage';
+import { HomePage } from '@/pages/HomePage';
 import { CardsListPage } from '@/pages/CardsListPage';
 import { CardDetailPage } from '@/pages/CardDetailPage';
+import { AIAssistantPage } from '@/pages/AIAssistantPage';
 import { Toaster } from '@/components/shadcn/sonner';
 
 function App() {
@@ -16,7 +18,7 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Navigate to="/cards" replace />
+                <HomePage />
               </ProtectedRoute>
             }
           />
@@ -41,6 +43,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CardDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ai-assistant"
+            element={
+              <ProtectedRoute>
+                <AIAssistantPage />
               </ProtectedRoute>
             }
           />

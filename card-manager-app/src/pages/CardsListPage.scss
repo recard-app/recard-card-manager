@@ -25,6 +25,20 @@
     gap: $spacing-sm;
   }
 
+  .home-link {
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-sm;
+    color: $neutral-gray-600;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: $neutral-gray-100;
+      color: $primary-blue;
+    }
+  }
+
   h1 {
     font-size: 18px;
     font-weight: 700;

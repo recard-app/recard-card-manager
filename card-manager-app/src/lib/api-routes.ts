@@ -63,4 +63,9 @@ export const API_ROUTES = {
     UPDATE: (multiplierId: string) => `/admin/multipliers/${multiplierId}`,
     DELETE: (multiplierId: string) => `/admin/multipliers/${multiplierId}`,
   },
+
+  // AI Assistant routes
+  AI: {
+    GENERATE: '/admin/ai/generate',
+  },
 };

@@ -1,0 +1,169 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.home-page {
+  @include flex-column;
+  min-height: 100vh;
+  padding: $spacing-sm;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: $spacing-sm;
+}
+
+.page-header {
+  @include flex-row;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs 0;
+  flex-shrink: 0;
+
+  h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: $neutral-gray-800;
+    margin: 0;
+  }
+}
+
+.nav-cards {
+  @include flex-column;
+  gap: $spacing-md;
+  flex: 1;
+  justify-content: center;
+  padding-bottom: 100px;
+  width: 100%;
+}
+
+.nav-card {
+  @include flex-row;
+  @include card;
+  gap: $spacing-lg;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+
+  &:hover {
+    border-color: $primary-blue;
+    transform: translateY(-2px);
+    box-shadow: $shadow-lg;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.nav-card-icon {
+  @include flex-center;
+  width: 64px;
+  height: 64px;
+  border-radius: $border-radius-md;
+  background-color: rgba($raw-primary-blue, 0.1);
+  color: $primary-blue;
+  flex-shrink: 0;
+}
+
+.nav-card-content {
+  flex: 1;
+
+  h2 {
+    font-size: $font-size-lg;
+    font-weight: 600;
+    color: $neutral-gray-800;
+    margin: 0 0 $spacing-xs 0;
+  }
+
+  p {
+    font-size: $font-size-sm;
+    color: $neutral-gray-600;
+    margin: 0;
+    line-height: 1.5;
+  }
+}
+
+// Profile dropdown styles (shared pattern from CardsListPage)
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  line-height: 0;
+  border: none;
+  background: transparent;
+  color: $neutral-gray-600;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  svg {
+    display: block;
+  }
+
+  &:hover {
+    background-color: $neutral-gray-100;
+    color: $neutral-gray-800;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba($raw-primary-blue, 0.2);
+  }
+}
+
+.profile-dropdown {
+  width: 240px;
+  padding: 0;
+  
+  .profile-info {
+    padding: $spacing-sm;
+    
+    .profile-name {
+      font-size: $font-size-sm;
+      font-weight: 600;
+      color: $neutral-gray-800;
+      margin-bottom: 2px;
+      word-break: break-word;
+    }
+    
+    .profile-email {
+      font-size: $font-size-xs;
+      color: $neutral-gray-600;
+      word-break: break-all;
+    }
+  }
+  
+  .profile-divider {
+    height: 1px;
+    background-color: $neutral-gray-200;
+  }
+  
+  .profile-logout {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    width: 100%;
+    padding: $spacing-xs $spacing-sm;
+    border: none;
+    background: transparent;
+    font-size: $font-size-xs;
+    font-family: $font-family-base;
+    color: $neutral-gray-600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    
+    &:hover {
+      background-color: $neutral-gray-100;
+      color: $error-red;
+    }
+    
+    &:focus {
+      outline: none;
+      background-color: $neutral-gray-100;
+    }
+  }
+}
+

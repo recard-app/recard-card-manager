@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import cardsRoutes from './routes/cards';
 import componentsRoutes from './routes/components';
+import aiRoutes from './routes/ai';
 import { isAdminEmail } from './services/permission.service';
 
 dotenv.config();
@@ -35,6 +36,7 @@ app.get('/admin/check-permission/:email', async (req: Request, res: Response) =>
 // Routes (protected by auth middleware)
 app.use('/admin/cards', cardsRoutes);
 app.use('/admin', componentsRoutes);
+app.use('/admin/ai', aiRoutes);
 
 // Health check
 app.get('/', (req: Request, res: Response) => {

@@ -1,0 +1,471 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.ai-assistant-page {
+  @include flex-column;
+  min-height: 100vh;
+  padding: $spacing-sm;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  @include flex-row;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs 0;
+  flex-shrink: 0;
+
+  .header-left {
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: $neutral-gray-800;
+    margin: 0;
+  }
+}
+
+.home-link {
+  @include flex-center;
+  width: 36px;
+  height: 36px;
+  border-radius: $border-radius-sm;
+  color: $neutral-gray-600;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: $neutral-gray-100;
+    color: $primary-blue;
+  }
+}
+
+.assistant-content {
+  @include flex-column;
+  gap: $spacing-lg;
+  flex: 1;
+  padding: $spacing-md 0;
+}
+
+.input-section,
+.output-section {
+  @include card;
+}
+
+.section-header {
+  @include flex-row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+
+  h2 {
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $neutral-gray-800;
+    margin: 0;
+  }
+}
+
+.raw-data-input,
+.refinement-input {
+  width: 100%;
+  padding: $spacing-sm;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-family: $font-family-base;
+  color: $neutral-gray-800;
+  background-color: $neutral-white;
+  resize: vertical;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-blue;
+    box-shadow: 0 0 0 2px rgba($raw-primary-blue, 0.1);
+  }
+
+  &::placeholder {
+    color: $neutral-gray-600;
+  }
+}
+
+.input-controls {
+  @include flex-row;
+  gap: $spacing-md;
+  align-items: flex-end;
+  margin-top: $spacing-md;
+  flex-wrap: wrap;
+
+  > div:first-child {
+    flex: 1;
+    max-width: 300px;
+  }
+
+  .generate-button {
+    height: 40px;
+  }
+}
+
+// Batch mode toggle
+.batch-toggle {
+  @include flex-row;
+  align-items: center;
+  gap: $spacing-xs;
+  cursor: pointer;
+  user-select: none;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-sm;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: $neutral-gray-100;
+  }
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: $primary-blue;
+    cursor: pointer;
+  }
+
+  span {
+    font-size: $font-size-sm;
+    color: $neutral-gray-600;
+    white-space: nowrap;
+  }
+}
+
+// Toggle bar styles (side-by-side buttons like a chocolate bar)
+.toggle-bar {
+  @include flex-row;
+  background-color: $neutral-gray-100;
+  border-radius: $border-radius-sm;
+  padding: 2px;
+  gap: 2px;
+}
+
+.toggle-button {
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-xs;
+  font-weight: 500;
+  font-family: $font-family-base;
+  color: $neutral-gray-600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover:not(.active) {
+    color: $neutral-gray-800;
+  }
+
+  &.active {
+    background-color: $neutral-white;
+    color: $neutral-gray-800;
+    box-shadow: $shadow-sm;
+  }
+}
+
+// Fields output
+.fields-output {
+  @include flex-column;
+  gap: $spacing-xs;
+}
+
+.field-row {
+  @include flex-row;
+  align-items: stretch;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-sm;
+  overflow: hidden;
+}
+
+.field-label {
+  width: 180px;
+  flex-shrink: 0;
+  padding: $spacing-sm;
+  background-color: $neutral-gray-100;
+  font-size: $font-size-xs;
+  font-weight: 600;
+  color: $neutral-gray-600;
+  border-right: 1px solid $neutral-gray-200;
+  display: flex;
+  align-items: center;
+}
+
+.field-value {
+  @include flex-row;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-sm;
+  background-color: $neutral-white;
+  gap: $spacing-sm;
+
+  span {
+    flex: 1;
+    font-size: $font-size-sm;
+    color: $neutral-gray-800;
+    word-break: break-word;
+  }
+
+  .copy-button {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: $neutral-gray-600;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background-color: $neutral-gray-100;
+      color: $primary-blue;
+    }
+  }
+}
+
+// JSON output
+.json-output {
+  @include flex-column;
+}
+
+.json-header {
+  @include flex-row;
+  justify-content: flex-end;
+  margin-bottom: $spacing-sm;
+
+  .copy-json-button {
+    gap: $spacing-xs;
+  }
+}
+
+.json-content {
+  padding: $spacing-md;
+  background-color: $neutral-gray-800;
+  color: $neutral-gray-100;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-xs;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+// Model info display
+.model-info {
+  font-size: $font-size-xs;
+  color: $neutral-gray-600;
+  margin-bottom: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  background-color: $neutral-gray-100;
+  border-radius: $border-radius-sm;
+  display: inline-block;
+
+  .model-name {
+    font-weight: 600;
+    color: $neutral-gray-800;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  }
+}
+
+// Items list for batch results
+.items-list {
+  @include flex-column;
+  gap: $spacing-md;
+}
+
+.item-card {
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-md;
+  overflow: hidden;
+  background-color: $neutral-white;
+}
+
+.item-header {
+  @include flex-row;
+  align-items: center;
+  gap: $spacing-sm;
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  border: none;
+  background-color: $neutral-gray-100;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  text-align: left;
+
+  &:hover {
+    background-color: $neutral-gray-200;
+  }
+
+  .item-expand-icon {
+    @include flex-center;
+    color: $neutral-gray-600;
+    flex-shrink: 0;
+  }
+
+  .item-number {
+    font-size: $font-size-xs;
+    font-weight: 600;
+    color: $neutral-gray-600;
+    flex-shrink: 0;
+  }
+
+  .item-title {
+    flex: 1;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $neutral-gray-800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .item-copy-button {
+    flex-shrink: 0;
+    gap: $spacing-xs;
+  }
+}
+
+.item-content {
+  padding: $spacing-md;
+
+  .fields-output {
+    margin: 0;
+  }
+
+  .json-output {
+    margin: 0;
+  }
+
+  .json-header {
+    margin-bottom: $spacing-sm;
+  }
+}
+
+// Refinement section
+.refinement-section {
+  margin-top: $spacing-lg;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $neutral-gray-200;
+
+  h3 {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $neutral-gray-800;
+    margin: 0 0 $spacing-sm 0;
+  }
+
+  .refinement-input {
+    margin-bottom: $spacing-sm;
+  }
+}
+
+// Spinning animation
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+// Profile dropdown styles (shared pattern)
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  line-height: 0;
+  border: none;
+  background: transparent;
+  color: $neutral-gray-600;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  svg {
+    display: block;
+  }
+
+  &:hover {
+    background-color: $neutral-gray-100;
+    color: $neutral-gray-800;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba($raw-primary-blue, 0.2);
+  }
+}
+
+.profile-dropdown {
+  width: 240px;
+  padding: 0;
+  
+  .profile-info {
+    padding: $spacing-sm;
+    
+    .profile-name {
+      font-size: $font-size-sm;
+      font-weight: 600;
+      color: $neutral-gray-800;
+      margin-bottom: 2px;
+      word-break: break-word;
+    }
+    
+    .profile-email {
+      font-size: $font-size-xs;
+      color: $neutral-gray-600;
+      word-break: break-all;
+    }
+  }
+  
+  .profile-divider {
+    height: 1px;
+    background-color: $neutral-gray-200;
+  }
+  
+  .profile-logout {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    width: 100%;
+    padding: $spacing-xs $spacing-sm;
+    border: none;
+    background: transparent;
+    font-size: $font-size-xs;
+    font-family: $font-family-base;
+    color: $neutral-gray-600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    
+    &:hover {
+      background-color: $neutral-gray-100;
+      color: $error-red;
+    }
+    
+    &:focus {
+      outline: none;
+      background-color: $neutral-gray-100;
+    }
+  }
+}
+
