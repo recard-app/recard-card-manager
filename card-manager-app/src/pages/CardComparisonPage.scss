@@ -1,0 +1,236 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.card-comparison-page {
+  @include flex-column;
+  min-height: 100vh;
+  padding: $spacing-sm;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  @include flex-row;
+  justify-content: space-between;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs 0;
+  flex-shrink: 0;
+
+  .header-left {
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: $neutral-gray-800;
+    margin: 0;
+  }
+}
+
+.home-link {
+  @include flex-center;
+  width: 36px;
+  height: 36px;
+  border-radius: $border-radius-sm;
+  color: $neutral-gray-600;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: $neutral-gray-100;
+    color: $primary-blue;
+  }
+}
+
+.comparison-content {
+  @include flex-column;
+  gap: $spacing-lg;
+  flex: 1;
+  padding: $spacing-md 0;
+}
+
+.selection-section,
+.input-section {
+  @include card;
+}
+
+.section-header {
+  @include flex-row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+
+  h2 {
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: $neutral-gray-800;
+    margin: 0;
+  }
+}
+
+.selection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: $spacing-md;
+
+  .selection-field {
+    @include flex-column;
+    gap: $spacing-xs;
+
+    label {
+      font-size: $font-size-sm;
+      font-weight: 500;
+      color: $neutral-gray-600;
+    }
+  }
+}
+
+.website-text-input {
+  width: 100%;
+  min-height: 200px;
+  padding: $spacing-sm;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-sm;
+  font-family: $font-family-base;
+  color: $neutral-gray-800;
+  background-color: $neutral-white;
+  resize: vertical;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-blue;
+    box-shadow: 0 0 0 2px rgba($raw-primary-blue, 0.1);
+  }
+
+  &::placeholder {
+    color: $neutral-gray-600;
+  }
+}
+
+.input-controls {
+  @include flex-row;
+  justify-content: flex-end;
+  margin-top: $spacing-md;
+
+  .compare-button {
+    height: 40px;
+    min-width: 140px;
+  }
+}
+
+// Loading state
+.loading-section {
+  @include card;
+  @include flex-center;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding: $spacing-xl;
+  text-align: center;
+
+  .loading-text {
+    font-size: $font-size-sm;
+    color: $neutral-gray-600;
+  }
+}
+
+// Profile dropdown styles (shared pattern)
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  line-height: 0;
+  border: none;
+  background: transparent;
+  color: $neutral-gray-600;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  svg {
+    display: block;
+  }
+
+  &:hover {
+    background-color: $neutral-gray-100;
+    color: $neutral-gray-800;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba($raw-primary-blue, 0.2);
+  }
+}
+
+.profile-dropdown {
+  width: 240px;
+  padding: 0;
+
+  .profile-info {
+    padding: $spacing-sm;
+
+    .profile-name {
+      font-size: $font-size-sm;
+      font-weight: 600;
+      color: $neutral-gray-800;
+      margin-bottom: 2px;
+      word-break: break-word;
+    }
+
+    .profile-email {
+      font-size: $font-size-xs;
+      color: $neutral-gray-600;
+      word-break: break-all;
+    }
+  }
+
+  .profile-divider {
+    height: 1px;
+    background-color: $neutral-gray-200;
+  }
+
+  .profile-logout {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    width: 100%;
+    padding: $spacing-xs $spacing-sm;
+    border: none;
+    background: transparent;
+    font-size: $font-size-xs;
+    font-family: $font-family-base;
+    color: $neutral-gray-600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background-color: $neutral-gray-100;
+      color: $error-red;
+    }
+
+    &:focus {
+      outline: none;
+      background-color: $neutral-gray-100;
+    }
+  }
+}
+
+// Spinning animation
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}

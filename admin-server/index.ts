@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import cardsRoutes from './routes/cards';
 import componentsRoutes from './routes/components';
 import aiRoutes from './routes/ai';
+import comparisonRoutes from './routes/comparison';
 import { isAdminEmail } from './services/permission.service';
 
 dotenv.config();
@@ -37,6 +38,7 @@ app.get('/admin/check-permission/:email', async (req: Request, res: Response) =>
 app.use('/admin/cards', cardsRoutes);
 app.use('/admin', componentsRoutes);
 app.use('/admin/ai', aiRoutes);
+app.use('/admin/comparison', comparisonRoutes);
 
 // Health check
 app.get('/', (req: Request, res: Response) => {

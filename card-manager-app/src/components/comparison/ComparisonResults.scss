@@ -1,0 +1,161 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.comparison-results {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+.results-section {
+  background: $neutral-white;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-lg;
+  padding: $spacing-lg;
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-md;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+
+    h3 {
+      font-size: $font-size-lg;
+      font-weight: 600;
+      color: $neutral-gray-800;
+      margin: 0;
+    }
+  }
+}
+
+.summary-section {
+  .model-badge {
+    font-size: $font-size-xs;
+    font-family: monospace;
+  }
+
+  .summary-text {
+    font-size: $font-size-base;
+    color: $neutral-gray-600;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .status-overview {
+    margin-top: $spacing-lg;
+    padding-top: $spacing-md;
+    border-top: 1px solid $neutral-gray-200;
+
+    h4 {
+      font-size: $font-size-sm;
+      font-weight: 600;
+      color: $neutral-gray-800;
+      margin: 0 0 $spacing-sm 0;
+    }
+
+    .overview-row {
+      display: flex;
+      align-items: center;
+      padding: $spacing-xs 0;
+      border-bottom: 1px solid $neutral-gray-100;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .overview-label {
+        font-size: $font-size-sm;
+        font-weight: 500;
+        color: $neutral-gray-600;
+        min-width: 100px;
+      }
+
+      .overview-counts {
+        display: flex;
+        gap: $spacing-md;
+        flex-wrap: wrap;
+      }
+
+      .overview-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: $font-size-sm;
+        font-weight: 500;
+
+        &.match {
+          color: $success-green;
+        }
+
+        &.mismatch,
+        &.outdated {
+          color: $error-red;
+        }
+
+        &.questionable {
+          color: $warning-yellow;
+        }
+
+        &.new {
+          color: #1e88e5;
+        }
+
+        &.missing {
+          color: $neutral-gray-600;
+        }
+
+        &.none {
+          color: $neutral-gray-600;
+          font-style: italic;
+        }
+      }
+    }
+  }
+}
+
+.card-details-section {
+  .status-counts {
+    display: flex;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+
+    .count-badge {
+      font-size: $font-size-xs;
+      padding: 2px 8px;
+      border-radius: $border-radius-sm;
+      font-weight: 500;
+
+      &.match {
+        background: rgba($raw-success-green, 0.1);
+        color: $success-green;
+      }
+
+      &.mismatch {
+        background: rgba($raw-error-red, 0.1);
+        color: $error-red;
+      }
+
+      &.questionable {
+        background: rgba($raw-warning-yellow, 0.1);
+        color: #b5860b;
+      }
+
+      &.missing {
+        background: $neutral-gray-100;
+        color: $neutral-gray-600;
+      }
+    }
+  }
+}
+
+.fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: $spacing-md;
+}
+
+.components-section {
+  // ComponentComparisonTabs handles its own styling
+}

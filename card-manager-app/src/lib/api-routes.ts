@@ -68,4 +68,9 @@ export const API_ROUTES = {
   AI: {
     GENERATE: '/admin/ai/generate',
   },
+
+  // Comparison routes
+  COMPARISON: {
+    ANALYZE: '/admin/comparison/analyze',
+  },
 };

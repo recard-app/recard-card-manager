@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CreditCard, Sparkles, CircleUser, LogOut } from 'lucide-react';
+import { CreditCard, Sparkles, GitCompare, CircleUser, LogOut } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -103,6 +103,16 @@ export function HomePage() {
           <div className="nav-card-content">
             <h2>AI Data Entry Assistant</h2>
             <p>Use AI to extract and format credit card data from raw text</p>
+          </div>
+        </Link>
+
+        <Link to="/card-comparison" className="nav-card">
+          <div className="nav-card-icon">
+            <GitCompare size={32} />
+          </div>
+          <div className="nav-card-content">
+            <h2>Card Comparison</h2>
+            <p>Compare database card data against website text to identify discrepancies</p>
           </div>
         </Link>
       </div>

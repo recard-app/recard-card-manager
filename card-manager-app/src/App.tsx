@@ -6,6 +6,7 @@ import { HomePage } from '@/pages/HomePage';
 import { CardsListPage } from '@/pages/CardsListPage';
 import { CardDetailPage } from '@/pages/CardDetailPage';
 import { AIAssistantPage } from '@/pages/AIAssistantPage';
+import { CardComparisonPage } from '@/pages/CardComparisonPage';
 import { Toaster } from '@/components/shadcn/sonner';
 
 function App() {
@@ -51,6 +52,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AIAssistantPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/card-comparison"
+            element={
+              <ProtectedRoute>
+                <CardComparisonPage />
               </ProtectedRoute>
             }
           />
