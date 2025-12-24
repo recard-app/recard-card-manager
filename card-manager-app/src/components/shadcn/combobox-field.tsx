@@ -20,11 +20,17 @@ import {
 } from "@/components/ui/popover"
 import { Label } from "./label"
 
+interface ComboboxOption {
+  value: string
+  label: string
+  secondaryText?: string // Optional secondary text displayed in muted color
+}
+
 interface ComboboxFieldProps {
   label?: string
   error?: string
   helperText?: string
-  options: Array<{ value: string; label: string }>
+  options: ComboboxOption[]
   value?: string
   onChange?: (value: string) => void
   placeholder?: string
@@ -89,7 +95,14 @@ export const ComboboxField = React.forwardRef<HTMLButtonElement, ComboboxFieldPr
               )}
             >
               <span className="truncate">
-                {selectedOption ? selectedOption.label : placeholder}
+                {selectedOption ? (
+                  <>
+                    {selectedOption.label}
+                    {selectedOption.secondaryText && (
+                      <span className="text-muted-foreground"> {selectedOption.secondaryText}</span>
+                    )}
+                  </>
+                ) : placeholder}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -103,7 +116,7 @@ export const ComboboxField = React.forwardRef<HTMLButtonElement, ComboboxFieldPr
                   {options.map((option) => (
                     <CommandItem
                       key={option.value}
-                      value={option.label}
+                      value={option.secondaryText ? `${option.label} ${option.secondaryText}` : option.label}
                       onSelect={() => {
                         onChange?.(option.value === value ? "" : option.value)
                         setOpen(false)
@@ -115,7 +128,12 @@ export const ComboboxField = React.forwardRef<HTMLButtonElement, ComboboxFieldPr
                           value === option.value ? "opacity-100" : "opacity-0"
                         )}
                       />
-                      <span className="truncate">{option.label}</span>
+                      <span className="truncate">
+                        {option.label}
+                        {option.secondaryText && (
+                          <span className="text-muted-foreground"> {option.secondaryText}</span>
+                        )}
+                      </span>
                     </CommandItem>
                   ))}
                 </CommandGroup>

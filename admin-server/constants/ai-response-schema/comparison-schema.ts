@@ -73,6 +73,15 @@ export interface ComponentComparisonResult {
 }
 
 // ============================================
+// TOKEN USAGE
+// ============================================
+
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
+// ============================================
 // FULL COMPARISON RESPONSE
 // ============================================
 
@@ -82,6 +91,7 @@ export interface ComponentComparisonResult {
 export interface ComparisonResponse {
   summary: string; // AI-generated summary of findings
   modelUsed: string; // Which Gemini model was used
+  tokenUsage?: TokenUsage; // Token usage statistics
   cardDetails: FieldComparisonResult[];
   perks: ComponentComparisonResult[];
   credits: ComponentComparisonResult[];

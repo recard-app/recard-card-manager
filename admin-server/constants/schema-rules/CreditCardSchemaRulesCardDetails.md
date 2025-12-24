@@ -110,20 +110,28 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureOneCard.json`
 | **Description** | The official marketing name of the credit card. |
 
 **Rules:**
+- Format: Issuer name followed by card name (e.g., "American Express Gold", "Chase Sapphire Preferred")
+- Do NOT include the word "Card" at the end - it is implied
 - Use the official card name as shown on the card issuer's website
 - Include the full name, not abbreviations
 - Title case formatting
 
 **Good Examples:**
 - `Chase Sapphire Reserve`
+- `Chase Sapphire Preferred`
 - `American Express Platinum`
+- `American Express Gold`
+- `American Express Blue Cash Everyday`
 - `Capital One Venture X`
 - `Citi Costco`
 
 **Bad Examples:**
+- `Chase Sapphire Reserve Card` (do not include "Card")
+- `American Express Gold Card` (do not include "Card")
 - `CSR` (abbreviation)
 - `chase sapphire reserve` (wrong case)
 - `CHASE SAPPHIRE RESERVE` (all caps)
+- `Sapphire Reserve` (missing issuer name)
 
 ---
 
@@ -278,16 +286,15 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureOneCard.json`
 | **Required** | Yes |
 | **Description** | Description of foreign transaction fees. |
 
-**Common Values:**
+**Standard Values:**
 | Value | When to Use |
 |-------|-------------|
 | `None` | Card has no foreign transaction fee |
-| `3%` | Card charges 3% FX fee |
-| `3% of each transaction in U.S. dollars` | More detailed description |
+| `Applied on international purchases` | Card has a foreign transaction fee (use this exact text) |
 
 **Rules:**
-- Use `None` for cards without FX fees
-- For cards with fees, describe the percentage
+- Use `None` for cards without FX fees (ForeignExchangeFeePercentage = 0)
+- Use `Applied on international purchases` for cards WITH FX fees (the percentage is stored in ForeignExchangeFeePercentage)
 
 ---
 
@@ -307,9 +314,9 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureOneCard.json`
 **Examples:**
 | FX Fee Description | Percentage Value |
 |-------------------|------------------|
-| `none` | `0` |
-| `3%` | `3` |
-| `2.7%` | `2.7` |
+| `None` | `0` |
+| `Applied on international purchases` | `3` |
+| `Applied on international purchases` | `2.7` |
 
 ---
 
@@ -495,7 +502,7 @@ These contain only ID references:
 | CardPrimaryColor | No | string | Hex (#XXXXXX) |
 | CardSecondaryColor | No | string | Hex (#XXXXXX) |
 | AnnualFee | Yes | number/null | Numeric, no $ |
-| ForeignExchangeFee | Yes | string | Description (e.g. "None" or "3%") |
+| ForeignExchangeFee | Yes | string | "None" or "Applied on international purchases" |
 | ForeignExchangeFeePercentage | Yes | number/null | Numeric percentage |
 | RewardsCurrency | Yes | string | points/miles/cash back (lowercase) |
 | PointsPerDollar | Yes | number/null | Base earning rate |

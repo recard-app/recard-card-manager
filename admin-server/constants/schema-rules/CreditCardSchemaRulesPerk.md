@@ -39,8 +39,35 @@ The following are either redundant (covered elsewhere) or standard for all cards
 
 ### Gray Area: Credits vs Perks
 Some benefits blur the line:
-- **TSA PreCheck/Global Entry Credit** - Could be either. Use Perk if it's about the eligibility/access; use Credit if emphasizing the reimbursement.
-- **Streaming Subscriptions** - If there's a specific dollar credit, it's a Credit. If it's "complimentary access," it's a Perk.
+- **TSA PreCheck/Global Entry Credit** - Almost always a Perk because the cadence is every 4-5 years. Use Perk with Category="travel", SubCategory="tsa".
+- **Streaming Subscriptions** - If there's a specific dollar credit that resets monthly/quarterly/semiannually/annually, it's a Credit. If it's "complimentary access," it's a Perk.
+
+### Multi-Year Cadence Benefits (CRITICAL)
+**Any benefit with a cadence longer than annually belongs in Perks, NOT Credits.**
+
+Credits are restricted to recurring benefits that reset:
+- Monthly, Quarterly, Semiannually, or Annually (one year or less)
+
+If a benefit has a cadence like:
+- Every 2 years
+- Every 4 years (e.g., Global Entry/TSA PreCheck)
+- Every 5 years
+- One-time or irregular
+
+→ It is a **PERK**, even if it has a specific dollar value.
+
+**Example - Global Entry/TSA PreCheck:**
+```json
+{
+  "Title": "Global Entry or TSA PreCheck Credit",
+  "Category": "travel",
+  "SubCategory": "tsa",
+  "Description": "Statement credit for Global Entry or TSA PreCheck application fees.",
+  "Requirements": "ONE STATEMENT CREDIT EVERY FOUR YEARS, MUST PAY APPLICATION FEE WITH CARD",
+  "Details": "Credit applies to whichever program is applied for first. Appears within two billing cycles."
+}
+```
+This is a PERK because the cadence (every 4 years) exceeds the annual limit for Credits.
 
 ### Master Template Reference
 
@@ -181,11 +208,40 @@ fbbda0f9-7422-47a4-ad8f-3f3a0d7858c0
 | Lounge Access | `travel` | `lounge access` |
 | TSA PreCheck/Global Entry | `travel` | `tsa` |
 | Hotel Programs | `travel` | `hotels` |
+| Portal/Booking Programs | `travel` | `portal` |
 | Purchase Protection | `insurance` | `purchase` |
 | Travel Insurance | `insurance` | `travel` |
 | Rental Car Insurance | `insurance` | `car rental` or `rental car protection` |
 | Cell Phone Protection | `insurance` | `cell phone protection` |
 | Streaming Services | `general` | `entertainment` |
+
+**IMPORTANT - Portal Booking Categorization:**
+
+When a perk requires booking through a specific service, website, or method related to the **card issuer** or **card network**, use:
+- **Category:** `travel`
+- **SubCategory:** `portal`
+
+This applies to perks like:
+- Visa Luxury Hotel Collection / Visa Signature Luxury Hotel Collection
+- Amex Fine Hotels & Resorts (when emphasizing the booking requirement)
+- Amex Hotel Collection
+- Chase Travel portal benefits
+- Capital One Travel portal benefits
+- Mastercard Travel & Lifestyle Services
+
+**Example - Visa Signature Luxury Hotel Collection:**
+```json
+{
+  "Title": "Visa Signature Luxury Hotel Collection",
+  "Category": "travel",
+  "SubCategory": "portal",
+  "Description": "Access to a premium collection of benefits at prestigious properties worldwide.",
+  "Requirements": "Reservations must be booked through Visa Luxury Hotel Collection website or Visa Concierge.",
+  "Details": "Benefits vary by property."
+}
+```
+
+**Note:** If the perk is specifically about hotel status or benefits (not the booking method), use `SubCategory: "hotels"` instead. Use `portal` when the booking method through a specific issuer/network service is the key aspect.
 
 ---
 

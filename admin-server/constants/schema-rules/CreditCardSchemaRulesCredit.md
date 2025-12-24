@@ -16,6 +16,18 @@ A Credit represents a statement credit, reimbursement, or dollar-value benefit a
 ### What Does NOT Qualify as a Credit?
 - Multipliers/rewards rates (e.g., "3X on dining") → use Multiplier
 - Non-monetary perks (e.g., "lounge access") → use Perk
+- Benefits with a cadence longer than annually (e.g., every 2 years, every 4 years) → use Perk
+
+### Cadence Rule (CRITICAL)
+Credits MUST have a recurring cadence of one year or less:
+- `monthly` - resets every month
+- `quarterly` - resets every 3 months
+- `semiannually` - resets every 6 months
+- `annually` - resets once per year
+
+**If a benefit has a cadence longer than annually (e.g., every 4 years for Global Entry/TSA PreCheck), it is a PERK, not a Credit.**
+
+Example: "$120 Global Entry or TSA PreCheck Credit" that resets every 4 years should be classified as a **Perk** with Category="travel", SubCategory="tsa", NOT as a Credit.
 
 ### Master Template Reference
 

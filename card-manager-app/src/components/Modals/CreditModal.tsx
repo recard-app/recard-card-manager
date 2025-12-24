@@ -21,9 +21,10 @@ interface CreditModalProps {
   referenceCardId: string;
   credit?: CardCredit | null;
   onSuccess: () => void;
+  initialJson?: Record<string, unknown>;
 }
 
-export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuccess }: CreditModalProps) {
+export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuccess, initialJson }: CreditModalProps) {
   const isEdit = !!credit;
 
   const [formData, setFormData] = useState({
@@ -82,6 +83,14 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
     setErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Import initial JSON when modal opens with pre-filled data
+  useEffect(() => {
+    if (initialJson && open && !credit) {
+      handleJsonImport(initialJson);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialJson]);
 
   const validate = (): boolean => {
     const parsed = CreditFormSchema.safeParse({

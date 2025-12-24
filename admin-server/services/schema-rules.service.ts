@@ -65,7 +65,9 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
   // Card-specific rules - many fields are auto-generated
   if (type === 'card') {
     rules.push('- DO NOT include id, VersionName, ReferenceCardId, IsActive, CardImage, lastUpdated, effectiveFrom, effectiveTo, Perks, Credits, or Multipliers fields (auto-generated)');
+    rules.push('- CardName: Format is "Issuer CardName" (e.g., "American Express Gold", "Chase Sapphire Preferred"). Do NOT include the word "Card" at the end');
     rules.push('- AnnualFee: number (not string), no $ sign');
+    rules.push('- ForeignExchangeFee: Use "None" if no fee, or "Applied on international purchases" if there is a fee');
     rules.push('- ForeignExchangeFeePercentage: number (0 for no fee)');
     rules.push('- RewardsCurrency: lowercase ("points", "miles", "cash back")');
   }
@@ -75,6 +77,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
     rules.push('- Title: Title Case. Only include $ amount for Annually/Semiannually/Quarterly credits, NOT for Monthly');
     rules.push('- Value: Numeric string WITHOUT $ sign, PER TIME PERIOD (not annual total)');
     rules.push('- TimePeriod: lowercase only - "monthly" | "quarterly" | "semiannually" | "annually"');
+    rules.push('- CADENCE RULE: Credits MUST have a cadence of one year or less. Benefits with cadence >1 year (e.g., every 4 years for TSA/Global Entry) are PERKS, not Credits');
     rules.push('- Requirements: Use UPPERCASE for critical requirements (e.g., "MUST BE BOOKED ON CHASE TRAVEL PORTAL")');
     rules.push('- SubCategory: Leave as empty string "" if no subcategory applies');
   }
@@ -91,12 +94,14 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
   
   if (type === 'perk') {
     rules.push('- DO NOT include id, ReferenceCardId, LastUpdated, EffectiveFrom, or EffectiveTo fields (auto-generated)');
-    rules.push('- Title: Title Case (e.g., "Priority Pass Select", "Purchase Protection")');
+    rules.push('- Title: Title Case (e.g., "Priority Pass Select", "Global Entry Credit")');
     rules.push('- Description: Required - explain what the perk provides');
     rules.push('- Details: Include coverage limits for insurance perks (e.g., "Up to $500 per claim")');
     rules.push('- SubCategory: Leave as empty string "" if no subcategory applies');
+    rules.push('- MULTI-YEAR CADENCE: Benefits with cadence >1 year (e.g., TSA/Global Entry every 4 years) are PERKS, even if they have a dollar value. Use Category="travel", SubCategory="tsa"');
     rules.push('- For lounge access: Category="travel", SubCategory="lounge access"');
     rules.push('- For streaming/entertainment: Category="general", SubCategory="entertainment" is acceptable');
+    rules.push('- PORTAL BOOKING: When perk requires booking through issuer/network service (Visa Luxury Hotel Collection, Amex Travel, Chase Travel, etc.), use Category="travel", SubCategory="portal"');
   }
   
   return '## Critical Field Rules\n\n' + rules.join('\n');

@@ -21,9 +21,15 @@ export interface GeneratedItem {
   json: Record<string, unknown>;
 }
 
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface GenerationResult {
   items: GeneratedItem[];
   modelUsed: string;
+  tokenUsage?: TokenUsage;
 }
 
 // Internal type for parsed response before adding model info
@@ -37,30 +43,40 @@ export interface GenerateParams {
   batchMode?: boolean;
   refinementPrompt?: string;
   previousOutput?: Record<string, unknown> | Record<string, unknown>[];
+  model?: string; // Optional model override
 }
 
-// Model constants
-const MODELS = {
+// Model constants - exported for validation
+export const MODELS = {
   GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
   GEMINI_25_PRO: 'gemini-2.5-pro',
   GEMINI_3_FLASH_PREVIEW: 'gemini-3-flash-preview',
 };
 
+export const VALID_MODELS = Object.values(MODELS);
+
 /**
  * Determines which Gemini models to try based on generation parameters.
- * Returns an array of models in priority order (first to try, then fallbacks).
+ * Returns an array of models in priority order (first to try, then fallback to Flash).
  */
-function getModelsForGeneration(type: GenerationType, batchMode: boolean, isRefinement: boolean): string[] {
-  // All refinements use Flash (no fallback needed for Flash)
+function getModelsForGeneration(type: GenerationType, batchMode: boolean, isRefinement: boolean, selectedModel?: string): string[] {
+  // All refinements use Flash only
   if (isRefinement) return [MODELS.GEMINI_3_FLASH_PREVIEW];
-  
-  // Card details use Pro - try Gemini 3 Pro first, fall back to 2.5 Pro
-  if (type === 'card') return [MODELS.GEMINI_3_PRO_PREVIEW, MODELS.GEMINI_25_PRO];
-  
-  // Batch mode uses Pro for better quality - try Gemini 3 Pro first, fall back to 2.5 Pro
-  if (batchMode) return [MODELS.GEMINI_3_PRO_PREVIEW, MODELS.GEMINI_25_PRO];
-  
-  // Single item uses Flash (no fallback needed for Flash)
+
+  // If user selected a specific model, use it with Flash as fallback
+  if (selectedModel && VALID_MODELS.includes(selectedModel)) {
+    if (selectedModel === MODELS.GEMINI_3_FLASH_PREVIEW) {
+      return [MODELS.GEMINI_3_FLASH_PREVIEW];
+    }
+    return [selectedModel, MODELS.GEMINI_3_FLASH_PREVIEW];
+  }
+
+  // Default: Card details and batch mode use Pro with Flash fallback
+  if (type === 'card' || batchMode) {
+    return [MODELS.GEMINI_3_PRO_PREVIEW, MODELS.GEMINI_3_FLASH_PREVIEW];
+  }
+
+  // Single item uses Flash only
   return [MODELS.GEMINI_3_FLASH_PREVIEW];
 }
 
@@ -552,7 +568,7 @@ export async function generateData(params: GenerateParams): Promise<GenerationRe
   // If previousOutput is an array, we're refining batch results
   const isBatchRefinement = isRefinement && Array.isArray(params.previousOutput);
   const batchMode = isBatchRefinement || (params.batchMode ?? false);
-  const modelsToTry = getModelsForGeneration(params.generationType, batchMode, isRefinement);
+  const modelsToTry = getModelsForGeneration(params.generationType, batchMode, isRefinement, params.model);
 
   const systemPrompt = getSystemPrompt(params.generationType, batchMode);
   
@@ -611,7 +627,17 @@ export async function generateData(params: GenerateParams): Promise<GenerationRe
         }
 
         const result = parseAndValidateResponse(text, params.generationType, batchMode);
-        return { ...result, modelUsed: model };
+
+        // Extract token usage from response
+        if (response.usageMetadata) {
+          console.log('Token usage:', JSON.stringify(response.usageMetadata, null, 2));
+        }
+        const tokenUsage: TokenUsage | undefined = response.usageMetadata ? {
+          inputTokens: response.usageMetadata.promptTokenCount || 0,
+          outputTokens: (response.usageMetadata.candidatesTokenCount || 0) + (response.usageMetadata.thoughtsTokenCount || 0),
+        } : undefined;
+
+        return { ...result, modelUsed: model, tokenUsage };
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         console.error(`Gemini generation error (${model}):`, lastError.message);

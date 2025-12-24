@@ -54,8 +54,22 @@
 }
 
 .input-section,
-.output-section {
+.output-section,
+.card-selector-section {
   @include card;
+}
+
+// Card selector section for component creation
+.card-selector-section {
+  .card-selector-row {
+    max-width: 700px;
+    width: 100%;
+  }
+}
+
+// Create component button styles
+.item-create-button {
+  gap: $spacing-xs;
 }
 
 .section-header {
@@ -110,6 +124,10 @@
 
   .generate-button {
     height: 40px;
+  }
+
+  .model-select {
+    min-width: 160px;
   }
 }
 
@@ -315,12 +333,8 @@
 
 .json-header {
   @include flex-row;
-  justify-content: flex-end;
+  justify-content: space-between;
   margin-bottom: $spacing-sm;
-
-  .copy-json-button {
-    gap: $spacing-xs;
-  }
 }
 
 .json-content {
@@ -342,6 +356,14 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: $spacing-sm;
+}
+
+// Group for model info and token counts
+.model-info-group {
+  @include flex-row;
+  align-items: center;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
 }
 
 // Model info display
@@ -650,8 +672,3 @@
     padding-left: 20px; // Align with text after icon
   }
 }
-
-.json-header {
-  justify-content: space-between;
-}
-

@@ -8,6 +8,7 @@ import {
   isValidComparisonResponse,
   AI_COMPARISON_SCHEMA,
   CARD_FIELD_LABELS,
+  TokenUsage,
 } from '../constants/ai-response-schema/comparison-schema';
 import {
   AI_CARD_SCHEMA,
@@ -20,13 +21,17 @@ import {
 const MODELS = {
   GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
   GEMINI_25_PRO: 'gemini-2.5-pro',
+  GEMINI_3_FLASH_PREVIEW: 'gemini-3-flash-preview',
 };
+
+const VALID_MODELS = Object.values(MODELS);
 
 // Request interface
 export interface ComparisonRequest {
   referenceCardId: string;
   versionId: string;
   websiteText: string;
+  model?: string; // Optional model override
 }
 
 // Aggregated card data with all components
@@ -461,7 +466,19 @@ export async function analyzeComparison(
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  const modelsToTry = [MODELS.GEMINI_3_PRO_PREVIEW, MODELS.GEMINI_25_PRO];
+
+  // Determine models to try based on user selection
+  let modelsToTry: string[];
+  if (request.model && VALID_MODELS.includes(request.model)) {
+    if (request.model === MODELS.GEMINI_3_FLASH_PREVIEW) {
+      modelsToTry = [MODELS.GEMINI_3_FLASH_PREVIEW];
+    } else {
+      modelsToTry = [request.model, MODELS.GEMINI_3_FLASH_PREVIEW];
+    }
+  } else {
+    // Default: Pro with Flash fallback
+    modelsToTry = [MODELS.GEMINI_3_PRO_PREVIEW, MODELS.GEMINI_3_FLASH_PREVIEW];
+  }
 
   // Aggregate card data from database
   const aggregatedData = await aggregateCardData(
@@ -525,9 +542,20 @@ export async function analyzeComparison(
         }
 
         const result = parseAndValidateResponse(text);
+
+        // Extract token usage from response
+        if (response.usageMetadata) {
+          console.log('Comparison token usage:', JSON.stringify(response.usageMetadata, null, 2));
+        }
+        const tokenUsage: TokenUsage | undefined = response.usageMetadata ? {
+          inputTokens: response.usageMetadata.promptTokenCount || 0,
+          outputTokens: (response.usageMetadata.candidatesTokenCount || 0) + (response.usageMetadata.thoughtsTokenCount || 0),
+        } : undefined;
+
         return {
           ...result,
           modelUsed: model,
+          tokenUsage,
         };
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));

@@ -21,9 +21,10 @@ interface MultiplierModalProps {
   referenceCardId: string;
   multiplier?: CardMultiplier | null;
   onSuccess: () => void;
+  initialJson?: Record<string, unknown>;
 }
 
-export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplier, onSuccess }: MultiplierModalProps) {
+export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplier, onSuccess, initialJson }: MultiplierModalProps) {
   const isEdit = !!multiplier;
 
   const [formData, setFormData] = useState({
@@ -78,6 +79,14 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
     setErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Import initial JSON when modal opens with pre-filled data
+  useEffect(() => {
+    if (initialJson && open && !multiplier) {
+      handleJsonImport(initialJson);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialJson]);
 
   const validate = (): boolean => {
     const parsed = MultiplierFormSchema.safeParse({

@@ -16,6 +16,19 @@ interface ComparisonResultsProps {
   result: ComparisonResponse;
 }
 
+// Helper to format token counts
+function formatTokenCount(count: number): string {
+  if (count >= 1000000) {
+    const millions = count / 1000000;
+    return millions % 1 === 0 ? `${millions}M` : `${millions.toFixed(1)}M`;
+  }
+  if (count >= 1000) {
+    const thousands = Math.round(count / 1000);
+    return `${thousands}k`;
+  }
+  return String(count);
+}
+
 // Helper to count component statuses
 function countComponentStatuses(
   items: { status: string }[]
@@ -58,9 +71,21 @@ export function ComparisonResults({ result }: ComparisonResultsProps) {
       <div className="results-section summary-section">
         <div className="section-header">
           <h3>Analysis Summary</h3>
-          <Badge variant="secondary" className="model-badge">
-            {result.modelUsed}
-          </Badge>
+          <div className="model-info-group">
+            <Badge variant="secondary" className="model-badge">
+              Model: {result.modelUsed}
+            </Badge>
+            {result.tokenUsage && (
+              <>
+                <Badge variant="secondary" className="model-badge">
+                  Input: {formatTokenCount(result.tokenUsage.inputTokens)}
+                </Badge>
+                <Badge variant="secondary" className="model-badge">
+                  Output: {formatTokenCount(result.tokenUsage.outputTokens)}
+                </Badge>
+              </>
+            )}
+          </div>
         </div>
         <p className="summary-text">{result.summary}</p>
 

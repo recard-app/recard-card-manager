@@ -4,11 +4,14 @@ import { Home, CircleUser, LogOut, Loader2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/Button';
 import { Combobox } from '@/components/ui/Combobox';
+import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { CardService } from '@/services/card.service';
 import { ComparisonService } from '@/services/comparison.service';
 import { ComparisonResults } from '@/components/comparison/ComparisonResults';
+import { AI_MODELS, AI_MODEL_OPTIONS } from '@/services/ai.service';
+import type { AIModel } from '@/services/ai.service';
 import type { CardWithStatus, VersionSummary } from '@/types/ui-types';
 import type { ComparisonResponse } from '@/types/comparison-types';
 import './CardComparisonPage.scss';
@@ -30,6 +33,7 @@ export function CardComparisonPage() {
 
   // Input and results
   const [websiteText, setWebsiteText] = useState('');
+  const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS.GEMINI_3_PRO_PREVIEW);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ComparisonResponse | null>(null);
 
@@ -192,6 +196,7 @@ export function CardComparisonPage() {
         referenceCardId: selectedCardId,
         versionId: selectedVersionId,
         websiteText: websiteText.trim(),
+        model: selectedModel,
       });
       setResult(comparisonResult);
       toast.success('Comparison complete');
@@ -206,7 +211,8 @@ export function CardComparisonPage() {
   // Build card options for select
   const cardOptions = cards.map((card) => ({
     value: card.ReferenceCardId,
-    label: `${card.CardName} (${card.CardIssuer})`,
+    label: card.CardName,
+    secondaryText: `(${card.ReferenceCardId})`,
   }));
 
   // Build version options for select
@@ -302,6 +308,12 @@ export function CardComparisonPage() {
         <div className="input-section">
           <div className="section-header">
             <h2>Website Text</h2>
+            <Select
+              value={selectedModel}
+              onChange={(value) => setSelectedModel(value as AIModel)}
+              options={AI_MODEL_OPTIONS}
+              className="model-select"
+            />
           </div>
           <textarea
             className="website-text-input"

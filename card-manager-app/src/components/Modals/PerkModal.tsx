@@ -21,9 +21,10 @@ interface PerkModalProps {
   referenceCardId: string;
   perk?: CardPerk | null;
   onSuccess: () => void;
+  initialJson?: Record<string, unknown>;
 }
 
-export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess }: PerkModalProps) {
+export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess, initialJson }: PerkModalProps) {
   const isEdit = !!perk;
 
   const [formData, setFormData] = useState({
@@ -70,6 +71,14 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
     setErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Import initial JSON when modal opens with pre-filled data
+  useEffect(() => {
+    if (initialJson && open && !perk) {
+      handleJsonImport(initialJson);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialJson]);
 
   const validate = (): boolean => {
     const parsed = PerkFormSchema.safeParse({

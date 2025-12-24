@@ -1,16 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, CircleUser, LogOut, Copy, Check, Loader2, ChevronDown, ChevronRight, CheckCircle, XCircle, ChevronsUpDown } from 'lucide-react';
+import { Home, CircleUser, LogOut, Copy, Check, Loader2, ChevronDown, ChevronRight, CheckCircle, XCircle, ChevronsUpDown, Plus } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { AIService } from '@/services/ai.service';
-import type { GenerationType, GenerationResult, GeneratedItem, GeneratedField } from '@/services/ai.service';
+import { AIService, AI_MODELS, AI_MODEL_OPTIONS } from '@/services/ai.service';
+import type { GenerationType, GenerationResult, GeneratedItem, GeneratedField, AIModel } from '@/services/ai.service';
 import { validateField, validateResponse } from '@/utils/schema-validation';
 import { CardIcon } from '@/components/icons/CardIcon';
+import { CreditModal } from '@/components/Modals/CreditModal';
+import { PerkModal } from '@/components/Modals/PerkModal';
+import { MultiplierModal } from '@/components/Modals/MultiplierModal';
+import { Combobox } from '@/components/ui/Combobox';
+import { CardService } from '@/services/card.service';
+import type { CardWithStatus } from '@/types/ui-types';
 import './AIAssistantPage.scss';
 
 type DisplayMode = 'fields' | 'json';
@@ -33,6 +39,7 @@ export function AIAssistantPage() {
   const [rawData, setRawData] = useState('');
   const [generationType, setGenerationType] = useState<GenerationType>('card');
   const [batchMode, setBatchMode] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS.GEMINI_3_PRO_PREVIEW);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('json');
@@ -43,6 +50,14 @@ export function AIAssistantPage() {
   // Refinement state
   const [refinementPrompt, setRefinementPrompt] = useState('');
   const [showRefinement, setShowRefinement] = useState(false);
+
+  // Component creation state
+  const [cards, setCards] = useState<CardWithStatus[]>([]);
+  const [loadingCards, setLoadingCards] = useState(true);
+  const [selectedCardId, setSelectedCardId] = useState<string>('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalKey, setModalKey] = useState(0);
+  const [pendingJsonImport, setPendingJsonImport] = useState<Record<string, unknown> | null>(null);
 
   // Check if batch mode is available for current type
   const canBatch = generationType !== 'card';
@@ -81,6 +96,23 @@ export function AIAssistantPage() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('popstate', handlePopState);
     };
+  }, []);
+
+  // Load cards for component creation
+  useEffect(() => {
+    async function loadCards() {
+      try {
+        const cardsList = await CardService.getAllCardsWithStatus();
+        cardsList.sort((a, b) => a.CardName.localeCompare(b.CardName));
+        setCards(cardsList);
+      } catch (error) {
+        console.error('Failed to load cards:', error);
+        toast.error('Failed to load cards');
+      } finally {
+        setLoadingCards(false);
+      }
+    }
+    loadCards();
   }, []);
 
   // Close profile dropdown on click outside
@@ -133,6 +165,7 @@ export function AIAssistantPage() {
         rawData,
         generationType,
         batchMode: canBatch && batchMode,
+        model: selectedModel,
       });
       // Validate the result and add validation status
       const validatedData = validateGenerationResult(data, generationType);
@@ -228,9 +261,40 @@ export function AIAssistantPage() {
     }
   };
 
+  const handleCreateComponent = (item: GeneratedItem) => {
+    if (!selectedCardId) {
+      toast.warning('Please select a card first');
+      return;
+    }
+    setPendingJsonImport(item.json);
+    setModalKey(k => k + 1);
+    setModalOpen(true);
+  };
+
+  const getComponentTypeLabel = (): string => {
+    switch (generationType) {
+      case 'credit': return 'Credit';
+      case 'perk': return 'Perk';
+      case 'multiplier': return 'Multiplier';
+      default: return '';
+    }
+  };
+
   const getItemTitle = (item: GeneratedItem): string => {
     const json = item.json;
     return (json.Title as string) || (json.Name as string) || (json.CardName as string) || (json.id as string) || 'Item';
+  };
+
+  const formatTokenCount = (count: number): string => {
+    if (count >= 1000000) {
+      const millions = count / 1000000;
+      return millions % 1 === 0 ? `${millions}M` : `${millions.toFixed(1)}M`;
+    }
+    if (count >= 1000) {
+      const thousands = Math.round(count / 1000);
+      return `${thousands}k`;
+    }
+    return String(count);
   };
 
   const copyToClipboard = async (text: string, fieldKey?: string) => {
@@ -394,6 +458,12 @@ export function AIAssistantPage() {
         <div className="input-section">
           <div className="section-header">
             <h2>Input Data</h2>
+            <Select
+              value={selectedModel}
+              onChange={(value) => setSelectedModel(value as AIModel)}
+              options={AI_MODEL_OPTIONS}
+              className="model-select"
+            />
           </div>
           <textarea
             className="raw-data-input"
@@ -425,8 +495,8 @@ export function AIAssistantPage() {
                 <span>Generate Multiple at once</span>
               </label>
             )}
-            <Button 
-              onClick={handleGenerate} 
+            <Button
+              onClick={handleGenerate}
               disabled={loading || !rawData.trim()}
               className="generate-button"
             >
@@ -441,6 +511,31 @@ export function AIAssistantPage() {
             </Button>
           </div>
         </div>
+
+        {/* Card selector section - only shown for components after generation */}
+        {result && generationType !== 'card' && (
+          <div className="card-selector-section">
+            <div className="section-header">
+              <h2>Create Component</h2>
+            </div>
+            <div className="card-selector-row">
+              <Combobox
+                label="Target Card"
+                required
+                options={cards.map(card => ({
+                  value: card.ReferenceCardId,
+                  label: card.CardName,
+                  secondaryText: `(${card.ReferenceCardId})`
+                }))}
+                value={selectedCardId}
+                onChange={setSelectedCardId}
+                placeholder="Select a card to create components for..."
+                searchPlaceholder="Search cards..."
+                disabled={loadingCards}
+              />
+            </div>
+          </div>
+        )}
 
         {result && result.items.length === 0 && (
           <div className="output-section">
@@ -484,8 +579,20 @@ export function AIAssistantPage() {
             </div>
 
             <div className="model-info-row">
-              <div className="model-info">
-                Model used: <span className="model-name">{result.modelUsed}</span>
+              <div className="model-info-group">
+                <div className="model-info">
+                  Model used: <span className="model-name">{result.modelUsed}</span>
+                </div>
+                {result.tokenUsage && (
+                  <>
+                    <div className="model-info">
+                      Input tokens: <span className="model-name">{formatTokenCount(result.tokenUsage.inputTokens)}</span>
+                    </div>
+                    <div className="model-info">
+                      Output tokens: <span className="model-name">{formatTokenCount(result.tokenUsage.outputTokens)}</span>
+                    </div>
+                  </>
+                )}
               </div>
               {result.items.length > 1 && (
                 <button
@@ -501,8 +608,7 @@ export function AIAssistantPage() {
             <div className="items-list">
               {result.items.map((item, index) => (
                 <div key={index} className="item-card">
-                  {result.items.length > 1 && (
-                    <div className="item-header">
+                  <div className="item-header">
                       <div 
                         className="item-header-clickable"
                         onClick={() => toggleItemExpanded(index)}
@@ -516,6 +622,18 @@ export function AIAssistantPage() {
                         <span className="item-number">[{index + 1}]</span>
                         <span className="item-title">{getItemTitle(item)}</span>
                       </div>
+                      {generationType !== 'card' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="item-create-button"
+                          onClick={() => handleCreateComponent(item)}
+                          disabled={!selectedCardId}
+                        >
+                          <Plus size={14} />
+                          Create {getComponentTypeLabel()}
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
@@ -530,14 +648,13 @@ export function AIAssistantPage() {
                         ) : (
                           <>
                             <Copy size={14} />
-                            Copy
+                            Copy JSON
                           </>
                         )}
                       </Button>
                     </div>
-                  )}
-                  
-                  {(result.items.length === 1 || expandedItems.has(index)) && (
+
+                  {expandedItems.has(index) && (
                     <div className="item-content">
                       {displayMode === 'fields' ? (
                         <div className="fields-output">
@@ -617,26 +734,6 @@ export function AIAssistantPage() {
                                 )
                               )}
                             </div>
-                            {result.items.length === 1 && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => copyItemJson(item, index)}
-                                className="copy-json-button"
-                              >
-                                {copiedField === `json-${index}` ? (
-                                  <>
-                                    <Check size={14} />
-                                    Copied
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy size={14} />
-                                    Copy JSON
-                                  </>
-                                )}
-                              </Button>
-                            )}
                           </div>
                           <pre className="json-content">
                             {JSON.stringify(item.json, null, 2)}
@@ -684,6 +781,47 @@ export function AIAssistantPage() {
             </Button>
           </div>
         </div>
+      )}
+
+      {/* Component creation modals */}
+      {generationType === 'credit' && (
+        <CreditModal
+          key={`credit-${modalKey}`}
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          referenceCardId={selectedCardId}
+          onSuccess={() => {
+            toast.success('Credit created!');
+            setModalOpen(false);
+          }}
+          initialJson={pendingJsonImport || undefined}
+        />
+      )}
+      {generationType === 'perk' && (
+        <PerkModal
+          key={`perk-${modalKey}`}
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          referenceCardId={selectedCardId}
+          onSuccess={() => {
+            toast.success('Perk created!');
+            setModalOpen(false);
+          }}
+          initialJson={pendingJsonImport || undefined}
+        />
+      )}
+      {generationType === 'multiplier' && (
+        <MultiplierModal
+          key={`multiplier-${modalKey}`}
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          referenceCardId={selectedCardId}
+          onSuccess={() => {
+            toast.success('Multiplier created!');
+            setModalOpen(false);
+          }}
+          initialJson={pendingJsonImport || undefined}
+        />
       )}
     </div>
   );
