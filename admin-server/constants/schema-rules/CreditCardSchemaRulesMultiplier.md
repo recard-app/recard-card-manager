@@ -117,19 +117,25 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureMultiplier.json`
 
 | Category | Description | Common Multiplier Examples |
 |----------|-------------|---------------------------|
-| `travel` | Travel-related spending | Flights, hotels, car rentals |
+| `travel` | Travel-related spending | Flights, hotels, car rentals, portal bookings |
 | `dining` | Restaurants and food | Restaurants, cafes, bars, food delivery |
 | `shopping` | Retail purchases | Supermarkets, drugstores, online shopping |
 | `gas` | Fuel and EV charging | Gas stations, EV charging |
 | `entertainment` | Entertainment spending | Streaming, events |
 | `transportation` | Ground transportation | Rideshare |
 | `general` | Base/catch-all rate | "Everyday purchases" |
-| `portal` | Issuer's booking portal | Portal bookings (special case) |
+| `portal` | DEPRECATED - use `travel` with subcategory `portal` instead | See note below |
 | `transit` | Public transit | Trains, buses |
 | `rewards boost` | Special bonus multipliers | Limited-time or conditional bonuses |
 
-**Note on `portal` Category:**
-Use `portal` as the Category when the multiplier specifically applies to purchases through the card issuer's travel portal (e.g., Chase Travel, Amex Travel, Capital One Travel).
+**IMPORTANT: Portal Booking Multipliers**
+When a multiplier requires booking through a card issuer's travel portal (e.g., Chase Travel, Amex Travel, Capital One Travel), use:
+- **Category**: `travel` (this is the MAIN category)
+- **SubCategory**: `portal` (this specifies it's portal-booked travel)
+
+This applies when the Requirements field mentions booking through a specific portal (e.g., "MUST BE BOOKED ON AmexTravel.com", "BOOK THROUGH CHASE TRAVEL PORTAL").
+
+Do NOT use `portal` as the Category. Portal bookings are travel purchases, so they belong under the `travel` category with `portal` as the subcategory.
 
 ---
 
@@ -162,6 +168,7 @@ Use `portal` as the Category when the multiplier specifically applies to purchas
 |----------|-------------|-------------------|
 | travel | `flights` | 5X on flights |
 | travel | `hotels` | 4X on hotels |
+| travel | `portal` | 10X on Chase Travel Portal bookings |
 | shopping | `supermarkets` | 4X at supermarkets |
 | shopping | `drugstores` | 3X at drugstores |
 | gas | `gas stations` | 5X on gas |
@@ -369,8 +376,8 @@ Use `portal` as the Category when the multiplier specifically applies to purchas
   "id": "fbacae42-ce13-42fe-b5ee-7301156b1b0d",
   "ReferenceCardId": "chase-sapphire-reserve",
   "Name": "Chase Travel Portal",
-  "Category": "portal",
-  "SubCategory": "",
+  "Category": "travel",
+  "SubCategory": "portal",
   "Description": "Includes airlines, hotels, motels, timeshares, car rentals, cruises, travel agencies, and more.",
   "Multiplier": 8,
   "Requirements": "MUST BE BOOKED ON CHASE TRAVEL PORTAL",
@@ -378,6 +385,25 @@ Use `portal` as the Category when the multiplier specifically applies to purchas
   "EffectiveFrom": "2025-09-19",
   "EffectiveTo": "9999-12-31",
   "LastUpdated": "2025-09-19T04:03:22.168Z"
+}
+```
+
+### Amex Travel Portal Multiplier
+
+```json
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "ReferenceCardId": "american-express-platinum",
+  "Name": "Prepaid Hotels & Eligible Travel",
+  "Category": "travel",
+  "SubCategory": "portal",
+  "Description": "Earn 2X Membership Rewards points on prepaid hotels and other eligible travel - such as prepaid car rentals, vacation packages and cruises.",
+  "Multiplier": 2,
+  "Requirements": "BOOK THROUGH AMEXTRAVEL.COM",
+  "Details": "",
+  "EffectiveFrom": "2025-01-01",
+  "EffectiveTo": "9999-12-31",
+  "LastUpdated": "2025-01-01T00:00:00.000Z"
 }
 ```
 
@@ -509,5 +535,9 @@ Most cards should have at least these multipliers:
 
 4. **Missing base rate**: Every card should have an "Everyday Purchases" or equivalent multiplier for the base earning rate
 
-5. **Wrong Category for portal purchases**: Use `portal` as Category (not `travel`) when the multiplier specifically requires booking through the issuer's portal
+5. **Wrong Category for portal purchases**: When a multiplier requires booking through an issuer's portal (Chase Travel, Amex Travel, etc.), use:
+   - Category: `travel`
+   - SubCategory: `portal`
+   - Wrong: Category `portal` with empty SubCategory
+   - Right: Category `travel` with SubCategory `portal`
 

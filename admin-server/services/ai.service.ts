@@ -211,6 +211,15 @@ If no multipliers are found, return an empty array: []
 
 ${categoryInfo}
 
+=== PORTAL BOOKING CATEGORIZATION ===
+IMPORTANT: When a multiplier requires booking through a card issuer's travel portal (Chase Travel, Amex Travel, Capital One Travel, etc.), use:
+- Category: "travel" (this is the MAIN category - NOT "portal")
+- SubCategory: "portal" (this specifies it's portal-booked travel)
+
+Look for requirements like "BOOK THROUGH AMEXTRAVEL.COM", "MUST BE BOOKED ON CHASE TRAVEL PORTAL", etc.
+These are TRAVEL purchases made through a portal, so Category must be "travel" with SubCategory "portal".
+=====================================
+
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
 =====================================`;
@@ -221,6 +230,15 @@ Extract multiplier/rewards rate details and output a JSON object with the follow
 ${JSON.stringify(MULTIPLIER_SCHEMA, null, 2)}
 
 ${categoryInfo}
+
+=== PORTAL BOOKING CATEGORIZATION ===
+IMPORTANT: When a multiplier requires booking through a card issuer's travel portal (Chase Travel, Amex Travel, Capital One Travel, etc.), use:
+- Category: "travel" (this is the MAIN category - NOT "portal")
+- SubCategory: "portal" (this specifies it's portal-booked travel)
+
+Look for requirements like "BOOK THROUGH AMEXTRAVEL.COM", "MUST BE BOOKED ON CHASE TRAVEL PORTAL", etc.
+These are TRAVEL purchases made through a portal, so Category must be "travel" with SubCategory "portal".
+=====================================
 
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}

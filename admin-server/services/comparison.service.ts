@@ -169,6 +169,14 @@ ${JSON.stringify(AI_PERK_SCHEMA, null, 2)}
 === MULTIPLIER SCHEMA ===
 ${JSON.stringify(AI_MULTIPLIER_SCHEMA, null, 2)}
 
+=== PORTAL BOOKING CATEGORIZATION (IMPORTANT FOR MULTIPLIERS) ===
+When a multiplier requires booking through a card issuer's travel portal (Chase Travel, Amex Travel, Capital One Travel, etc.), it should use:
+- Category: "travel" (MAIN category - NOT "portal")
+- SubCategory: "portal" (specifies portal-booked travel)
+
+If a database multiplier has Category "portal" instead of Category "travel" with SubCategory "portal", this is INCORRECT categorization and should be flagged as a mismatch.
+Look for Requirements mentioning portal booking (e.g., "BOOK THROUGH AMEXTRAVEL.COM", "MUST BE BOOKED ON CHASE TRAVEL PORTAL").
+
 === FIELD LABELS (for reference) ===
 ${JSON.stringify(CARD_FIELD_LABELS, null, 2)}
 

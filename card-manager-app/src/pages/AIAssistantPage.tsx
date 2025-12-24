@@ -46,6 +46,42 @@ export function AIAssistantPage() {
   // Check if batch mode is available for current type
   const canBatch = generationType !== 'card';
 
+  // Check if there's unsaved data that should trigger navigation warning
+  const hasUnsavedDataRef = useRef(false);
+  hasUnsavedDataRef.current = rawData.trim().length > 0 || (result !== null && result.items.length > 0);
+
+  // Handle browser back/forward navigation and close/refresh
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedDataRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    const handlePopState = () => {
+      if (hasUnsavedDataRef.current) {
+        const confirmed = window.confirm('Are you sure you want to leave? Your input and generated data will be lost.');
+        if (!confirmed) {
+          // Push state back to prevent navigation
+          window.history.pushState(null, '', window.location.href);
+        }
+      }
+    };
+
+    // Push initial state so we can intercept back navigation
+    window.history.pushState(null, '', window.location.href);
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   // Close profile dropdown on click outside
   useEffect(() => {
     if (!profileOpen) return;
