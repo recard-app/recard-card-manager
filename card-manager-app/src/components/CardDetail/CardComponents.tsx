@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import type { CardCredit, CardPerk, CardMultiplier, CreditCardDetails } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/utils/date-utils';
 import './CardComponents.scss';
+
+type ComponentFilter = 'all' | 'credits' | 'multipliers' | 'perks';
 
 interface CardComponentsProps {
   card: CreditCardDetails;
@@ -24,6 +27,8 @@ interface ComponentWithStatus {
 }
 
 export function CardComponents({ card: _card, credits, perks, multipliers }: CardComponentsProps) {
+  const [filter, setFilter] = useState<ComponentFilter>('all');
+
   // Helper to check if a component is currently active (today is within range)
   const isCurrentlyActive = (effectiveFrom: string, effectiveTo: string): boolean => {
     const now = new Date();
@@ -101,6 +106,17 @@ export function CardComponents({ card: _card, credits, perks, multipliers }: Car
 
   // Category badges removed since sections are already split by type
 
+  const showCredits = filter === 'all' || filter === 'credits';
+  const showMultipliers = filter === 'all' || filter === 'multipliers';
+  const showPerks = filter === 'all' || filter === 'perks';
+
+  const filterOptions: { value: ComponentFilter; label: string }[] = [
+    { value: 'all', label: 'All' },
+    { value: 'credits', label: 'Credits' },
+    { value: 'multipliers', label: 'Multipliers' },
+    { value: 'perks', label: 'Perks' },
+  ];
+
   if (sortedCredits.length === 0 && sortedPerks.length === 0 && sortedMultipliers.length === 0) {
     return (
       <div className="card-components">
@@ -114,10 +130,25 @@ export function CardComponents({ card: _card, credits, perks, multipliers }: Car
 
   return (
     <div className="card-components">
-      <h2>Card Components</h2>
-      <p className="components-description">Components currently active based on their effective dates</p>
+      <div className="components-header">
+        <div className="header-text">
+          <h2>Card Components</h2>
+          <p className="components-description">Components currently active based on their effective dates</p>
+        </div>
+        <div className="filter-toggle">
+          {filterOptions.map(option => (
+            <button
+              key={option.value}
+              className={`filter-button ${filter === option.value ? 'active' : ''}`}
+              onClick={() => setFilter(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {sortedCredits.length > 0 && (
+      {showCredits && sortedCredits.length > 0 && (
         <div className="components-section">
           <h3>Credits</h3>
           <div className="components-list">
@@ -154,7 +185,7 @@ export function CardComponents({ card: _card, credits, perks, multipliers }: Car
         </div>
       )}
 
-      {sortedPerks.length > 0 && (
+      {showPerks && sortedPerks.length > 0 && (
         <div className="components-section">
           <h3>Perks</h3>
           <div className="components-list">
@@ -190,7 +221,7 @@ export function CardComponents({ card: _card, credits, perks, multipliers }: Car
         </div>
       )}
 
-      {sortedMultipliers.length > 0 && (
+      {showMultipliers && sortedMultipliers.length > 0 && (
         <div className="components-section">
           <h3>Multipliers</h3>
           <div className="components-list">

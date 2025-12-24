@@ -273,6 +273,46 @@ export function AIAssistantPage() {
     };
   };
 
+  const getValidationErrorSummary = (item: GeneratedItem): string | null => {
+    if (item.isValid) return null;
+
+    const missingFields: string[] = [];
+    const invalidFields: string[] = [];
+
+    for (const field of item.fields) {
+      if (!field.isValid && field.validationError) {
+        // Check if it's a "missing" type error (empty, required, etc.)
+        const isMissing = field.validationError.toLowerCase().includes('empty') ||
+                          field.validationError.toLowerCase().includes('required') ||
+                          field.value === null ||
+                          field.value === '' ||
+                          field.value === undefined;
+
+        if (isMissing) {
+          missingFields.push(field.label);
+        } else {
+          invalidFields.push(field.label);
+        }
+      }
+    }
+
+    const parts: string[] = [];
+
+    if (missingFields.length === 1) {
+      parts.push(`Missing field: ${missingFields[0]}`);
+    } else if (missingFields.length > 1) {
+      parts.push(`Missing fields: ${missingFields.join(', ')}`);
+    }
+
+    if (invalidFields.length === 1) {
+      parts.push(`Invalid value for: ${invalidFields[0]}`);
+    } else if (invalidFields.length > 1) {
+      parts.push(`Invalid values for: ${invalidFields.join(', ')}`);
+    }
+
+    return parts.length > 0 ? parts.join('. ') : null;
+  };
+
   /**
    * Validates a GenerationResult and adds validation status to each field and item
    */
@@ -557,14 +597,21 @@ export function AIAssistantPage() {
                             <div className="json-validation-status">
                               {item.isValid !== undefined && (
                                 item.isValid ? (
-                                  <>
+                                  <div className="validation-status-row">
                                     <CheckCircle size={14} className="validation-icon valid" />
                                     <span className="valid-text">valid schema</span>
-                                  </>
+                                  </div>
                                 ) : (
                                   <>
-                                    <XCircle size={14} className="validation-icon invalid" />
-                                    <span className="invalid-text">invalid schema</span>
+                                    <div className="validation-status-row">
+                                      <XCircle size={14} className="validation-icon invalid" />
+                                      <span className="invalid-text">invalid schema</span>
+                                    </div>
+                                    {getValidationErrorSummary(item) && (
+                                      <div className="validation-error-details">
+                                        {getValidationErrorSummary(item)}
+                                      </div>
+                                    )}
                                   </>
                                 )
                               )}

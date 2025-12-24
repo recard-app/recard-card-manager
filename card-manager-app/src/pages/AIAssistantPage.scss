@@ -614,10 +614,16 @@
 
 .json-validation-status {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   font-size: $font-size-xs;
   font-weight: 500;
   flex: 1;
+  gap: 4px;
+
+  .validation-status-row {
+    display: flex;
+    align-items: center;
+  }
 
   .validation-icon {
     margin-right: 6px;
@@ -629,6 +635,13 @@
 
   .invalid-text {
     color: #ef4444;
+  }
+
+  .validation-error-details {
+    font-size: $font-size-xs;
+    font-weight: 400;
+    color: $neutral-gray-600;
+    padding-left: 20px; // Align with text after icon
   }
 }
 

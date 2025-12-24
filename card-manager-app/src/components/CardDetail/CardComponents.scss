@@ -6,6 +6,30 @@
   padding-top: $spacing-xl;
   border-top: 2px solid $neutral-gray-200;
 
+  .components-header {
+    @include flex-row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+    flex-wrap: wrap;
+
+    .header-text {
+      h2 {
+        font-size: $font-size-xl;
+        font-weight: 600;
+        color: $neutral-gray-800;
+        margin: 0 0 $spacing-xs 0;
+      }
+
+      .components-description {
+        font-size: $font-size-sm;
+        color: $neutral-gray-600;
+        margin: 0;
+      }
+    }
+  }
+
   h2 {
     font-size: $font-size-xl;
     font-weight: 600;
@@ -27,6 +51,38 @@
     background-color: $neutral-gray-100;
     border-radius: $border-radius-lg;
     border: 1px dashed $neutral-gray-300;
+  }
+}
+
+.filter-toggle {
+  @include flex-row;
+  gap: $spacing-xs;
+  background-color: $neutral-gray-100;
+  border-radius: $border-radius-md;
+  padding: $spacing-xs;
+
+  .filter-button {
+    padding: $spacing-xs $spacing-md;
+    border: none;
+    background: transparent;
+    color: $neutral-gray-600;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+
+    &:hover {
+      color: $neutral-gray-800;
+      background-color: $neutral-gray-200;
+    }
+
+    &.active {
+      background-color: $neutral-white;
+      color: $primary-blue;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
   }
 }
 
