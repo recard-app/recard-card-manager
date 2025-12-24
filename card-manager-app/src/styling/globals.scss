@@ -62,3 +62,38 @@ html, body {
 #root {
   height: 100%;
 }
+
+// Color Picker Field Component
+.color-picker-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .color-picker-native {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid $neutral-gray-200;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    background: none;
+
+    &::-webkit-color-swatch-wrapper {
+      padding: 2px;
+    }
+
+    &::-webkit-color-swatch {
+      border: none;
+      border-radius: 2px;
+    }
+
+    &::-moz-color-swatch {
+      border: none;
+      border-radius: 2px;
+    }
+  }
+
+  .color-picker-text-input {
+    flex: 1;
+  }
+}

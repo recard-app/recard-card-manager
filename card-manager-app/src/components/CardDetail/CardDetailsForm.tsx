@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
+import { ColorPickerField } from '@/components/shadcn/form-field';
 import { Select } from '@/components/ui/Select';
 import { TextareaField } from '@/components/shadcn/form-field';
 import { DatePicker } from '@/components/ui/DatePicker';
@@ -502,17 +503,17 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
               rows={3}
             />
             <div className="form-row">
-              <FormField
+              <ColorPickerField
                 label="Primary Color (optional)"
                 value={formData.CardPrimaryColor}
-                onChange={(e) => setFormData({ ...formData, CardPrimaryColor: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, CardPrimaryColor: value })}
                 placeholder="#1A73E8"
                 helperText="Color Hex format. Ex: '#FFFFFF'."
               />
-              <FormField
+              <ColorPickerField
                 label="Secondary Color (optional)"
                 value={formData.CardSecondaryColor}
-                onChange={(e) => setFormData({ ...formData, CardSecondaryColor: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, CardSecondaryColor: value })}
                 placeholder="#185ABC"
                 helperText="Color Hex format. Ex: '#FFFFFF'."
               />
