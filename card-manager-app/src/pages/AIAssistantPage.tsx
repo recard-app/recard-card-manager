@@ -379,6 +379,24 @@ export function AIAssistantPage() {
           </div>
         </div>
 
+        {result && result.items.length === 0 && (
+          <div className="output-section">
+            <div className="section-header">
+              <h2>Generated Output</h2>
+            </div>
+            <div className="model-info">
+              Model used: <span className="model-name">{result.modelUsed}</span>
+            </div>
+            <div className="empty-result">
+              <p className="empty-result-title">No {generationType === 'card' ? 'card details' : `${generationType}s`} found</p>
+              <p className="empty-result-description">
+                The AI successfully processed your input but did not find any {generationType === 'card' ? 'card details' : `${generationType}s`} to extract.
+                This may be because the pasted text does not contain relevant {generationType} information.
+              </p>
+            </div>
+          </div>
+        )}
+
         {result && result.items.length > 0 && (
           <div className="output-section">
             <div className="section-header">

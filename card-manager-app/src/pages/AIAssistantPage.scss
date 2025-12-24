@@ -281,6 +281,33 @@
   }
 }
 
+// Empty result state
+.empty-result {
+  @include flex-column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+  text-align: center;
+  border: 1px dashed $neutral-gray-300;
+  border-radius: $border-radius-sm;
+  background-color: $neutral-gray-100;
+
+  .empty-result-title {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $neutral-gray-800;
+    margin: 0 0 $spacing-xs 0;
+  }
+
+  .empty-result-description {
+    font-size: $font-size-xs;
+    color: $neutral-gray-600;
+    margin: 0;
+    max-width: 400px;
+    line-height: 1.5;
+  }
+}
+
 // JSON output
 .json-output {
   @include flex-column;

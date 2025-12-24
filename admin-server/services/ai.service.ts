@@ -183,6 +183,19 @@ If no perks are found, return an empty array: []
 
 ${categoryInfo}
 
+=== PERKS TO EXCLUDE (DO NOT CREATE) ===
+Do NOT create perks for the following - they are either redundant or standard for all cards:
+- No Foreign Transaction Fee (already in Card Details ForeignExchangeFee field)
+- Unauthorized Charge Protection / Zero Liability / Fraud Protection (standard for all cards by law)
+- Purchase Protection (too common/standard)
+- Extended Warranty Protection (too common/standard)
+- 24/7 Customer Support / Customer Service (standard for all cards)
+- Return Protection (too common/standard)
+- Price Protection (too common/standard)
+
+If the input text mentions these, SKIP them entirely.
+=====================================
+
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
 =====================================`;
@@ -193,6 +206,19 @@ Extract perk/benefit details and output a JSON object with the following schema:
 ${JSON.stringify(PERK_SCHEMA, null, 2)}
 
 ${categoryInfo}
+
+=== PERKS TO EXCLUDE (DO NOT CREATE) ===
+Do NOT create perks for the following - they are either redundant or standard for all cards:
+- No Foreign Transaction Fee (already in Card Details ForeignExchangeFee field)
+- Unauthorized Charge Protection / Zero Liability / Fraud Protection (standard for all cards by law)
+- Purchase Protection (too common/standard)
+- Extended Warranty Protection (too common/standard)
+- 24/7 Customer Support / Customer Service (standard for all cards)
+- Return Protection (too common/standard)
+- Price Protection (too common/standard)
+
+If the input text mentions these, SKIP them entirely.
+=====================================
 
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}

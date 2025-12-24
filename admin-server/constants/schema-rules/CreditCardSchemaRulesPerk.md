@@ -19,6 +19,24 @@ A Perk represents a non-monetary benefit, feature, or service associated with a 
 - Statement credits with dollar values → use Credit
 - Multipliers/rewards rates → use Multiplier
 
+### Perks to EXCLUDE (Do NOT create entries for these)
+The following are either redundant (covered elsewhere) or standard for all cards and should NOT be added as perks:
+
+| Exclude | Reason |
+|---------|--------|
+| **No Foreign Transaction Fee** | Already captured in Card Details (`ForeignExchangeFee` and `ForeignExchangeFeePercentage` fields) |
+| **Unauthorized Charge Protection / Zero Liability / Fraud Protection** | Standard for all credit cards by law - not a distinguishing perk |
+| **Purchase Protection** | Too common/standard across most cards - not a distinguishing benefit |
+| **Extended Warranty Protection** | Too common/standard across most cards - not a distinguishing benefit |
+| **24/7 Customer Support / Customer Service** | Standard for all credit cards - not a distinguishing perk |
+| **Return Protection** | Too common/standard across most cards - not a distinguishing benefit |
+| **Price Protection** | Too common/standard across most cards - not a distinguishing benefit |
+
+**Why these are excluded:**
+- Foreign transaction fees are already tracked in the card's main details
+- Fraud/unauthorized charge protection is legally required and standard
+- Basic insurance (purchase protection, extended warranty) and support are too ubiquitous to be meaningful differentiators
+
 ### Gray Area: Credits vs Perks
 Some benefits blur the line:
 - **TSA PreCheck/Global Entry Credit** - Could be either. Use Perk if it's about the eligibility/access; use Credit if emphasizing the reimbursement.
@@ -90,10 +108,12 @@ fbbda0f9-7422-47a4-ad8f-3f3a0d7858c0
 - `Airport Lounge Access`
 - `TSA/Global Entry Credit`
 - `Fine Hotels & Resorts Program`
-- `Purchase Protection`
 - `DoorDash DashPass`
 - `Peloton Membership`
 - `Travel and Emergency Assistance`
+- `Trip Cancellation Insurance`
+- `Rental Car Insurance`
+- `Cell Phone Protection`
 
 **Common Perk Titles by Category:**
 
@@ -102,9 +122,11 @@ fbbda0f9-7422-47a4-ad8f-3f3a0d7858c0
 | Travel - Lounge | `Priority Pass Select`, `Airport Lounge Access`, `Centurion Lounge Access` |
 | Travel - TSA | `TSA PreCheck Credit`, `Global Entry Credit`, `TSA/Global Entry Credit`, `Clear and TSA Credit` |
 | Travel - Hotels | `Fine Hotels & Resorts Program`, `Hotel Status` |
-| Insurance | `Purchase Protection`, `Extended Warranty`, `Trip Cancellation Insurance`, `Rental Car Insurance` |
+| Insurance | `Trip Cancellation Insurance`, `Rental Car Insurance`, `Cell Phone Protection`, `Baggage Insurance` |
 | Dining | `DoorDash DashPass` |
 | Entertainment | `Peloton Membership`, `Apple TV+ Membership` |
+
+**Note:** Do NOT include Purchase Protection, Extended Warranty, or similar basic insurance perks - see exclusions above.
 
 ---
 
@@ -346,23 +368,25 @@ fbbda0f9-7422-47a4-ad8f-3f3a0d7858c0
 }
 ```
 
-### Insurance Perk
+### Insurance Perk (Trip Cancellation)
 
 ```json
 {
   "id": "0a638020-5eef-4de3-b3ea-7e8885cdd3ae",
-  "ReferenceCardId": "chase-freedom-flex",
-  "Title": "Purchase Protection",
+  "ReferenceCardId": "chase-sapphire-reserve",
+  "Title": "Trip Cancellation/Interruption Insurance",
   "Category": "insurance",
-  "SubCategory": "purchase",
-  "Description": "Get coverage for damaged or stolen items purchased with the card.",
-  "Requirements": "",
-  "Details": "Up to $500 per claim and $50,000 per account.",
+  "SubCategory": "travel",
+  "Description": "Coverage for non-refundable trip costs if your trip is cancelled or cut short due to covered reasons.",
+  "Requirements": "Trip must be paid with the card",
+  "Details": "Up to $10,000 per person and $20,000 per trip.",
   "EffectiveFrom": "2025-09-19",
   "EffectiveTo": "9999-12-31",
   "LastUpdated": "2025-09-19T04:03:22.168Z"
 }
 ```
+
+**Note:** Do NOT create perks for Purchase Protection or Extended Warranty - these are excluded.
 
 ### Streaming/Entertainment Perk
 
@@ -438,12 +462,13 @@ Here are the most common perks found on credit cards:
 
 | Perk | Category | SubCategory | What It Covers |
 |------|----------|-------------|----------------|
-| Purchase Protection | insurance | purchase | Damaged/stolen items |
-| Extended Warranty | insurance | purchase | Extends manufacturer warranty |
 | Trip Cancellation | insurance | travel | Non-refundable trip costs |
 | Trip Delay | insurance | travel | Expenses due to delays |
 | Rental Car Insurance | insurance | rental car protection | Collision damage waiver |
 | Cell Phone Protection | insurance | cell phone protection | Phone damage/theft |
+| Baggage Insurance | insurance | travel | Lost/delayed baggage |
+
+**Note:** Purchase Protection and Extended Warranty are excluded - see "Perks to EXCLUDE" section above.
 
 ### Entertainment/Lifestyle Perks
 
@@ -491,6 +516,14 @@ Here are the most common perks found on credit cards:
    - Right: `Description: "Access to 1,300+ airport lounges worldwide."`
 
 5. **Note on `general` + `entertainment`**: For streaming/entertainment perks, using `Category: "general"` with `SubCategory: "entertainment"` is acceptable and commonly used
+
+6. **Including excluded perks**: Do NOT create perks for:
+   - No Foreign Transaction Fee (already in Card Details)
+   - Unauthorized Charge Protection / Zero Liability / Fraud Protection (standard for all cards)
+   - Purchase Protection (too common/standard)
+   - Extended Warranty Protection (too common/standard)
+   - 24/7 Customer Support (standard for all cards)
+   - Return Protection / Price Protection (too common/standard)
 
 ---
 

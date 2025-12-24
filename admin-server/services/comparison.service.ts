@@ -177,6 +177,18 @@ When a multiplier requires booking through a card issuer's travel portal (Chase 
 If a database multiplier has Category "portal" instead of Category "travel" with SubCategory "portal", this is INCORRECT categorization and should be flagged as a mismatch.
 Look for Requirements mentioning portal booking (e.g., "BOOK THROUGH AMEXTRAVEL.COM", "MUST BE BOOKED ON CHASE TRAVEL PORTAL").
 
+=== PERKS TO EXCLUDE (DO NOT FLAG AS "NEW") ===
+The following perks should NOT be flagged as "new" even if found on website, as they are either redundant or too common/standard to track:
+- No Foreign Transaction Fee (already tracked in Card Details ForeignExchangeFee field)
+- Unauthorized Charge Protection / Zero Liability / Fraud Protection (standard for all cards)
+- Purchase Protection (too common/standard)
+- Extended Warranty Protection (too common/standard)
+- 24/7 Customer Support / Customer Service (standard for all cards)
+- Return Protection (too common/standard)
+- Price Protection (too common/standard)
+
+If these perks exist in the database, mark them as "questionable" with a note that they should potentially be removed.
+
 === FIELD LABELS (for reference) ===
 ${JSON.stringify(CARD_FIELD_LABELS, null, 2)}
 
