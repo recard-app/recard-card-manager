@@ -135,6 +135,30 @@
   }
 }
 
+.display-toggle {
+  padding: 6px $spacing-sm;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-xs;
+  font-family: $font-family-base;
+  color: $neutral-gray-600;
+  background-color: $neutral-white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: $neutral-gray-300;
+    color: $neutral-gray-800;
+  }
+
+  &.active {
+    background-color: rgba($raw-primary-blue, 0.1);
+    border-color: $primary-blue;
+    color: $primary-blue;
+  }
+}
+
 .status-filter {
   padding: 6px $spacing-xs;
   border: 1px solid $neutral-gray-200;
@@ -256,6 +280,20 @@
   .col-name {
     font-weight: 600;
     color: $neutral-gray-800;
+    gap: 6px;
+
+    .card-icon-mini {
+      flex-shrink: 0;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+
+    .card-name-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 
   .col-issuer {

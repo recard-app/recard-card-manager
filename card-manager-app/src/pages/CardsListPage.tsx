@@ -162,6 +162,7 @@ export function CardsListPage() {
   const [syncing, setSyncing] = useState(false);
   const [sortColumn, setSortColumn] = useState<SortColumn | null>('CardName');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [showCardId, setShowCardId] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileContentRef = useRef<HTMLDivElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
@@ -330,9 +331,10 @@ export function CardsListPage() {
   const filteredAndSortedCards = useMemo(() => {
     // First filter
     const filtered = cards.filter(card => {
-      // Search filter
+      // Search filter (always searches by name, ID, and issuer)
       const matchesSearch = searchQuery === '' ||
         card.CardName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        card.ReferenceCardId.toLowerCase().includes(searchQuery.toLowerCase()) ||
         card.CardIssuer.toLowerCase().includes(searchQuery.toLowerCase());
 
       // Status filter
@@ -543,6 +545,13 @@ export function CardsListPage() {
           />
         </div>
 
+        <button
+          className={cn('display-toggle', showCardId && 'active')}
+          onClick={() => setShowCardId(!showCardId)}
+        >
+          {showCardId ? 'Card ID' : 'Card Name'}
+        </button>
+
         <MultiSelectFilter
           label="Status"
           selected={statusFilter}
@@ -576,7 +585,7 @@ export function CardsListPage() {
             <div className="table-header">
               <div className="col-image"></div>
               <div className="col-name">
-                <SortableHeader column="CardName" label="Card Name" />
+                <SortableHeader column="CardName" label={showCardId ? 'Card ID' : 'Card Name'} />
               </div>
               <div className="col-issuer">
                 <SortableHeader column="CardIssuer" label="Issuer" />
@@ -606,7 +615,19 @@ export function CardsListPage() {
                       />
                     )}
                   </div>
-                  <div className="col-name">{card.CardName}</div>
+                  <div className="col-name">
+                    <span
+                      className="card-icon-mini"
+                      style={{
+                        background: card.CardPrimaryColor
+                          ? `linear-gradient(135deg, ${card.CardPrimaryColor} 50%, ${card.CardSecondaryColor || card.CardPrimaryColor} 50%)`
+                          : 'transparent',
+                      }}
+                    />
+                    <span className="card-name-text">
+                      {showCardId ? card.ReferenceCardId : card.CardName}
+                    </span>
+                  </div>
                   <div className="col-issuer">{card.CardIssuer}</div>
                   <div className="col-status">
                     <Badge variant={getStatusBadgeVariant(card.status)}>
