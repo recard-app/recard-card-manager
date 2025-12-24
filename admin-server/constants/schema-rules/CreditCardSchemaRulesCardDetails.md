@@ -286,15 +286,9 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureOneCard.json`
 | **Required** | Yes |
 | **Description** | Description of foreign transaction fees. |
 
-**Standard Values:**
-| Value | When to Use |
-|-------|-------------|
-| `None` | Card has no foreign transaction fee |
-| `Applied on international purchases` | Card has a foreign transaction fee (use this exact text) |
-
 **Rules:**
 - Use `None` for cards without FX fees (ForeignExchangeFeePercentage = 0)
-- Use `Applied on international purchases` for cards WITH FX fees (the percentage is stored in ForeignExchangeFeePercentage)
+- For cards with FX fees, describe the fee policy (the percentage is stored in ForeignExchangeFeePercentage)
 
 ---
 
@@ -315,8 +309,8 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureOneCard.json`
 | FX Fee Description | Percentage Value |
 |-------------------|------------------|
 | `None` | `0` |
-| `Applied on international purchases` | `3` |
-| `Applied on international purchases` | `2.7` |
+| `3% on foreign transactions` | `3` |
+| `2.7% foreign transaction fee` | `2.7` |
 
 ---
 
@@ -502,7 +496,7 @@ These contain only ID references:
 | CardPrimaryColor | No | string | Hex (#XXXXXX) |
 | CardSecondaryColor | No | string | Hex (#XXXXXX) |
 | AnnualFee | Yes | number/null | Numeric, no $ |
-| ForeignExchangeFee | Yes | string | "None" or "Applied on international purchases" |
+| ForeignExchangeFee | Yes | string | "None" or fee description |
 | ForeignExchangeFeePercentage | Yes | number/null | Numeric percentage |
 | RewardsCurrency | Yes | string | points/miles/cash back (lowercase) |
 | PointsPerDollar | Yes | number/null | Base earning rate |

@@ -67,7 +67,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
     rules.push('- DO NOT include id, VersionName, ReferenceCardId, IsActive, CardImage, lastUpdated, effectiveFrom, effectiveTo, Perks, Credits, or Multipliers fields (auto-generated)');
     rules.push('- CardName: Format is "Issuer CardName" (e.g., "American Express Gold", "Chase Sapphire Preferred"). Do NOT include the word "Card" at the end');
     rules.push('- AnnualFee: number (not string), no $ sign');
-    rules.push('- ForeignExchangeFee: Use "None" if no fee, or "Applied on international purchases" if there is a fee');
+    rules.push('- ForeignExchangeFee: Description of the foreign exchange fee policy');
     rules.push('- ForeignExchangeFeePercentage: number (0 for no fee)');
     rules.push('- RewardsCurrency: lowercase ("points", "miles", "cash back")');
   }
