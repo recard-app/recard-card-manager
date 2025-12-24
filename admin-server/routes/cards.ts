@@ -288,12 +288,12 @@ router.get('/', async (req: Request, res: Response) => {
         )[0];
 
         results.push({
-          // Core identity from credit_cards_names
+          // Version data from most recent version (spread first so it can be overridden)
+          ...mostRecent,
+          // Core identity from credit_cards_names (override version values)
           ReferenceCardId: referenceCardId,
           CardName: cardNameData.CardName,
           CardIssuer: cardNameData.CardIssuer,
-          // Version data from most recent version
-          ...mostRecent,
           // Status info
           status: hasActiveVersion ? 'active' : 'no_active_version',
           ActiveVersionName: activeVersion ? activeVersion.VersionName : null,
