@@ -62,6 +62,19 @@ export function AIAssistantPage() {
   // Check if batch mode is available for current type
   const canBatch = generationType !== 'card';
 
+  // Auto-select model based on generation type and batch mode
+  // Single component (non-batch) → Flash, everything else → Pro
+  useEffect(() => {
+    const isComponent = generationType !== 'card';
+    const isSingleComponent = isComponent && !batchMode;
+
+    if (isSingleComponent) {
+      setSelectedModel(AI_MODELS.GEMINI_3_FLASH_PREVIEW);
+    } else {
+      setSelectedModel(AI_MODELS.GEMINI_3_PRO_PREVIEW);
+    }
+  }, [generationType, batchMode]);
+
   // Check if there's unsaved data that should trigger navigation warning
   const hasUnsavedDataRef = useRef(false);
   hasUnsavedDataRef.current = rawData.trim().length > 0 || (result !== null && result.items.length > 0);

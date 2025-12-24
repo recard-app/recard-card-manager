@@ -581,6 +581,10 @@ Here are the most common perks found on credit cards:
    - 24/7 Customer Support (standard for all cards)
    - Return Protection / Price Protection (too common/standard)
 
+7. **Wrong SubCategory spelling for hotels**:
+   - Wrong: `SubCategory: "hotel"` (missing 's')
+   - Right: `SubCategory: "hotels"` (with 's')
+
 ---
 
 ## Difference Between Perks, Credits, and Multipliers

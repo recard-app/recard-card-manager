@@ -459,3 +459,7 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureCredit.json`
 
 5. **Missing Requirements**: If the credit requires a specific portal or merchant, document it
 
+6. **Wrong SubCategory spelling for hotels**:
+   - Wrong: `SubCategory: "hotel"` (missing 's')
+   - Right: `SubCategory: "hotels"` (with 's')
+

@@ -79,7 +79,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
     rules.push('- TimePeriod: lowercase only - "monthly" | "quarterly" | "semiannually" | "annually"');
     rules.push('- CADENCE RULE: Credits MUST have a cadence of one year or less. Benefits with cadence >1 year (e.g., every 4 years for TSA/Global Entry) are PERKS, not Credits');
     rules.push('- Requirements: Use UPPERCASE for critical requirements (e.g., "MUST BE BOOKED ON CHASE TRAVEL PORTAL")');
-    rules.push('- SubCategory: Leave as empty string "" if no subcategory applies');
+    rules.push('- SubCategory: Leave as empty string "" if no subcategory applies. IMPORTANT: Use "hotels" (with s), NOT "hotel"');
   }
   
   if (type === 'multiplier') {
@@ -88,7 +88,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
     rules.push('- Multiplier: number type (not string), e.g., 3 for 3X, 1.5 for 1.5%');
     rules.push('- Category: Use "portal" for issuer travel portal purchases (not "travel")');
     rules.push('- Description: Explain what purchases qualify, not just repeat the category name');
-    rules.push('- SubCategory: Leave as empty string "" if no subcategory applies');
+    rules.push('- SubCategory: Leave as empty string "" if no subcategory applies. IMPORTANT: Use "hotels" (with s), NOT "hotel"');
     rules.push('- Requirements: Use UPPERCASE for portal requirements');
   }
   
@@ -97,9 +97,10 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
     rules.push('- Title: Title Case (e.g., "Priority Pass Select", "Global Entry Credit")');
     rules.push('- Description: Required - explain what the perk provides');
     rules.push('- Details: Include coverage limits for insurance perks (e.g., "Up to $500 per claim")');
-    rules.push('- SubCategory: Leave as empty string "" if no subcategory applies');
+    rules.push('- SubCategory: Leave as empty string "" if no subcategory applies. IMPORTANT: Use "hotels" (with s), NOT "hotel"');
     rules.push('- MULTI-YEAR CADENCE: Benefits with cadence >1 year (e.g., TSA/Global Entry every 4 years) are PERKS, even if they have a dollar value. Use Category="travel", SubCategory="tsa"');
     rules.push('- For lounge access: Category="travel", SubCategory="lounge access"');
+    rules.push('- For hotel programs/status: Category="travel", SubCategory="hotels" (MUST include the s)');
     rules.push('- For streaming/entertainment: Category="general", SubCategory="entertainment" is acceptable');
     rules.push('- PORTAL BOOKING: When perk requires booking through issuer/network service (Visa Luxury Hotel Collection, Amex Travel, Chase Travel, etc.), use Category="travel", SubCategory="portal"');
   }

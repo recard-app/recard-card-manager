@@ -541,3 +541,7 @@ Most cards should have at least these multipliers:
    - Wrong: Category `portal` with empty SubCategory
    - Right: Category `travel` with SubCategory `portal`
 
+6. **Wrong SubCategory spelling for hotels**:
+   - Wrong: `SubCategory: "hotel"` (missing 's')
+   - Right: `SubCategory: "hotels"` (with 's')
+
