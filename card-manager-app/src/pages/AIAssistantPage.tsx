@@ -483,19 +483,20 @@ export function AIAssistantPage() {
               </div>
             </div>
 
-            <div className="model-info">
-              Model used: <span className="model-name">{result.modelUsed}</span>
+            <div className="model-info-row">
+              <div className="model-info">
+                Model used: <span className="model-name">{result.modelUsed}</span>
+              </div>
+              {result.items.length > 1 && (
+                <button
+                  className="expand-collapse-toggle"
+                  onClick={toggleAllExpanded}
+                >
+                  <ChevronsUpDown size={14} />
+                  {allExpanded ? 'Collapse All' : 'Expand All'}
+                </button>
+              )}
             </div>
-
-            {result.items.length > 1 && (
-              <button
-                className="expand-collapse-toggle"
-                onClick={toggleAllExpanded}
-              >
-                <ChevronsUpDown size={14} />
-                {allExpanded ? 'Collapse All' : 'Expand All'}
-              </button>
-            )}
 
             <div className="items-list">
               {result.items.map((item, index) => (
