@@ -45,7 +45,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
   const formatRewardsCurrencyForDisplay = (value?: string): string => {
     const normalized = normalizeRewardsCurrency(value);
     if (!normalized) return '';
-    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+    return normalized.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
   const [formData, setFormData] = useState({

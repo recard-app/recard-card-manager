@@ -48,7 +48,7 @@ export const TIME_PERIODS = [
 // Rewards currencies
 export const REWARDS_CURRENCIES = [
   'Points',
-  'Cashback',
+  'Cash Back',
   'Miles',
   'Other',
 ] as const;

@@ -6,6 +6,7 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  min-width: 1000px;
 }
 
 .page-header {
@@ -98,16 +99,6 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
-
-  @media (max-width: 1400px) {
-    grid-template-columns: auto 1fr;
-  }
-
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-    height: auto;
-    overflow: visible;
-  }
 }
 
 .main-content {
@@ -116,6 +107,7 @@
   overflow-y: auto;
   padding: $spacing-md;
   position: relative;
+  min-width: 0; // Allow content to shrink below intrinsic size
 
   .content-loading-overlay {
     position: absolute;

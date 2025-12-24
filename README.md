@@ -37,6 +37,9 @@ This is separate from the production ReCard app:
 - Real-time card status tracking (active/inactive/no active version)
 - Protected routes requiring authentication
 - Permission pre-check endpoint for UX-friendly login gating
+- AI-powered features (requires Gemini API key):
+  - **AI Data Entry Assistant**: Parse credit card details from pasted text
+  - **Card Comparison**: Compare database card data against website text to identify matches, mismatches, missing, and outdated fields
 
 ## Setup
 
@@ -77,6 +80,9 @@ Navigate to `CardManager/admin-server` and create `.env`:
 PORT=9000
 CORS_ORIGIN=http://localhost:5174
 FIREBASE_SERVICE_ACCOUNT_PATH=../../Server/config/firebase-service-account.json
+
+# Gemini API Key (required for AI features)
+GEMINI_API_KEY=your_gemini_api_key
 
 # (Optional) Alternative to file path: provide the full JSON string
 # FIREBASE_SERVICE_ACCOUNT='{"type":"service_account","project_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\\n..."}'

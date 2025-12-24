@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { AIService } from '@/services/ai.service';
 import type { GenerationType, GenerationResult, GeneratedItem, GeneratedField } from '@/services/ai.service';
 import { validateField, validateResponse } from '@/utils/schema-validation';
+import { CardIcon } from '@/components/icons/CardIcon';
 import './AIAssistantPage.scss';
 
 type DisplayMode = 'fields' | 'json';
@@ -193,6 +194,24 @@ export function AIAssistantPage() {
   const renderFieldValue = (value: string | number | null): string => {
     if (value === null) return '';
     return String(value);
+  };
+
+  const isColorField = (key: string): boolean => {
+    return key === 'CardPrimaryColor' || key === 'CardSecondaryColor';
+  };
+
+  const isValidHexColor = (value: string | number | null): boolean => {
+    if (!value || typeof value !== 'string') return false;
+    return /^#[0-9A-Fa-f]{6}$/.test(value);
+  };
+
+  const getCardColors = (item: GeneratedItem): { primary: string; secondary: string } => {
+    const primary = item.json.CardPrimaryColor as string | undefined;
+    const secondary = item.json.CardSecondaryColor as string | undefined;
+    return {
+      primary: isValidHexColor(primary ?? null) ? primary! : '#5A5F66',
+      secondary: isValidHexColor(secondary ?? null) ? secondary! : '#F2F4F6',
+    };
   };
 
   /**
@@ -409,6 +428,12 @@ export function AIAssistantPage() {
                                 {field.label}
                               </div>
                               <div className="field-value">
+                                {isColorField(field.key) && isValidHexColor(field.value) && (
+                                  <span
+                                    className="color-swatch"
+                                    style={{ backgroundColor: String(field.value) }}
+                                  />
+                                )}
                                 <span>{renderFieldValue(field.value)}</span>
                                 <button
                                   className="copy-button"
@@ -424,6 +449,20 @@ export function AIAssistantPage() {
                               </div>
                             </div>
                           ))}
+                          {generationType === 'card' && (
+                            <div className="card-preview-section">
+                              <div className="card-preview-label">Card Preview</div>
+                              <div className="card-preview-content">
+                                <CardIcon
+                                  title="Card preview"
+                                  size={36}
+                                  primary={getCardColors(item).primary}
+                                  secondary={getCardColors(item).secondary}
+                                />
+                                <span className="card-preview-hint">Preview with generated colors</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="json-output">

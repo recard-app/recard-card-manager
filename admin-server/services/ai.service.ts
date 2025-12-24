@@ -126,6 +126,18 @@ ${JSON.stringify(CARD_SCHEMA, null, 2)}
 
 ${categoryInfo}
 
+=== COLOR SELECTION INSTRUCTIONS ===
+For CardPrimaryColor and CardSecondaryColor, use your best guess of what the physical credit card looks like in real life:
+- **CardPrimaryColor**: The base/background color that covers the MAJORITY of the card surface. This is the dominant color you see when looking at the card.
+- **CardSecondaryColor**: The accent color used for details, logos, text, or decorative elements on the card. This is a secondary/highlight color.
+
+Examples:
+- Chase Sapphire Reserve: Primary #0A1F2E (dark navy), Secondary #A8C7DA (light blue accent)
+- American Express Platinum: Primary #B1B3B3 (silver), Secondary #FFFFFF (white text)
+- American Express Gold: Primary #D4AF37 (gold), Secondary #1A1A1A (black accents)
+- Capital One Venture X: Primary #1A1A1A (black), Secondary #E31837 (red accents)
+=====================================
+
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
 =====================================`;

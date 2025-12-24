@@ -216,16 +216,16 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureOneCard.json`
 
 **Rules:**
 - Use 6-digit hex format with # prefix
-- Try to match the card's actual physical appearance
+- **Color Selection**: Use your best guess of what the physical card looks like in real life. This should be the base/background color that covers the majority of the card surface.
 - **Usage**: This is the base/background color of the rendered card icon. It covers most of the card area.
 
 **Examples:**
 | Card | Color | Notes |
 |------|-------|-------|
-| Chase Sapphire Reserve | `#0A1F2E` | Dark navy blue |
-| American Express Platinum | `#B1B3B3` | Silver/gray |
-| American Express Gold | `#D4AF37` | Gold |
-| Capital One Venture X | (varies) | |
+| Chase Sapphire Reserve | `#0A1F2E` | Dark navy blue (the main color of the physical card) |
+| American Express Platinum | `#B1B3B3` | Silver/gray (the metallic finish) |
+| American Express Gold | `#D4AF37` | Gold (the dominant gold color) |
+| Capital One Venture X | `#1A1A1A` | Black (the main card color) |
 
 ---
 
@@ -241,7 +241,7 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureOneCard.json`
 
 **Rules:**
 - Use 6-digit hex format with # prefix
-- Should complement the primary color
+- **Color Selection**: Use your best guess of what the physical card looks like in real life. This should be the accent color used for details, logos, text, or decorative elements on the card.
 - **Usage**: This is used for the accent stripe on the rendered card icon. The stripe is minimal and small, so this color acts as a highlight or detail accent.
 
 ---

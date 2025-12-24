@@ -210,7 +210,15 @@
   background-color: $neutral-white;
   gap: $spacing-sm;
 
-  span {
+  .color-swatch {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    border-radius: 3px;
+    border: 1px solid $neutral-gray-300;
+  }
+
+  span:not(.color-swatch) {
     flex: 1;
     font-size: $font-size-sm;
     color: $neutral-gray-800;
@@ -232,6 +240,43 @@
     &:hover {
       background-color: $neutral-gray-100;
       color: $primary-blue;
+    }
+  }
+}
+
+// Card preview section in fields output
+.card-preview-section {
+  @include flex-row;
+  align-items: stretch;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-sm;
+  overflow: hidden;
+  margin-top: $spacing-xs;
+
+  .card-preview-label {
+    width: 180px;
+    flex-shrink: 0;
+    padding: $spacing-sm;
+    background-color: $neutral-gray-100;
+    font-size: $font-size-xs;
+    font-weight: 600;
+    color: $neutral-gray-600;
+    border-right: 1px solid $neutral-gray-200;
+    display: flex;
+    align-items: center;
+  }
+
+  .card-preview-content {
+    @include flex-row;
+    flex: 1;
+    align-items: center;
+    padding: $spacing-sm;
+    background-color: $neutral-white;
+    gap: $spacing-sm;
+
+    .card-preview-hint {
+      font-size: $font-size-xs;
+      color: $neutral-gray-600;
     }
   }
 }
