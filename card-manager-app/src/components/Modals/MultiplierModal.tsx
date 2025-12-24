@@ -111,21 +111,32 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
 
   const handleJsonImport = (fields: Record<string, unknown>) => {
     const updates: Partial<typeof formData> = {};
-    
+
     if ('Name' in fields && typeof fields.Name === 'string') {
       updates.Name = fields.Name;
     }
+
+    // Determine the category to use for subcategory validation
+    let effectiveCategory = formData.Category;
     if ('Category' in fields && typeof fields.Category === 'string') {
       // Only set if it's a valid category
       if (Object.keys(CATEGORIES).includes(fields.Category)) {
         updates.Category = fields.Category;
-        // Reset subcategory if category changes
+        effectiveCategory = fields.Category;
+        // Reset subcategory since category changed
         updates.SubCategory = '';
       }
     }
+
+    // Only accept SubCategory if it's valid for the effective category
     if ('SubCategory' in fields && typeof fields.SubCategory === 'string') {
-      updates.SubCategory = fields.SubCategory;
+      const validSubcategories = SUBCATEGORIES[effectiveCategory] || [];
+      if (validSubcategories.includes(fields.SubCategory)) {
+        updates.SubCategory = fields.SubCategory;
+      }
+      // If not valid, leave SubCategory empty (already reset above or unchanged)
     }
+
     if ('Description' in fields && typeof fields.Description === 'string') {
       updates.Description = fields.Description;
     }

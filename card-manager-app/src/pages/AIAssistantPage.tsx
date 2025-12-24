@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, CircleUser, LogOut, Copy, Check, Loader2, ChevronDown, ChevronRight, CheckCircle, XCircle } from 'lucide-react';
+import { Home, CircleUser, LogOut, Copy, Check, Loader2, ChevronDown, ChevronRight, CheckCircle, XCircle, ChevronsUpDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -37,7 +37,8 @@ export function AIAssistantPage() {
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('json');
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set([0]));
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+  const [allExpanded, setAllExpanded] = useState(true);
 
   // Refinement state
   const [refinementPrompt, setRefinementPrompt] = useState('');
@@ -126,7 +127,6 @@ export function AIAssistantPage() {
     setResult(null);
     setShowRefinement(false);
     setRefinementPrompt('');
-    setExpandedItems(new Set([0]));
 
     try {
       const data = await AIService.generate({
@@ -137,6 +137,9 @@ export function AIAssistantPage() {
       // Validate the result and add validation status
       const validatedData = validateGenerationResult(data, generationType);
       setResult(validatedData);
+      // Expand all items by default
+      setExpandedItems(new Set(validatedData.items.map((_, i) => i)));
+      setAllExpanded(true);
       setShowRefinement(true);
     } catch (err: any) {
       console.error('Generation error:', err);
@@ -178,6 +181,9 @@ export function AIAssistantPage() {
       // Validate the result and add validation status
       const validatedData = validateGenerationResult(data, generationType);
       setResult(validatedData);
+      // Expand all items by default
+      setExpandedItems(new Set(validatedData.items.map((_, i) => i)));
+      setAllExpanded(true);
       setRefinementPrompt('');
       // Reset textarea height
       const textarea = document.querySelector('.refinement-input') as HTMLTextAreaElement;
@@ -201,8 +207,25 @@ export function AIAssistantPage() {
       } else {
         next.add(index);
       }
+      // Update allExpanded state based on whether all items are expanded
+      if (result) {
+        setAllExpanded(next.size === result.items.length);
+      }
       return next;
     });
+  };
+
+  const toggleAllExpanded = () => {
+    if (!result) return;
+    if (allExpanded) {
+      // Collapse all
+      setExpandedItems(new Set());
+      setAllExpanded(false);
+    } else {
+      // Expand all
+      setExpandedItems(new Set(result.items.map((_, i) => i)));
+      setAllExpanded(true);
+    }
   };
 
   const getItemTitle = (item: GeneratedItem): string => {
@@ -423,6 +446,16 @@ export function AIAssistantPage() {
             <div className="model-info">
               Model used: <span className="model-name">{result.modelUsed}</span>
             </div>
+
+            {result.items.length > 1 && (
+              <button
+                className="expand-collapse-toggle"
+                onClick={toggleAllExpanded}
+              >
+                <ChevronsUpDown size={14} />
+                {allExpanded ? 'Collapse All' : 'Expand All'}
+              </button>
+            )}
 
             <div className="items-list">
               {result.items.map((item, index) => (

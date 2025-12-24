@@ -353,6 +353,30 @@
   }
 }
 
+// Expand/Collapse all toggle
+.expand-collapse-toggle {
+  @include flex-row;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-xs $spacing-sm;
+  margin-bottom: $spacing-sm;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-sm;
+  background-color: $neutral-white;
+  font-size: $font-size-xs;
+  font-weight: 500;
+  font-family: $font-family-base;
+  color: $neutral-gray-600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background-color: $neutral-gray-100;
+    color: $neutral-gray-800;
+    border-color: $neutral-gray-300;
+  }
+}
+
 // Items list for batch results
 .items-list {
   @include flex-column;
