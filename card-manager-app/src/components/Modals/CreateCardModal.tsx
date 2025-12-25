@@ -101,17 +101,18 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
           label="Reference Card ID"
           required
           value={formData.ReferenceCardId}
-          onChange={(e) =>
-            setFormData({
-              ...formData,
-              ReferenceCardId: e.target.value.replace(/[^a-zA-Z0-9-]/g, ''),
-            })
-          }
+          onChange={(e) => {
+            const value = e.target.value
+              .toLowerCase()
+              .replace(/\s+/g, '-')
+              .replace(/[^a-z0-9_-]/g, '');
+            setFormData({ ...formData, ReferenceCardId: value });
+          }}
           error={errors.ReferenceCardId}
           placeholder="e.g., chase-sapphire-preferred"
         />
         <p className="field-help">
-          Unique identifier for this card (letters, numbers, hyphens only; no spaces).
+          Unique identifier for this card (lowercase letters, numbers, hyphens, underscores only).
           This cannot be changed once created.
         </p>
 

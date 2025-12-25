@@ -236,6 +236,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
             value={formData.SubCategory}
             onChange={(value) => setFormData({ ...formData, SubCategory: value })}
             options={SUBCATEGORIES[formData.Category].map(sub => ({ value: sub, label: sub }))}
+            clearable
           />
         )}
 

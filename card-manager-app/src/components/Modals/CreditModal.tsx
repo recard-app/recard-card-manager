@@ -263,6 +263,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
             value={formData.SubCategory}
             onChange={(value) => setFormData({ ...formData, SubCategory: value })}
             options={SUBCATEGORIES[formData.Category].map(sub => ({ value: sub, label: sub }))}
+            clearable
           />
         )}
 

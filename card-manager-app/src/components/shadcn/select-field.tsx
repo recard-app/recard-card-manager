@@ -21,11 +21,26 @@ interface SelectFieldProps {
   className?: string
   id?: string
   required?: boolean
+  clearable?: boolean
+  clearLabel?: string
 }
 
+const CLEAR_VALUE = "__clear__"
+
 export const SelectField = React.forwardRef<HTMLButtonElement, SelectFieldProps>(
-  ({ label, error, helperText, options, value, onChange, placeholder = "Select...", disabled, className, id, required }, ref) => {
+  ({ label, error, helperText, options, value, onChange, placeholder = "Select...", disabled, className, id, required, clearable = false, clearLabel = "(None)" }, ref) => {
     const fieldId = id || React.useId()
+
+    const handleValueChange = (newValue: string) => {
+      if (newValue === CLEAR_VALUE) {
+        onChange?.("")
+      } else {
+        onChange?.(newValue)
+      }
+    }
+
+    // Use CLEAR_VALUE as the internal value when value is empty and clearable is true
+    const internalValue = clearable && value === "" ? CLEAR_VALUE : value
 
     return (
       <div className="space-y-2">
@@ -35,7 +50,7 @@ export const SelectField = React.forwardRef<HTMLButtonElement, SelectFieldProps>
             {required && <span aria-hidden="true" className="ml-1 text-destructive">*</span>}
           </Label>
         )}
-        <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <Select value={internalValue} onValueChange={handleValueChange} disabled={disabled}>
           <SelectTrigger
             ref={ref}
             id={fieldId}
@@ -44,6 +59,11 @@ export const SelectField = React.forwardRef<HTMLButtonElement, SelectFieldProps>
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent>
+            {clearable && (
+              <SelectItem value={CLEAR_VALUE} className="text-muted-foreground italic">
+                {clearLabel}
+              </SelectItem>
+            )}
             {options.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}

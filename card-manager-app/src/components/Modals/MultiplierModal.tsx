@@ -249,6 +249,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
             value={formData.SubCategory}
             onChange={(value) => setFormData({ ...formData, SubCategory: value })}
             options={SUBCATEGORIES[formData.Category].map(sub => ({ value: sub, label: sub }))}
+            clearable
           />
         )}
 
