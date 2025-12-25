@@ -62,8 +62,24 @@
 // Card selector section for component creation
 .card-selector-section {
   .card-selector-row {
-    max-width: 700px;
+    @include flex-row;
+    align-items: flex-end;
+    gap: $spacing-sm;
+    max-width: 750px;
     width: 100%;
+
+    // Combobox takes up available space
+    > div:first-child {
+      flex: 1;
+      max-width: 700px;
+    }
+  }
+
+  .refresh-cards-button {
+    height: 40px;
+    width: 40px;
+    padding: 0;
+    flex-shrink: 0;
   }
 }
 

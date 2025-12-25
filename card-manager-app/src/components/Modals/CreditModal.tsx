@@ -9,7 +9,7 @@ import type { CardCredit } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
 import { getCurrentDate } from '@/utils/date-utils';
-import { CATEGORIES, SUBCATEGORIES, TIME_PERIODS } from '@/constants/form-options';
+import { CATEGORIES, SUBCATEGORIES, TIME_PERIODS, TIME_PERIOD_LABELS } from '@/constants/form-options';
 import { FileJson } from 'lucide-react';
 import './CreditModal.scss';
 import { CreditFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
@@ -158,10 +158,10 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
       updates.Value = fields.Value;
     }
     if ('TimePeriod' in fields && typeof fields.TimePeriod === 'string') {
-      // Capitalize first letter to match TIME_PERIODS format
-      const capitalized = fields.TimePeriod.charAt(0).toUpperCase() + fields.TimePeriod.slice(1).toLowerCase();
-      if (TIME_PERIODS.includes(capitalized as typeof TIME_PERIODS[number])) {
-        updates.TimePeriod = capitalized;
+      // Normalize to lowercase to match TIME_PERIODS format
+      const normalized = fields.TimePeriod.toLowerCase();
+      if (TIME_PERIODS.includes(normalized as typeof TIME_PERIODS[number])) {
+        updates.TimePeriod = normalized;
       }
     }
     if ('Requirements' in fields && typeof fields.Requirements === 'string') {
@@ -282,7 +282,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           required
           value={formData.TimePeriod}
           onChange={(value) => setFormData({ ...formData, TimePeriod: value })}
-          options={TIME_PERIODS.map(tp => ({ value: tp, label: tp }))}
+          options={TIME_PERIODS.map(tp => ({ value: tp, label: TIME_PERIOD_LABELS[tp] || tp }))}
         />
 
         <FormField

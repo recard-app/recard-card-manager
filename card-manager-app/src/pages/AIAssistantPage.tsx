@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, CircleUser, LogOut, Copy, Check, Loader2, ChevronDown, ChevronRight, CheckCircle, XCircle, ChevronsUpDown, Plus } from 'lucide-react';
+import { Home, CircleUser, LogOut, Copy, Check, Loader2, ChevronDown, ChevronRight, CheckCircle, XCircle, ChevronsUpDown, Plus, RefreshCw } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -112,19 +112,24 @@ export function AIAssistantPage() {
   }, []);
 
   // Load cards for component creation
-  useEffect(() => {
-    async function loadCards() {
-      try {
-        const cardsList = await CardService.getAllCardsWithStatus();
-        cardsList.sort((a, b) => a.CardName.localeCompare(b.CardName));
-        setCards(cardsList);
-      } catch (error) {
-        console.error('Failed to load cards:', error);
-        toast.error('Failed to load cards');
-      } finally {
-        setLoadingCards(false);
+  const loadCards = async (showToast = false) => {
+    setLoadingCards(true);
+    try {
+      const cardsList = await CardService.getAllCardsWithStatus();
+      cardsList.sort((a, b) => a.CardName.localeCompare(b.CardName));
+      setCards(cardsList);
+      if (showToast) {
+        toast.success('Cards refreshed');
       }
+    } catch (error) {
+      console.error('Failed to load cards:', error);
+      toast.error('Failed to load cards');
+    } finally {
+      setLoadingCards(false);
     }
+  };
+
+  useEffect(() => {
     loadCards();
   }, []);
 
@@ -546,6 +551,16 @@ export function AIAssistantPage() {
                 searchPlaceholder="Search cards..."
                 disabled={loadingCards}
               />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => loadCards(true)}
+                disabled={loadingCards}
+                className="refresh-cards-button"
+                title="Refresh cards list"
+              >
+                <RefreshCw size={14} className={loadingCards ? 'spinning' : ''} />
+              </Button>
             </div>
           </div>
         )}

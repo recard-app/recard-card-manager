@@ -88,6 +88,13 @@
   }
 }
 
+.selection-section {
+  .refresh-cards-button {
+    margin-top: $spacing-sm;
+    gap: $spacing-xs;
+  }
+}
+
 .website-text-input {
   width: 100%;
   min-height: 200px;

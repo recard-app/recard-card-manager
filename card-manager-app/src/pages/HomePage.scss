@@ -14,9 +14,15 @@
   @include flex-row;
   justify-content: space-between;
   align-items: center;
-  gap: $spacing-sm;
+  gap: $spacing-xs;
   padding: $spacing-xs 0;
   flex-shrink: 0;
+
+  .header-left {
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-sm;
+  }
 
   h1 {
     font-size: 18px;
@@ -26,12 +32,21 @@
   }
 }
 
+.home-link {
+  @include flex-center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: $border-radius-sm;
+  color: $neutral-gray-600;
+  cursor: default;
+}
+
 .nav-cards {
   @include flex-column;
   gap: $spacing-md;
-  flex: 1;
-  justify-content: center;
-  padding-bottom: 100px;
+  padding-top: $spacing-md;
   width: 100%;
 }
 

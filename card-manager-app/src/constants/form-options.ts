@@ -37,13 +37,21 @@ export const SUBCATEGORIES: Record<string, string[]> = {
   'rewards boost': [],
 };
 
-// Time periods for credits
+// Time periods for credits (lowercase to match server CREDIT_PERIODS)
 export const TIME_PERIODS = [
-  'Monthly',
-  'Quarterly',
-  'Semiannually',
-  'Annually',
+  'monthly',
+  'quarterly',
+  'semiannually',
+  'annually',
 ] as const;
+
+// Display labels for time periods (for UI display)
+export const TIME_PERIOD_LABELS: Record<string, string> = {
+  'monthly': 'Monthly',
+  'quarterly': 'Quarterly',
+  'semiannually': 'Semiannually',
+  'annually': 'Annually',
+};
 
 // Rewards currencies
 export const REWARDS_CURRENCIES = [

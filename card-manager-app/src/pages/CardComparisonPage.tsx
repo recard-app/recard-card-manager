@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, CircleUser, LogOut, Loader2 } from 'lucide-react';
+import { Home, CircleUser, LogOut, Loader2, RefreshCw } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/Button';
 import { Combobox } from '@/components/ui/Combobox';
@@ -73,21 +73,27 @@ export function CardComparisonPage() {
     };
   }, []);
 
-  // Load all cards on mount
-  useEffect(() => {
-    async function loadCards() {
-      try {
-        const cardsList = await CardService.getAllCardsWithStatus();
-        // Sort by card name
-        cardsList.sort((a, b) => a.CardName.localeCompare(b.CardName));
-        setCards(cardsList);
-      } catch (error) {
-        console.error('Failed to load cards:', error);
-        toast.error('Failed to load cards');
-      } finally {
-        setLoadingCards(false);
+  // Load all cards
+  const loadCards = async (showToast = false) => {
+    setLoadingCards(true);
+    try {
+      const cardsList = await CardService.getAllCardsWithStatus();
+      // Sort by card name
+      cardsList.sort((a, b) => a.CardName.localeCompare(b.CardName));
+      setCards(cardsList);
+      if (showToast) {
+        toast.success('Cards refreshed');
       }
+    } catch (error) {
+      console.error('Failed to load cards:', error);
+      toast.error('Failed to load cards');
+    } finally {
+      setLoadingCards(false);
     }
+  };
+
+  // Load cards on mount
+  useEffect(() => {
     loadCards();
   }, []);
 
@@ -302,6 +308,16 @@ export function CardComparisonPage() {
               />
             </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadCards(true)}
+            disabled={loadingCards}
+            className="refresh-cards-button"
+          >
+            <RefreshCw size={14} className={loadingCards ? 'spinning' : ''} />
+            Refresh Cards
+          </Button>
         </div>
 
         {/* Website Text Input */}
