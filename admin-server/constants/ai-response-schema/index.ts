@@ -103,14 +103,38 @@ export const PERK_SCHEMA_FIELDS = [
 // MULTIPLIER SCHEMA
 // ============================================
 
+export type MultiplierType = 'standard' | 'rotating' | 'selectable';
+
+export const VALID_MULTIPLIER_TYPES: MultiplierType[] = ['standard', 'rotating', 'selectable'];
+
+export interface AllowedCategoryEntry {
+  category: string;
+  subCategory: string;
+  displayName: string;
+}
+
+export type SchedulePeriodType = 'quarter' | 'month' | 'half_year' | 'year';
+
+export interface AIRotatingScheduleEntry {
+  category: string;        // e.g., "shopping"
+  subCategory: string;     // e.g., "amazon.com" or ""
+  periodType: SchedulePeriodType;
+  periodValue: number;     // e.g., 1 for Q1
+  year: number;            // e.g., 2025
+  title: string;           // REQUIRED - e.g., "Amazon.com purchases"
+}
+
 export interface AIMultiplierResponse {
   Name: string;
-  Category: string;
+  Category: string;  // Empty string for rotating/selectable types
   SubCategory: string;
   Description: string;
   Multiplier: number;
   Requirements: string;
   Details: string;
+  multiplierType?: MultiplierType;  // Optional - defaults to 'standard'
+  allowedCategories?: AllowedCategoryEntry[];  // Required for 'selectable' type only
+  scheduleEntries?: AIRotatingScheduleEntry[];  // Required for 'rotating' type only
 }
 
 export const MULTIPLIER_SCHEMA_FIELDS = [
@@ -121,7 +145,12 @@ export const MULTIPLIER_SCHEMA_FIELDS = [
   'Multiplier',
   'Requirements',
   'Details',
+  'multiplierType',
+  'allowedCategories',
+  'scheduleEntries',
 ] as const;
+
+export const VALID_SCHEDULE_PERIOD_TYPES: SchedulePeriodType[] = ['quarter', 'month', 'half_year', 'year'];
 
 // ============================================
 // VALIDATION HELPERS
@@ -187,13 +216,45 @@ export function isValidPerkResponse(obj: unknown): obj is AIPerkResponse {
 }
 
 /**
+ * Validates that an allowed category entry has all required fields
+ */
+function isValidAllowedCategoryEntry(entry: unknown): entry is AllowedCategoryEntry {
+  if (typeof entry !== 'object' || entry === null) return false;
+  const e = entry as Record<string, unknown>;
+  return (
+    typeof e.category === 'string' &&
+    typeof e.subCategory === 'string' &&
+    typeof e.displayName === 'string'
+  );
+}
+
+/**
+ * Validates that a rotating schedule entry has all required fields
+ */
+function isValidScheduleEntry(entry: unknown): entry is AIRotatingScheduleEntry {
+  if (typeof entry !== 'object' || entry === null) return false;
+  const e = entry as Record<string, unknown>;
+  return (
+    typeof e.category === 'string' &&
+    typeof e.subCategory === 'string' &&
+    typeof e.periodType === 'string' &&
+    VALID_SCHEDULE_PERIOD_TYPES.includes(e.periodType as SchedulePeriodType) &&
+    typeof e.periodValue === 'number' &&
+    typeof e.year === 'number' &&
+    typeof e.title === 'string' &&
+    e.title !== ''  // title is required and must not be empty
+  );
+}
+
+/**
  * Validates that a multiplier response has all required fields
  */
 export function isValidMultiplierResponse(obj: unknown): obj is AIMultiplierResponse {
   if (typeof obj !== 'object' || obj === null) return false;
   const o = obj as Record<string, unknown>;
-  
-  return (
+
+  // Validate core required fields
+  const hasRequiredFields = (
     typeof o.Name === 'string' &&
     typeof o.Category === 'string' &&
     typeof o.SubCategory === 'string' &&
@@ -202,6 +263,29 @@ export function isValidMultiplierResponse(obj: unknown): obj is AIMultiplierResp
     typeof o.Requirements === 'string' &&
     typeof o.Details === 'string'
   );
+
+  if (!hasRequiredFields) return false;
+
+  // Validate optional multiplierType if present
+  if (o.multiplierType !== undefined) {
+    if (!VALID_MULTIPLIER_TYPES.includes(o.multiplierType as MultiplierType)) {
+      return false;
+    }
+  }
+
+  // Validate allowedCategories if present (required for selectable type)
+  if (o.allowedCategories !== undefined) {
+    if (!Array.isArray(o.allowedCategories)) return false;
+    if (!o.allowedCategories.every(isValidAllowedCategoryEntry)) return false;
+  }
+
+  // Validate scheduleEntries if present (required for rotating type)
+  if (o.scheduleEntries !== undefined) {
+    if (!Array.isArray(o.scheduleEntries)) return false;
+    if (!o.scheduleEntries.every(isValidScheduleEntry)) return false;
+  }
+
+  return true;
 }
 
 // ============================================
@@ -244,11 +328,14 @@ export const AI_PERK_SCHEMA = {
 
 export const AI_MULTIPLIER_SCHEMA = {
   Name: 'string (Title Case category, e.g., "Dining", NOT "3X on Dining")',
-  Category: 'string (use "portal" for issuer portal purchases)',
+  Category: 'string (REQUIRED for standard, empty string "" for rotating/selectable)',
   SubCategory: 'string (or empty string "" if none)',
   Description: 'string (required - what purchases qualify)',
   Multiplier: 'number (e.g., 3 for 3X, 1.5 for 1.5%)',
   Requirements: 'string (UPPERCASE for portal requirements)',
   Details: 'string (spending caps, exclusions)',
+  multiplierType: 'string: "standard" | "rotating" | "selectable" (optional, defaults to "standard")',
+  allowedCategories: 'array (ONLY for selectable type) - each object: { category: string, subCategory: string, displayName: string }',
+  scheduleEntries: 'array (ONLY for rotating type) - each object: { category: string, subCategory: string, periodType: "quarter"|"month"|"half_year"|"year", periodValue: number, year: number, title: string (REQUIRED - descriptive display name like "Amazon.com purchases") }',
 };
 

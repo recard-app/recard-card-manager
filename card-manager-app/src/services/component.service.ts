@@ -1,6 +1,6 @@
 import { apiClient } from '@/lib/api-client';
 import { API_ROUTES } from '@/lib/api-routes';
-import type { CardCredit, CardPerk, CardMultiplier } from '@/types';
+import type { CardCredit, CardPerk, CardMultiplier, RotatingScheduleEntry, AllowedCategoryEntry } from '@/types';
 
 /**
  * Component Service
@@ -84,12 +84,12 @@ export class ComponentService {
   /**
    * Create a new multiplier
    */
-  static async createMultiplier(multiplierData: Omit<CardMultiplier, 'id' | 'LastUpdated'>): Promise<string> {
+  static async createMultiplier(multiplierData: Omit<CardMultiplier, 'id' | 'LastUpdated'>): Promise<{ id: string }> {
     const response = await apiClient.post<{ id: string }>(
       API_ROUTES.MULTIPLIERS.CREATE,
       multiplierData
     );
-    return response.data.id;
+    return response.data;
   }
 
   /**
@@ -107,5 +107,71 @@ export class ComponentService {
    */
   static async deleteMultiplier(multiplierId: string): Promise<void> {
     await apiClient.delete(API_ROUTES.MULTIPLIERS.DELETE(multiplierId));
+  }
+
+  // ===== ROTATING SCHEDULE =====
+
+  /**
+   * Get all rotating schedule entries for a multiplier
+   */
+  static async getRotatingSchedule(multiplierId: string): Promise<RotatingScheduleEntry[]> {
+    const response = await apiClient.get<RotatingScheduleEntry[]>(
+      API_ROUTES.MULTIPLIERS.SCHEDULE.LIST(multiplierId)
+    );
+    return response.data;
+  }
+
+  /**
+   * Create a rotating schedule entry
+   */
+  static async createRotatingScheduleEntry(
+    multiplierId: string,
+    entryData: Omit<RotatingScheduleEntry, 'id'>
+  ): Promise<{ id: string }> {
+    const response = await apiClient.post<{ id: string }>(
+      API_ROUTES.MULTIPLIERS.SCHEDULE.CREATE(multiplierId),
+      entryData
+    );
+    return response.data;
+  }
+
+  /**
+   * Delete a rotating schedule entry
+   */
+  static async deleteRotatingScheduleEntry(multiplierId: string, entryId: string): Promise<void> {
+    await apiClient.delete(API_ROUTES.MULTIPLIERS.SCHEDULE.DELETE(multiplierId, entryId));
+  }
+
+  // ===== ALLOWED CATEGORIES =====
+
+  /**
+   * Get all allowed categories for a selectable multiplier
+   */
+  static async getAllowedCategories(multiplierId: string): Promise<AllowedCategoryEntry[]> {
+    const response = await apiClient.get<AllowedCategoryEntry[]>(
+      API_ROUTES.MULTIPLIERS.ALLOWED_CATEGORIES.LIST(multiplierId)
+    );
+    return response.data;
+  }
+
+  /**
+   * Create an allowed category entry
+   */
+  static async createAllowedCategory(
+    multiplierId: string,
+    categoryData: Omit<AllowedCategoryEntry, 'id'>
+  ): Promise<{ id: string }> {
+    const response = await apiClient.post<{ id: string }>(
+      API_ROUTES.MULTIPLIERS.ALLOWED_CATEGORIES.CREATE(multiplierId),
+      categoryData
+    );
+    return response.data;
+  }
+
+  /**
+   * Delete an allowed category entry
+   */
+  static async deleteAllowedCategory(multiplierId: string, categoryId: string): Promise<void> {
+    await apiClient.delete(API_ROUTES.MULTIPLIERS.ALLOWED_CATEGORIES.DELETE(multiplierId, categoryId));
   }
 }

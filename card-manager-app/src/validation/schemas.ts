@@ -57,7 +57,8 @@ export type PerkForm = z.infer<typeof PerkFormSchema>;
 
 export const MultiplierFormSchema = z.object({
   Name: z.string().min(1, 'Name is required'),
-  Category: z.string().min(1, 'Category is required'),
+  // Category is optional for rotating/selectable types (validated in component)
+  Category: z.string().optional(),
   SubCategory: z.string().optional(),
   Description: z.string().min(1, 'Description is required'),
   Multiplier: z.string().min(1, 'Multiplier is required').refine((v) => !isNaN(Number(v)) && Number(v) > 0, { message: 'Multiplier must be greater than 0' }),
@@ -65,6 +66,7 @@ export const MultiplierFormSchema = z.object({
   Details: z.string().optional(),
   EffectiveFrom: z.string().min(1, 'Effective from date is required').regex(isoDateYYYYMMDD, 'Use YYYY-MM-DD'),
   EffectiveTo: z.string().optional().refine((v) => !v || isoDateYYYYMMDD.test(v), { message: 'Use YYYY-MM-DD' }),
+  multiplierType: z.enum(['standard', 'rotating', 'selectable']).optional(),
 });
 export type MultiplierForm = z.infer<typeof MultiplierFormSchema>;
 

@@ -1,7 +1,8 @@
 import type { CardCredit, CardPerk, CardMultiplier } from '@/types';
+import { MULTIPLIER_TYPES, isRotatingMultiplier, isSelectableMultiplier } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2, RotateCcw, ListChecks } from 'lucide-react';
 import { formatDate } from '@/utils/date-utils';
 import './ComponentTabs.scss';
 
@@ -233,8 +234,33 @@ function MultipliersList({ multipliers, onEdit, onDelete }: MultipliersListProps
 
           <div className="component-details">
             <div className="detail-row">
+              <span className="label">Type:</span>
+              <span className="value multiplier-type-value">
+                {isRotatingMultiplier(multiplier) && (
+                  <>
+                    <RotateCcw size={14} />
+                    <span>Rotating</span>
+                  </>
+                )}
+                {isSelectableMultiplier(multiplier) && (
+                  <>
+                    <ListChecks size={14} />
+                    <span>Selectable</span>
+                  </>
+                )}
+                {multiplier.multiplierType === MULTIPLIER_TYPES.STANDARD && (
+                  <span>Standard</span>
+                )}
+              </span>
+            </div>
+            <div className="detail-row">
               <span className="label">Category:</span>
-              <span className="value">{multiplier.Category}</span>
+              <span className="value">
+                {isRotatingMultiplier(multiplier) || isSelectableMultiplier(multiplier)
+                  ? '(Dynamic - see schedule/categories)'
+                  : multiplier.Category || 'Not specified'}
+                {multiplier.SubCategory && ` / ${multiplier.SubCategory}`}
+              </span>
             </div>
             <div className="detail-row">
               <span className="label">Description:</span>

@@ -1,0 +1,53 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.schedule-entry-modal-form {
+  @include flex-column;
+  gap: $spacing-lg;
+}
+
+.period-selection-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-md;
+}
+
+.date-range-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-md;
+}
+
+.checkbox-row {
+  @include flex-row;
+  align-items: center;
+  gap: $spacing-sm;
+  cursor: pointer;
+  font-size: $font-size-sm;
+  color: $neutral-gray-800;
+
+  input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: $primary-blue;
+  }
+
+  span {
+    user-select: none;
+  }
+}
+
+.calculated-dates {
+  padding: $spacing-sm $spacing-md;
+  background-color: $neutral-gray-100;
+  border-radius: $border-radius-md;
+  font-size: $font-size-sm;
+  color: $neutral-gray-600;
+}
+
+.divider {
+  height: 1px;
+  background-color: $neutral-gray-200;
+  margin: $spacing-sm 0;
+}

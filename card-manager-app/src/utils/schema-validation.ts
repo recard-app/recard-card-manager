@@ -21,6 +21,10 @@ export const VALID_CREDIT_TIME_PERIODS: CreditTimePeriod[] = [
 
 export const VALID_REWARDS_CURRENCIES = ['points', 'miles', 'cash back'];
 
+export type MultiplierType = 'standard' | 'rotating' | 'selectable';
+
+export const VALID_MULTIPLIER_TYPES: MultiplierType[] = ['standard', 'rotating', 'selectable'];
+
 // Expected fields per schema type
 export const SCHEMA_FIELDS: Record<GenerationType, string[]> = {
   card: [
@@ -62,6 +66,9 @@ export const SCHEMA_FIELDS: Record<GenerationType, string[]> = {
     'Multiplier',
     'Requirements',
     'Details',
+    'multiplierType',
+    'allowedCategories',
+    'scheduleEntries',
   ],
 };
 
@@ -227,6 +234,41 @@ function validatePerkField(key: string, value: unknown): FieldValidationResult {
   }
 }
 
+/**
+ * Validates an allowed category entry for selectable multipliers
+ */
+function isValidAllowedCategoryEntry(entry: unknown): boolean {
+  if (typeof entry !== 'object' || entry === null) return false;
+  const e = entry as Record<string, unknown>;
+  return (
+    typeof e.category === 'string' &&
+    typeof e.subCategory === 'string' &&
+    typeof e.displayName === 'string'
+  );
+}
+
+export type SchedulePeriodType = 'quarter' | 'month' | 'half_year' | 'year';
+
+export const VALID_SCHEDULE_PERIOD_TYPES: SchedulePeriodType[] = ['quarter', 'month', 'half_year', 'year'];
+
+/**
+ * Validates a rotating schedule entry
+ */
+function isValidScheduleEntry(entry: unknown): boolean {
+  if (typeof entry !== 'object' || entry === null) return false;
+  const e = entry as Record<string, unknown>;
+  return (
+    typeof e.category === 'string' &&
+    typeof e.subCategory === 'string' &&
+    typeof e.periodType === 'string' &&
+    VALID_SCHEDULE_PERIOD_TYPES.includes(e.periodType as SchedulePeriodType) &&
+    typeof e.periodValue === 'number' &&
+    typeof e.year === 'number' &&
+    typeof e.title === 'string' &&
+    (e.title as string).trim() !== ''  // title is required and must not be empty
+  );
+}
+
 function validateMultiplierField(key: string, value: unknown): FieldValidationResult {
   switch (key) {
     case 'Name':
@@ -243,6 +285,12 @@ function validateMultiplierField(key: string, value: unknown): FieldValidationRe
       return { valid: true };
 
     case 'Category':
+      // Category can be empty string for rotating/selectable types
+      if (typeof value !== 'string') {
+        return { valid: false, reason: 'Must be a string' };
+      }
+      return { valid: true };
+
     case 'Description':
       if (typeof value !== 'string') {
         return { valid: false, reason: 'Must be a string' };
@@ -266,6 +314,49 @@ function validateMultiplierField(key: string, value: unknown): FieldValidationRe
       }
       if (value <= 0) {
         return { valid: false, reason: 'Must be greater than 0' };
+      }
+      return { valid: true };
+
+    case 'multiplierType':
+      if (value === undefined || value === null) {
+        // Optional field - defaults to 'standard'
+        return { valid: true };
+      }
+      if (typeof value !== 'string') {
+        return { valid: false, reason: 'Must be a string' };
+      }
+      if (!VALID_MULTIPLIER_TYPES.includes(value as MultiplierType)) {
+        return { valid: false, reason: 'Must be "standard", "rotating", or "selectable"' };
+      }
+      return { valid: true };
+
+    case 'allowedCategories':
+      if (value === undefined || value === null) {
+        // Optional for non-selectable types (validation of this is done at object level)
+        return { valid: true };
+      }
+      if (!Array.isArray(value)) {
+        return { valid: false, reason: 'Must be an array' };
+      }
+      if (value.length === 0) {
+        return { valid: false, reason: 'Must have at least one category' };
+      }
+      if (!value.every(isValidAllowedCategoryEntry)) {
+        return { valid: false, reason: 'Each entry must have category, subCategory, and displayName' };
+      }
+      return { valid: true };
+
+    case 'scheduleEntries':
+      if (value === undefined || value === null) {
+        // Optional for non-rotating types (validation of this is done at object level)
+        return { valid: true };
+      }
+      if (!Array.isArray(value)) {
+        return { valid: false, reason: 'Must be an array' };
+      }
+      // Allow empty array - rotating multipliers may not have schedule entries yet
+      if (value.length > 0 && !value.every(isValidScheduleEntry)) {
+        return { valid: false, reason: 'Each entry must have category, subCategory, periodType, periodValue, year, and title (non-empty)' };
       }
       return { valid: true };
 

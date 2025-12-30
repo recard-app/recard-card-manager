@@ -342,4 +342,174 @@ router.delete('/multipliers/:multiplierId', async (req: Request, res: Response) 
   }
 });
 
+// ===== ROTATING SCHEDULE SUBCOLLECTION =====
+
+/**
+ * GET /admin/multipliers/:multiplierId/schedule
+ * Get all rotating schedule entries for a multiplier
+ */
+router.get('/multipliers/:multiplierId/schedule', async (req: Request, res: Response) => {
+  try {
+    const { multiplierId } = req.params;
+
+    const snapshot = await db
+      .collection('credit_cards_multipliers')
+      .doc(multiplierId)
+      .collection('schedule')
+      .orderBy('startDate', 'desc')
+      .get();
+
+    if (snapshot.empty) {
+      return res.json([]);
+    }
+
+    const entries: any[] = [];
+    snapshot.forEach((doc) => {
+      entries.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    res.json(entries);
+  } catch (error) {
+    console.error('Error fetching schedule:', error);
+    res.status(500).json({ error: 'Failed to fetch schedule' });
+  }
+});
+
+/**
+ * POST /admin/multipliers/:multiplierId/schedule
+ * Create a rotating schedule entry
+ */
+router.post('/multipliers/:multiplierId/schedule', async (req: Request, res: Response) => {
+  try {
+    const { multiplierId } = req.params;
+    const entryData = req.body;
+
+    // Remove any id field if present (Firestore will generate one)
+    if (entryData.id) {
+      delete entryData.id;
+    }
+
+    const docRef = await db
+      .collection('credit_cards_multipliers')
+      .doc(multiplierId)
+      .collection('schedule')
+      .add(entryData);
+
+    res.status(201).json({ id: docRef.id });
+  } catch (error) {
+    console.error('Error creating schedule entry:', error);
+    res.status(500).json({ error: 'Failed to create schedule entry' });
+  }
+});
+
+/**
+ * DELETE /admin/multipliers/:multiplierId/schedule/:entryId
+ * Delete a rotating schedule entry
+ */
+router.delete('/multipliers/:multiplierId/schedule/:entryId', async (req: Request, res: Response) => {
+  try {
+    const { multiplierId, entryId } = req.params;
+
+    await db
+      .collection('credit_cards_multipliers')
+      .doc(multiplierId)
+      .collection('schedule')
+      .doc(entryId)
+      .delete();
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting schedule entry:', error);
+    res.status(500).json({ error: 'Failed to delete schedule entry' });
+  }
+});
+
+// ===== ALLOWED CATEGORIES SUBCOLLECTION =====
+
+/**
+ * GET /admin/multipliers/:multiplierId/allowed-categories
+ * Get all allowed categories for a selectable multiplier
+ */
+router.get('/multipliers/:multiplierId/allowed-categories', async (req: Request, res: Response) => {
+  try {
+    const { multiplierId } = req.params;
+
+    const snapshot = await db
+      .collection('credit_cards_multipliers')
+      .doc(multiplierId)
+      .collection('allowed_categories')
+      .orderBy('displayName', 'asc')
+      .get();
+
+    if (snapshot.empty) {
+      return res.json([]);
+    }
+
+    const categories: any[] = [];
+    snapshot.forEach((doc) => {
+      categories.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    res.json(categories);
+  } catch (error) {
+    console.error('Error fetching allowed categories:', error);
+    res.status(500).json({ error: 'Failed to fetch allowed categories' });
+  }
+});
+
+/**
+ * POST /admin/multipliers/:multiplierId/allowed-categories
+ * Create an allowed category entry
+ */
+router.post('/multipliers/:multiplierId/allowed-categories', async (req: Request, res: Response) => {
+  try {
+    const { multiplierId } = req.params;
+    const categoryData = req.body;
+
+    // Remove any id field if present (Firestore will generate one)
+    if (categoryData.id) {
+      delete categoryData.id;
+    }
+
+    const docRef = await db
+      .collection('credit_cards_multipliers')
+      .doc(multiplierId)
+      .collection('allowed_categories')
+      .add(categoryData);
+
+    res.status(201).json({ id: docRef.id });
+  } catch (error) {
+    console.error('Error creating allowed category:', error);
+    res.status(500).json({ error: 'Failed to create allowed category' });
+  }
+});
+
+/**
+ * DELETE /admin/multipliers/:multiplierId/allowed-categories/:categoryId
+ * Delete an allowed category entry
+ */
+router.delete('/multipliers/:multiplierId/allowed-categories/:categoryId', async (req: Request, res: Response) => {
+  try {
+    const { multiplierId, categoryId } = req.params;
+
+    await db
+      .collection('credit_cards_multipliers')
+      .doc(multiplierId)
+      .collection('allowed_categories')
+      .doc(categoryId)
+      .delete();
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting allowed category:', error);
+    res.status(500).json({ error: 'Failed to delete allowed category' });
+  }
+});
+
 export default router;

@@ -102,3 +102,213 @@
   padding-top: $spacing-lg;
   border-top: 1px solid $neutral-gray-200;
 }
+
+// Multiplier Type Section
+.multiplier-type-section {
+  @include flex-column;
+  gap: $spacing-sm;
+
+  .section-label {
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: $neutral-gray-800;
+  }
+
+  .type-options {
+    @include flex-column;
+    gap: $spacing-xs;
+  }
+
+  .type-option {
+    @include flex-row;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid $neutral-gray-300;
+    border-radius: $border-radius-md;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: $neutral-gray-300;
+      background-color: $neutral-gray-50;
+    }
+
+    &.selected {
+      border-color: $primary-blue;
+      background-color: rgba($raw-primary-blue, 0.05);
+    }
+
+    input[type='radio'] {
+      margin-top: 2px;
+      accent-color: $primary-blue;
+    }
+
+    .type-content {
+      @include flex-column;
+      gap: 2px;
+    }
+
+    .type-label {
+      font-size: $font-size-sm;
+      font-weight: 500;
+      color: $neutral-gray-800;
+    }
+
+    .type-description {
+      font-size: $font-size-xs;
+      color: $neutral-gray-600;
+    }
+  }
+
+  .type-info-note {
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-md;
+    background-color: $neutral-gray-100;
+    border-radius: $border-radius-md;
+    font-size: $font-size-xs;
+    color: $neutral-gray-600;
+
+    svg {
+      flex-shrink: 0;
+      color: $primary-blue;
+    }
+  }
+}
+
+// Rotating Schedule & Selectable Categories Sections
+.rotating-schedule-section,
+.selectable-categories-section {
+  @include flex-column;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-md;
+  background-color: $neutral-gray-50;
+}
+
+.section-header {
+  @include flex-row;
+  align-items: center;
+  gap: $spacing-sm;
+  font-size: $font-size-sm;
+  font-weight: 600;
+  color: $neutral-gray-800;
+
+  svg {
+    color: $primary-blue;
+  }
+
+  button {
+    margin-left: auto;
+  }
+}
+
+.loading-text {
+  font-size: $font-size-sm;
+  color: $neutral-gray-600;
+  font-style: italic;
+}
+
+.add-entry-form {
+  @include flex-column;
+  gap: $spacing-sm;
+  padding: $spacing-md;
+  background-color: $neutral-white;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-md;
+}
+
+.form-row {
+  @include flex-row;
+  gap: $spacing-sm;
+
+  > * {
+    flex: 1;
+  }
+}
+
+.form-actions {
+  @include flex-row;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  margin-top: $spacing-sm;
+  padding-top: $spacing-sm;
+  border-top: 1px solid $neutral-gray-200;
+}
+
+.entries-list {
+  @include flex-column;
+  gap: $spacing-xs;
+}
+
+.entry-item {
+  @include flex-row;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  padding: $spacing-sm $spacing-md;
+  background-color: $neutral-white;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-md;
+
+  .entry-info {
+    @include flex-column;
+    gap: 2px;
+    flex: 1;
+  }
+
+  .entry-period,
+  .entry-display-name {
+    font-size: $font-size-sm;
+    font-weight: 500;
+    color: $neutral-gray-800;
+  }
+
+  .entry-category {
+    font-size: $font-size-xs;
+    color: $neutral-gray-600;
+  }
+
+  .entry-dates {
+    font-size: $font-size-xs;
+    color: $neutral-gray-600;
+  }
+
+  button {
+    flex-shrink: 0;
+    color: $error-red;
+
+    &:hover {
+      background-color: rgba($raw-error-red, 0.1);
+    }
+  }
+}
+
+.empty-entries {
+  font-size: $font-size-sm;
+  color: $neutral-gray-600;
+  font-style: italic;
+  text-align: center;
+  padding: $spacing-md;
+}
+
+.info-note {
+  @include flex-row;
+  align-items: center;
+  gap: $spacing-xs;
+  padding: $spacing-sm $spacing-md;
+  background-color: rgba($raw-primary-blue, 0.05);
+  border: 1px solid rgba($raw-primary-blue, 0.2);
+  border-radius: $border-radius-md;
+  font-size: $font-size-xs;
+  color: $neutral-gray-800;
+
+  svg {
+    flex-shrink: 0;
+    color: $primary-blue;
+  }
+}
+

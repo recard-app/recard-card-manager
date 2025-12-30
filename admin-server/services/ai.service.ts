@@ -262,6 +262,54 @@ Look for requirements like "BOOK THROUGH AMEXTRAVEL.COM", "MUST BE BOOKED ON CHA
 These are TRAVEL purchases made through a portal, so Category must be "travel" with SubCategory "portal".
 =====================================
 
+=== ROTATING MULTIPLIER SCHEDULE ENTRIES ===
+When multiplierType is "rotating", you MUST include a "scheduleEntries" array with the current quarter/period categories.
+
+Each scheduleEntry object must have:
+- category: string (e.g., "shopping", "dining", "gas")
+- subCategory: string (e.g., "amazon.com", "gas stations", or "" if none)
+- periodType: "quarter" | "month" | "half_year" | "year"
+- periodValue: number (1-4 for quarter, 1-12 for month, 1-2 for half_year)
+- year: number (e.g., 2025)
+- title: string (REQUIRED) - A descriptive name for display
+
+IMPORTANT: The "title" field is REQUIRED and should be human-readable. Do NOT just repeat the category name.
+Good examples: "Amazon.com purchases", "Grocery stores & supermarkets", "Streaming services", "Dining & Restaurants"
+Bad examples: "shopping", "dining" (too generic)
+
+Example rotating multiplier with schedule:
+{
+  "Name": "Rotating 5% Categories",
+  "Category": "",
+  "SubCategory": "",
+  "Description": "Earn 5% cash back on bonus categories that rotate each quarter.",
+  "Multiplier": 5,
+  "Requirements": "MUST ACTIVATE EACH QUARTER",
+  "Details": "Up to $1,500 in combined purchases per quarter",
+  "multiplierType": "rotating",
+  "scheduleEntries": [
+    {
+      "category": "shopping",
+      "subCategory": "amazon.com",
+      "periodType": "quarter",
+      "periodValue": 1,
+      "year": 2025,
+      "title": "Amazon.com purchases"
+    },
+    {
+      "category": "dining",
+      "subCategory": "",
+      "periodType": "quarter",
+      "periodValue": 1,
+      "year": 2025,
+      "title": "Dining & Restaurants"
+    }
+  ]
+}
+
+Note: Multiple categories can exist for the same period (e.g., Q1 2025 with both Amazon and Dining).
+=====================================
+
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
 =====================================`;
@@ -280,6 +328,54 @@ IMPORTANT: When a multiplier requires booking through a card issuer's travel por
 
 Look for requirements like "BOOK THROUGH AMEXTRAVEL.COM", "MUST BE BOOKED ON CHASE TRAVEL PORTAL", etc.
 These are TRAVEL purchases made through a portal, so Category must be "travel" with SubCategory "portal".
+=====================================
+
+=== ROTATING MULTIPLIER SCHEDULE ENTRIES ===
+When multiplierType is "rotating", you MUST include a "scheduleEntries" array with the current quarter/period categories.
+
+Each scheduleEntry object must have:
+- category: string (e.g., "shopping", "dining", "gas")
+- subCategory: string (e.g., "amazon.com", "gas stations", or "" if none)
+- periodType: "quarter" | "month" | "half_year" | "year"
+- periodValue: number (1-4 for quarter, 1-12 for month, 1-2 for half_year)
+- year: number (e.g., 2025)
+- title: string (REQUIRED) - A descriptive name for display
+
+IMPORTANT: The "title" field is REQUIRED and should be human-readable. Do NOT just repeat the category name.
+Good examples: "Amazon.com purchases", "Grocery stores & supermarkets", "Streaming services", "Dining & Restaurants"
+Bad examples: "shopping", "dining" (too generic)
+
+Example rotating multiplier with schedule:
+{
+  "Name": "Rotating 5% Categories",
+  "Category": "",
+  "SubCategory": "",
+  "Description": "Earn 5% cash back on bonus categories that rotate each quarter.",
+  "Multiplier": 5,
+  "Requirements": "MUST ACTIVATE EACH QUARTER",
+  "Details": "Up to $1,500 in combined purchases per quarter",
+  "multiplierType": "rotating",
+  "scheduleEntries": [
+    {
+      "category": "shopping",
+      "subCategory": "amazon.com",
+      "periodType": "quarter",
+      "periodValue": 1,
+      "year": 2025,
+      "title": "Amazon.com purchases"
+    },
+    {
+      "category": "dining",
+      "subCategory": "",
+      "periodType": "quarter",
+      "periodValue": 1,
+      "year": 2025,
+      "title": "Dining & Restaurants"
+    }
+  ]
+}
+
+Note: Multiple categories can exist for the same period (e.g., Q1 2025 with both Amazon and Dining).
 =====================================
 
 === SCHEMA RULES (FOLLOW EXACTLY) ===

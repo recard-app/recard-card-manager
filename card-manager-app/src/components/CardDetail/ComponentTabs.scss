@@ -131,6 +131,16 @@
     .value {
       color: $neutral-gray-800;
     }
+
+    .multiplier-type-value {
+      @include flex-row;
+      align-items: center;
+      gap: $spacing-xs;
+
+      svg {
+        color: $primary-blue;
+      }
+    }
   }
 }
 

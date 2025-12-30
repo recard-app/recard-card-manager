@@ -62,6 +62,18 @@ export const API_ROUTES = {
     CREATE: '/admin/multipliers',
     UPDATE: (multiplierId: string) => `/admin/multipliers/${multiplierId}`,
     DELETE: (multiplierId: string) => `/admin/multipliers/${multiplierId}`,
+    // Rotating schedule subcollection
+    SCHEDULE: {
+      LIST: (multiplierId: string) => `/admin/multipliers/${multiplierId}/schedule`,
+      CREATE: (multiplierId: string) => `/admin/multipliers/${multiplierId}/schedule`,
+      DELETE: (multiplierId: string, entryId: string) => `/admin/multipliers/${multiplierId}/schedule/${entryId}`,
+    },
+    // Allowed categories subcollection
+    ALLOWED_CATEGORIES: {
+      LIST: (multiplierId: string) => `/admin/multipliers/${multiplierId}/allowed-categories`,
+      CREATE: (multiplierId: string) => `/admin/multipliers/${multiplierId}/allowed-categories`,
+      DELETE: (multiplierId: string, categoryId: string) => `/admin/multipliers/${multiplierId}/allowed-categories/${categoryId}`,
+    },
   },
 
   // AI Assistant routes

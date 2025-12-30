@@ -69,7 +69,8 @@ export const PerkSchema = z.object({
 export const MultiplierSchema = z.object({
   ReferenceCardId: z.string().min(1),
   Name: z.string().min(1),
-  Category: z.string().min(1),
+  // Category is optional for rotating/selectable types
+  Category: z.string().optional(),
   SubCategory: z.string().optional(),
   Description: z.string().min(1),
   Multiplier: z.number().gt(0),
@@ -77,6 +78,7 @@ export const MultiplierSchema = z.object({
   Details: z.string().optional(),
   EffectiveFrom: z.string().regex(isoDateYYYYMMDD),
   EffectiveTo: z.string().regex(isoDateYYYYMMDD).optional(),
+  multiplierType: z.enum(['standard', 'rotating', 'selectable']).optional(),
 });
 
 export function parseOr400<T>(parser: z.ZodType<T>, data: unknown) {

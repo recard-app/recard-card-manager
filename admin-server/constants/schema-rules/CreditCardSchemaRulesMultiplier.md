@@ -290,6 +290,132 @@ Do NOT use `portal` as the Category. Portal bookings are travel purchases, so th
 
 ---
 
+### multiplierType
+
+| Property | Value |
+|----------|-------|
+| **Type** | `string` |
+| **Required** | No (defaults to `standard`) |
+| **Description** | The type of multiplier behavior. |
+
+**Allowed Values:**
+
+| Type | Description | Category Field | Additional Data |
+|------|-------------|----------------|-----------------|
+| `standard` | Fixed category multiplier | Required | None |
+| `rotating` | Category changes periodically (quarterly, etc.) | Empty string `""` | Schedule added manually after creation |
+| `selectable` | User chooses from allowed categories | Empty string `""` | `allowedCategories` array required |
+
+**Rules:**
+- If omitted, defaults to `standard`
+- For `rotating`: Leave `Category` as empty string `""`, schedule entries are added manually after creating the multiplier
+- For `selectable`: Leave `Category` as empty string `""`, must include `allowedCategories` array
+
+**Examples:**
+```json
+"multiplierType": "standard"
+```
+```json
+"multiplierType": "rotating"
+```
+```json
+"multiplierType": "selectable"
+```
+
+---
+
+### allowedCategories (Selectable Only)
+
+| Property | Value |
+|----------|-------|
+| **Type** | `array` of objects |
+| **Required** | Yes (only when `multiplierType` is `selectable`) |
+| **Description** | The categories users can choose from for this multiplier. |
+
+**Array Item Structure:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `category` | string | Yes | Category from standard list (e.g., "dining", "gas") |
+| `subCategory` | string | Yes | Subcategory or empty string `""` |
+| `displayName` | string | Yes | User-friendly name shown in dropdown |
+
+**Rules:**
+- Only include when `multiplierType` is `selectable`
+- Must have at least one category entry
+- Each entry needs all three fields: `category`, `subCategory`, `displayName`
+- Use standard category values from the Category field reference
+
+**Example:**
+```json
+"allowedCategories": [
+  { "category": "dining", "subCategory": "", "displayName": "Restaurants" },
+  { "category": "gas", "subCategory": "gas stations", "displayName": "Gas Stations" },
+  { "category": "shopping", "subCategory": "supermarkets", "displayName": "Grocery Stores" },
+  { "category": "entertainment", "subCategory": "streaming", "displayName": "Streaming Services" }
+]
+```
+
+---
+
+### scheduleEntries (Rotating Only)
+
+| Property | Value |
+|----------|-------|
+| **Type** | `array` of objects |
+| **Required** | Yes (only when `multiplierType` is `rotating`) |
+| **Description** | The schedule entries defining which categories apply to each period. |
+
+**Array Item Structure:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `category` | string | Yes | Category from taxonomy (e.g., "dining", "shopping") |
+| `subCategory` | string | Yes | Subcategory or empty string (e.g., "amazon.com", "") |
+| `periodType` | string | Yes | One of: "quarter", "month", "half_year", "year" |
+| `periodValue` | number | Yes | Period identifier (1-4 for quarter, 1-12 for month, 1-2 for half_year) |
+| `year` | number | Yes | The year this entry applies to (e.g., 2025) |
+| `title` | string | **Yes** | **REQUIRED** - Descriptive display name (e.g., "Amazon.com purchases") |
+
+**Important:** The `title` field is REQUIRED and should be a human-readable description, NOT just the category name.
+
+**Good Title Examples:**
+- "Amazon.com purchases"
+- "Dining & Restaurants"
+- "Gas Stations & EV Charging"
+- "Grocery stores including Target & Walmart"
+- "Streaming services"
+
+**Bad Title Examples:**
+- "shopping" (too generic, just repeating category)
+- "dining" (not descriptive enough)
+
+**Example:**
+```json
+"scheduleEntries": [
+  {
+    "category": "shopping",
+    "subCategory": "amazon.com",
+    "periodType": "quarter",
+    "periodValue": 1,
+    "year": 2025,
+    "title": "Amazon.com purchases"
+  },
+  {
+    "category": "dining",
+    "subCategory": "",
+    "periodType": "quarter",
+    "periodValue": 1,
+    "year": 2025,
+    "title": "Dining & Restaurants"
+  }
+]
+```
+
+**Note:** Multiple schedule entries can exist for the same period. For example, Q1 2025 might include both "Amazon.com purchases" and "Dining & Restaurants" as separate entries.
+
+---
+
 ### EffectiveFrom
 
 | Property | Value |
@@ -483,6 +609,87 @@ Do NOT use `portal` as the Category. Portal bookings are travel purchases, so th
 }
 ```
 
+### Selectable Multiplier (User Choice)
+
+For cards where users can choose their bonus category from a list of options.
+
+```json
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "ReferenceCardId": "us-bank-cash-plus",
+  "Name": "Quarterly Bonus Category",
+  "Category": "",
+  "SubCategory": "",
+  "Description": "Earn 5% cash back on purchases in your chosen category each quarter.",
+  "Multiplier": 5,
+  "Requirements": "MUST ACTIVATE EACH QUARTER",
+  "Details": "Up to $2,000 in combined purchases per quarter",
+  "multiplierType": "selectable",
+  "allowedCategories": [
+    { "category": "dining", "subCategory": "", "displayName": "Restaurants" },
+    { "category": "gas", "subCategory": "gas stations", "displayName": "Gas Stations" },
+    { "category": "shopping", "subCategory": "supermarkets", "displayName": "Grocery Stores" },
+    { "category": "entertainment", "subCategory": "streaming", "displayName": "Streaming Services" },
+    { "category": "travel", "subCategory": "", "displayName": "Travel" }
+  ],
+  "EffectiveFrom": "2025-01-01",
+  "EffectiveTo": "9999-12-31",
+  "LastUpdated": "2025-01-01T00:00:00.000Z"
+}
+```
+
+**Note:** For selectable multipliers:
+- `Category` is empty string (the actual category is determined by user selection)
+- `allowedCategories` array defines what users can choose from
+- Each allowed category has its own `category`, `subCategory`, and `displayName`
+
+### Rotating Multiplier (Changes Quarterly)
+
+For cards where bonus categories change each quarter (e.g., Chase Freedom, Discover).
+
+```json
+{
+  "id": "b2c3d4e5-f678-9012-bcde-f12345678901",
+  "ReferenceCardId": "chase-freedom-flex",
+  "Name": "Rotating 5% Category",
+  "Category": "",
+  "SubCategory": "",
+  "Description": "Earn 5% cash back on bonus categories that rotate each quarter.",
+  "Multiplier": 5,
+  "Requirements": "MUST ACTIVATE EACH QUARTER",
+  "Details": "Up to $1,500 in combined purchases per quarter. Categories announced quarterly.",
+  "multiplierType": "rotating",
+  "scheduleEntries": [
+    {
+      "category": "shopping",
+      "subCategory": "amazon.com",
+      "periodType": "quarter",
+      "periodValue": 1,
+      "year": 2025,
+      "title": "Amazon.com purchases"
+    },
+    {
+      "category": "dining",
+      "subCategory": "",
+      "periodType": "quarter",
+      "periodValue": 1,
+      "year": 2025,
+      "title": "Dining & Restaurants"
+    }
+  ],
+  "EffectiveFrom": "2025-01-01",
+  "EffectiveTo": "9999-12-31",
+  "LastUpdated": "2025-01-01T00:00:00.000Z"
+}
+```
+
+**Note:** For rotating multipliers:
+- `Category` is empty string (varies by schedule period)
+- Include `scheduleEntries` array with current period categories
+- Each schedule entry MUST have a `title` field with a descriptive display name
+- A single period (e.g., Q1 2025) can have multiple categories - create separate schedule entries for each
+- Example: Q1 2025 might include both "Amazon.com purchases" and "Dining & Restaurants" as separate entries
+
 ---
 
 ## Every Card Should Have...
@@ -507,12 +714,15 @@ Most cards should have at least these multipliers:
 | id | Yes | string | UUID |
 | ReferenceCardId | Yes | string | kebab-case |
 | Name | Yes | string | Title Case, descriptive |
-| Category | Yes | string | See category list |
+| Category | Yes* | string | See category list (* empty for rotating/selectable) |
 | SubCategory | No | string | See subcategory list or empty |
 | Description | Yes | string | What qualifies |
 | Multiplier | Yes | number | > 0, can be decimal |
 | Requirements | No | string | UPPERCASE for emphasis |
 | Details | No | string | Additional notes |
+| multiplierType | No | string | "standard" (default), "rotating", "selectable" |
+| allowedCategories | Conditional | array | Required only when multiplierType is "selectable" |
+| scheduleEntries | Conditional | array | Required only when multiplierType is "rotating" |
 | EffectiveFrom | Yes | string | YYYY-MM-DD |
 | EffectiveTo | Yes | string | YYYY-MM-DD or 9999-12-31 |
 | LastUpdated | Yes | string | Full ISO 8601 timestamp |
@@ -544,4 +754,24 @@ Most cards should have at least these multipliers:
 6. **Wrong SubCategory spelling for hotels**:
    - Wrong: `SubCategory: "hotel"` (missing 's')
    - Right: `SubCategory: "hotels"` (with 's')
+
+7. **Missing allowedCategories for selectable type**:
+   - Wrong: `multiplierType: "selectable"` without `allowedCategories`
+   - Right: Include full `allowedCategories` array with at least one category
+
+8. **Including allowedCategories for non-selectable types**:
+   - Wrong: `multiplierType: "standard"` with `allowedCategories`
+   - Right: Only include `allowedCategories` when `multiplierType: "selectable"`
+
+9. **Non-empty Category for rotating/selectable**:
+   - Wrong: `multiplierType: "selectable"` with `Category: "dining"`
+   - Right: `Category: ""` (empty) for rotating/selectable types
+
+10. **Missing scheduleEntries for rotating multipliers**:
+    - Wrong: `multiplierType: "rotating"` without `scheduleEntries`
+    - Right: Include `scheduleEntries` array with current period categories
+
+11. **Missing or generic title in scheduleEntries**:
+    - Wrong: `"title": "shopping"` (just repeating category)
+    - Right: `"title": "Amazon.com purchases"` (descriptive display name)
 
