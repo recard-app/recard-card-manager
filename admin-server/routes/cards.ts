@@ -79,7 +79,7 @@ router.post('/card-names/:referenceCardId', async (req: Request, res: Response) 
     if (!parsed.ok) {
       return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
     }
-    const { CardName, CardIssuer } = parsed.data;
+    const { CardName, CardIssuer, CardCharacteristics } = parsed.data;
 
     // Validate required fields
     // (Already validated above)
@@ -93,6 +93,7 @@ router.post('/card-names/:referenceCardId', async (req: Request, res: Response) 
     const newCardName: CreditCardName = {
       CardName,
       CardIssuer,
+      CardCharacteristics: CardCharacteristics || 'standard',
     };
 
     await db.collection('credit_cards_names').doc(referenceCardId).set(newCardName);
@@ -115,7 +116,7 @@ router.put('/card-names/:referenceCardId', async (req: Request, res: Response) =
     if (!parsed.ok) {
       return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
     }
-    const { CardName, CardIssuer } = parsed.data;
+    const { CardName, CardIssuer, CardCharacteristics } = parsed.data;
 
     const doc = await db.collection('credit_cards_names').doc(referenceCardId).get();
     if (!doc.exists) {
@@ -125,6 +126,7 @@ router.put('/card-names/:referenceCardId', async (req: Request, res: Response) =
     const updateData: Partial<CreditCardName> = {};
     if (CardName !== undefined) updateData.CardName = CardName;
     if (CardIssuer !== undefined) updateData.CardIssuer = CardIssuer;
+    if (CardCharacteristics !== undefined) updateData.CardCharacteristics = CardCharacteristics;
 
     await db.collection('credit_cards_names').doc(referenceCardId).update(updateData);
 
@@ -264,6 +266,7 @@ router.get('/', async (req: Request, res: Response) => {
           ReferenceCardId: referenceCardId,
           CardName: cardNameData.CardName,
           CardIssuer: cardNameData.CardIssuer,
+          CardCharacteristics: cardNameData.CardCharacteristics || 'standard',
           status: 'no_versions',
           ActiveVersionName: null,
           versionCount: 0,
@@ -294,6 +297,7 @@ router.get('/', async (req: Request, res: Response) => {
           ReferenceCardId: referenceCardId,
           CardName: cardNameData.CardName,
           CardIssuer: cardNameData.CardIssuer,
+          CardCharacteristics: cardNameData.CardCharacteristics || 'standard',
           // Status info
           status: hasActiveVersion ? 'active' : 'no_active_version',
           ActiveVersionName: activeVersion ? activeVersion.VersionName : null,
@@ -328,6 +332,7 @@ router.get('/', async (req: Request, res: Response) => {
         CardName: mostRecent.CardName,
         CardIssuer: mostRecent.CardIssuer,
         ...mostRecent,
+        CardCharacteristics: 'standard', // Orphaned versions default to standard
         status: hasActiveVersion ? 'active' : 'no_active_version',
         ActiveVersionName: activeVersion ? activeVersion.VersionName : null,
         versionCount: versions.length,

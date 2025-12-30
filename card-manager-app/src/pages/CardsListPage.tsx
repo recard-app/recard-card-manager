@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CardService } from '@/services/card.service';
-import type { CardWithStatus } from '@/types/ui-types';
+import type { CardWithStatus, CardCharacteristics } from '@/types/ui-types';
 import { CardStatus } from '@/types/ui-types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -158,6 +158,7 @@ export function CardsListPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [lastUpdatedFilter, setLastUpdatedFilter] = useState<Exclude<LastUpdatedTier, 'all'>[]>([]);
+  const [characteristicsFilter, setCharacteristicsFilter] = useState<CardCharacteristics[]>([]);
   const [createCardModalOpen, setCreateCardModalOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [sortColumn, setSortColumn] = useState<SortColumn | null>('CardName');
@@ -357,7 +358,11 @@ export function CardsListPage() {
         return lastUpdatedFilter.includes(tier);
       })();
 
-      return matchesSearch && matchesStatus && matchesLastUpdated;
+      // Characteristics filter
+      const matchesCharacteristics = characteristicsFilter.length === 0 ||
+        characteristicsFilter.includes(card.CardCharacteristics || 'standard');
+
+      return matchesSearch && matchesStatus && matchesLastUpdated && matchesCharacteristics;
     });
 
     // If no sort is applied, keep the existing natural order
@@ -392,7 +397,7 @@ export function CardsListPage() {
 
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [cards, searchQuery, statusFilter, lastUpdatedFilter, sortColumn, sortDirection]);
+  }, [cards, searchQuery, statusFilter, lastUpdatedFilter, characteristicsFilter, sortColumn, sortDirection]);
 
   const getStatusBadgeVariant = (status: CardStatus | string) => {
     switch (status) {
@@ -411,6 +416,17 @@ export function CardsListPage() {
       case CardStatus.NoActiveVersion: return 'No Active Version';
       case CardStatus.NoVersions: return 'No Versions';
       default: return status;
+    }
+  };
+
+  const getCharacteristicsBadge = (characteristics?: CardCharacteristics) => {
+    switch (characteristics) {
+      case 'rotating':
+        return <Badge variant="info">Rotating</Badge>;
+      case 'selectable':
+        return <Badge variant="warning">Selectable</Badge>;
+      default:
+        return <Badge variant="secondary">Standard</Badge>;
     }
   };
 
@@ -573,6 +589,17 @@ export function CardsListPage() {
             { value: 'gt90', label: <span className="flex items-center gap-2"><AlertOctagon size={14} className="text-red-600" /> &gt; 90 days</span> },
           ]}
         />
+
+        <MultiSelectFilter
+          label="Characteristics"
+          selected={characteristicsFilter}
+          onChange={setCharacteristicsFilter}
+          options={[
+            { value: 'standard', label: 'Standard' },
+            { value: 'rotating', label: 'Rotating' },
+            { value: 'selectable', label: 'Selectable' },
+          ]}
+        />
       </div>
 
       <div className="cards-table">
@@ -594,6 +621,7 @@ export function CardsListPage() {
                 <SortableHeader column="status" label="Status" />
               </div>
               <div className="col-version">Active Version</div>
+              <div className="col-characteristics">Characteristics</div>
               <div className="col-last-updated">
                 <SortableHeader column="lastUpdated" label="Last Updated" />
               </div>
@@ -638,6 +666,9 @@ export function CardsListPage() {
                     {card.ActiveVersionName || (
                       <span className="text-gray-400">None</span>
                     )}
+                  </div>
+                  <div className="col-characteristics">
+                    {getCharacteristicsBadge(card.CardCharacteristics)}
                   </div>
                   <div className="col-last-updated">
                     {card.status === CardStatus.Active && card.lastUpdated ? (

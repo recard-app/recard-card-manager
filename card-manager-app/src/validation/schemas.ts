@@ -7,6 +7,7 @@ export const CardNameFormSchema = z.object({
   ReferenceCardId: z.string().min(1, 'Reference Card ID is required').regex(/^[a-zA-Z0-9-]+$/, 'Card ID can only contain letters, numbers, and hyphens'),
   CardName: z.string().min(1, 'Card name is required'),
   CardIssuer: z.string().min(1, 'Card issuer is required'),
+  CardCharacteristics: z.enum(['standard', 'rotating', 'selectable']).optional(),
 });
 export type CardNameForm = z.infer<typeof CardNameFormSchema>;
 

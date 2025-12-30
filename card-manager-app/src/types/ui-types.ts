@@ -11,6 +11,11 @@ export type ComponentType = 'credits' | 'perks' | 'multipliers';
 export type CardComponent = CardCredit | CardPerk | CardMultiplier;
 
 /**
+ * Card characteristics - indicates if card has rotating or selectable multipliers
+ */
+export type CardCharacteristics = 'standard' | 'rotating' | 'selectable';
+
+/**
  * Canonical card status values
  */
 export const CardStatus = {
@@ -30,6 +35,7 @@ export interface CreditCardName {
   ReferenceCardId: string;  // Document ID
   CardName: string;
   CardIssuer: string;
+  CardCharacteristics?: CardCharacteristics;
 }
 
 /**
@@ -41,7 +47,8 @@ export interface CardWithStatus {
   ReferenceCardId: string;
   CardName: string;
   CardIssuer: string;
-  
+  CardCharacteristics?: CardCharacteristics;
+
   // Status info
   status: CardStatus;
   ActiveVersionName: string | null;

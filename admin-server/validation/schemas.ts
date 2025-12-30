@@ -5,6 +5,7 @@ const isoDateYYYYMMDD = /^\d{4}-\d{2}-\d{2}$/;
 export const CardNameSchema = z.object({
   CardName: z.string().min(1, 'CardName is required'),
   CardIssuer: z.string().min(1, 'CardIssuer is required'),
+  CardCharacteristics: z.enum(['standard', 'rotating', 'selectable']).optional(),
 });
 export type CardName = z.infer<typeof CardNameSchema>;
 

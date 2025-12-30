@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
@@ -179,6 +179,9 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
   const [jsonImportModalOpen, setJsonImportModalOpen] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(false);
 
+  // Year filter for rotating schedule
+  const [scheduleYearFilter, setScheduleYearFilter] = useState<number | 'all'>('all');
+
   // Track if we're processing initialJson to prevent the type-change effect from clearing categories
   // Using a ref so it's immediately available (state updates are batched)
   const isProcessingInitialJsonRef = useRef(false);
@@ -186,6 +189,28 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
   const sanitizeNumericInput = (value: string): string => {
     return value.replace(/[^0-9.-]/g, '');
   };
+
+  // Compute available years from schedule data
+  const availableYears = useMemo(() => {
+    if (!scheduleEntries || scheduleEntries.length === 0) return [];
+    // Get unique years from schedule entries, sorted descending (most recent first)
+    const years = [...new Set(scheduleEntries.map(entry => entry.year))].sort((a, b) => b - a);
+    return years;
+  }, [scheduleEntries]);
+
+  // Filter and sort schedule entries
+  const filteredAndSortedScheduleEntries = useMemo(() => {
+    if (!scheduleEntries || scheduleEntries.length === 0) return [];
+
+    // Filter by year (unless 'all' is selected)
+    let filtered = scheduleEntries;
+    if (scheduleYearFilter !== 'all') {
+      filtered = scheduleEntries.filter(entry => entry.year === scheduleYearFilter);
+    }
+
+    // Sort by startDate ascending (chronological order)
+    return [...filtered].sort((a, b) => a.startDate.localeCompare(b.startDate));
+  }, [scheduleEntries, scheduleYearFilter]);
 
   // Load existing schedule/categories when editing
   useEffect(() => {
@@ -212,6 +237,29 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
       setLoadingExisting(false);
     }
   };
+
+  // Set default year filter when schedule entries load
+  useEffect(() => {
+    if (availableYears.length > 0 && scheduleYearFilter === 'all') {
+      const thisYear = new Date().getFullYear();
+
+      // Check if current year has data
+      if (availableYears.includes(thisYear)) {
+        setScheduleYearFilter(thisYear);
+      } else {
+        // Find nearest year with data
+        const nearestYear = availableYears.reduce((nearest, year) => {
+          return Math.abs(year - thisYear) < Math.abs(nearest - thisYear) ? year : nearest;
+        });
+        setScheduleYearFilter(nearestYear);
+      }
+    }
+  }, [availableYears]);
+
+  // Reset year filter when multiplier changes
+  useEffect(() => {
+    setScheduleYearFilter('all');
+  }, [multiplier?.id]);
 
   // Initialize form data
   useEffect(() => {
@@ -738,6 +786,21 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
 
             {loadingExisting && <div className="loading-text">Loading schedule...</div>}
 
+            {/* Year Filter */}
+            {availableYears.length > 0 && (
+              <div className="year-filter-row" style={{ marginBottom: '12px', maxWidth: '150px' }}>
+                <Select
+                  label="Filter by Year"
+                  value={scheduleYearFilter === 'all' ? 'all' : String(scheduleYearFilter)}
+                  onChange={(value) => setScheduleYearFilter(value === 'all' ? 'all' : Number(value))}
+                  options={[
+                    { value: 'all', label: 'All Years' },
+                    ...availableYears.map(year => ({ value: String(year), label: String(year) }))
+                  ]}
+                />
+              </div>
+            )}
+
             {showAddSchedule && (
               <div className="add-entry-form">
                 <div className="form-row">
@@ -806,9 +869,9 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
               </div>
             )}
 
-            {scheduleEntries.length > 0 ? (
+            {filteredAndSortedScheduleEntries.length > 0 ? (
               <div className="entries-list">
-                {scheduleEntries.map((entry) => (
+                {filteredAndSortedScheduleEntries.map((entry) => (
                   <div key={entry.id} className="entry-item">
                     <div className="entry-info">
                       <span className="entry-period">
@@ -835,7 +898,11 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
               </div>
             ) : (
               !showAddSchedule && !loadingExisting && (
-                <div className="empty-entries">No schedule entries yet. Add periods to define when each category applies.</div>
+                <div className="empty-entries">
+                  {scheduleEntries.length > 0 && scheduleYearFilter !== 'all'
+                    ? `No entries for ${scheduleYearFilter}. Select a different year or add a new period.`
+                    : 'No schedule entries yet. Add periods to define when each category applies.'}
+                </div>
               )
             )}
           </div>

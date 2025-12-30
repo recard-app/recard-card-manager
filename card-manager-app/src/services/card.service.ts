@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import { API_ROUTES } from '@/lib/api-routes';
 import type { CreditCardDetails } from '@/types';
-import type { CardWithStatus, CreditCardName, VersionSummary } from '@/types/ui-types';
+import type { CardWithStatus, CreditCardName, VersionSummary, CardCharacteristics } from '@/types/ui-types';
 
 /**
  * Card Service
@@ -15,16 +15,22 @@ export class CardService {
    * @param referenceCardId The unique identifier for the card (will be the document ID)
    * @param cardName The display name of the card
    * @param cardIssuer The issuer of the card
+   * @param cardCharacteristics Optional card characteristics (standard, rotating, selectable)
    * @returns The created card name data
    */
   static async createCardName(
     referenceCardId: string,
     cardName: string,
-    cardIssuer: string
+    cardIssuer: string,
+    cardCharacteristics?: CardCharacteristics
   ): Promise<CreditCardName> {
     const response = await apiClient.post<CreditCardName>(
       API_ROUTES.CARD_NAMES.CREATE(referenceCardId),
-      { CardName: cardName, CardIssuer: cardIssuer }
+      {
+        CardName: cardName,
+        CardIssuer: cardIssuer,
+        ...(cardCharacteristics && { CardCharacteristics: cardCharacteristics })
+      }
     );
     return response.data;
   }
@@ -51,7 +57,7 @@ export class CardService {
    */
   static async updateCardName(
     referenceCardId: string,
-    data: { CardName?: string; CardIssuer?: string }
+    data: { CardName?: string; CardIssuer?: string; CardCharacteristics?: CardCharacteristics }
   ): Promise<void> {
     await apiClient.put(API_ROUTES.CARD_NAMES.UPDATE(referenceCardId), data);
   }

@@ -198,7 +198,7 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: 24px 2fr 1fr 1fr 2fr 1fr 0.5fr;
+  grid-template-columns: 24px 2fr 1fr 1fr 2fr 0.8fr 1fr 0.5fr;
   gap: $spacing-sm;
   padding: $spacing-xs $spacing-sm;
   background-color: $neutral-gray-100;
@@ -250,7 +250,7 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: 24px 2fr 1fr 1fr 2fr 1fr 0.5fr;
+  grid-template-columns: 24px 2fr 1fr 1fr 2fr 0.8fr 1fr 0.5fr;
   gap: $spacing-sm;
   padding: $spacing-xs $spacing-sm;
   text-decoration: none;
@@ -306,6 +306,10 @@
 
   .col-version {
     color: $neutral-gray-600;
+  }
+
+  .col-characteristics {
+    justify-content: flex-start;
   }
 
   .col-last-updated {
