@@ -192,16 +192,34 @@
 .section-header {
   @include flex-row;
   align-items: center;
+  justify-content: space-between;
   gap: $spacing-sm;
   font-size: $font-size-sm;
   font-weight: 600;
   color: $neutral-gray-800;
 
-  svg {
+  .section-title {
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-sm;
+
+    svg {
+      color: $primary-blue;
+    }
+  }
+
+  .section-actions {
+    @include flex-row;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  // Legacy support for direct svg/button children
+  > svg {
     color: $primary-blue;
   }
 
-  button {
+  > button {
     margin-left: auto;
   }
 }
@@ -265,6 +283,11 @@
     font-size: $font-size-sm;
     font-weight: 500;
     color: $neutral-gray-800;
+  }
+
+  .entry-title {
+    font-size: $font-size-sm;
+    color: $neutral-gray-600;
   }
 
   .entry-category {

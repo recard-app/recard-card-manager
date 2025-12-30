@@ -315,12 +315,23 @@ export function CardsListPage() {
     return 'lt30';
   };
 
+  // Get the effective last updated timestamp (max of lastUpdated and componentsLastUpdated)
+  const getEffectiveLastUpdated = (card: CardWithStatus): string | undefined => {
+    if (!card.lastUpdated && !card.componentsLastUpdated) return undefined;
+    if (!card.lastUpdated) return card.componentsLastUpdated;
+    if (!card.componentsLastUpdated) return card.lastUpdated;
+    return new Date(card.lastUpdated) > new Date(card.componentsLastUpdated)
+      ? card.lastUpdated
+      : card.componentsLastUpdated;
+  };
+
   // Compute staleness tier counts for all cards (not just filtered)
   const stalenessCounts = useMemo(() => {
     const counts = { lt30: 0, gt30: 0, gt60: 0, gt90: 0 };
     cards.forEach(card => {
-      if (card.status === CardStatus.Active && card.lastUpdated) {
-        const tier = getLastUpdatedTier(card.lastUpdated);
+      const effectiveDate = getEffectiveLastUpdated(card);
+      if (card.status === CardStatus.Active && effectiveDate) {
+        const tier = getLastUpdatedTier(effectiveDate);
         if (tier) {
           counts[tier]++;
         }
@@ -351,9 +362,10 @@ export function CardsListPage() {
       // Last updated filter
       const matchesLastUpdated = (() => {
         if (lastUpdatedFilter.length === 0) return true; // no filter applied
-        // Only consider active versions with a lastUpdated timestamp
-        if (card.status !== CardStatus.Active || !card.lastUpdated) return false;
-        const tier = getLastUpdatedTier(card.lastUpdated);
+        // Only consider active versions with an effective last updated timestamp
+        const effectiveDate = getEffectiveLastUpdated(card);
+        if (card.status !== CardStatus.Active || !effectiveDate) return false;
+        const tier = getLastUpdatedTier(effectiveDate);
         if (!tier) return false;
         return lastUpdatedFilter.includes(tier);
       })();
@@ -385,12 +397,14 @@ export function CardsListPage() {
           comparison = getStatusSortValue(a.status) - getStatusSortValue(b.status);
           break;
         case 'lastUpdated':
-          // Cards without lastUpdated go to the end
-          const aDate = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
-          const bDate = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
-          if (!a.lastUpdated && !b.lastUpdated) comparison = 0;
-          else if (!a.lastUpdated) comparison = 1;
-          else if (!b.lastUpdated) comparison = -1;
+          // Cards without effective lastUpdated go to the end
+          const aEffective = getEffectiveLastUpdated(a);
+          const bEffective = getEffectiveLastUpdated(b);
+          const aDate = aEffective ? new Date(aEffective).getTime() : 0;
+          const bDate = bEffective ? new Date(bEffective).getTime() : 0;
+          if (!aEffective && !bEffective) comparison = 0;
+          else if (!aEffective) comparison = 1;
+          else if (!bEffective) comparison = -1;
           else comparison = aDate - bDate;
           break;
       }
@@ -671,21 +685,23 @@ export function CardsListPage() {
                     {getCharacteristicsBadge(card.CardCharacteristics)}
                   </div>
                   <div className="col-last-updated">
-                    {card.status === CardStatus.Active && card.lastUpdated ? (
-                      <>
-                        {(() => {
-                          const stalenessInfo = getStalenessInfo(card.lastUpdated);
-                          return stalenessInfo ? (
-                            <span className="staleness-icon" style={{ color: stalenessInfo.color }}>
-                              {stalenessInfo.icon}
-                            </span>
-                          ) : null;
-                        })()}
-                        <span>{formatLastUpdated(card.lastUpdated)}</span>
-                      </>
-                    ) : (
-                      <span className="text-gray-400"></span>
-                    )}
+                    {(() => {
+                      const effectiveDate = getEffectiveLastUpdated(card);
+                      if (card.status === CardStatus.Active && effectiveDate) {
+                        const stalenessInfo = getStalenessInfo(effectiveDate);
+                        return (
+                          <>
+                            {stalenessInfo && (
+                              <span className="staleness-icon" style={{ color: stalenessInfo.color }}>
+                                {stalenessInfo.icon}
+                              </span>
+                            )}
+                            <span>{formatLastUpdated(effectiveDate)}</span>
+                          </>
+                        );
+                      }
+                      return <span className="text-gray-400"></span>;
+                    })()}
                   </div>
                   <div className="col-versions">
                     {card.versionCount ?? 0}

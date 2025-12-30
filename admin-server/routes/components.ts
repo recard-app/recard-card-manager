@@ -9,6 +9,38 @@ const router = express.Router();
 // Apply auth middleware to all routes
 router.use(verifyAuth);
 
+/**
+ * Helper: Update parent card's componentsLastUpdated timestamp
+ * Finds the active version for the given ReferenceCardId and updates its timestamp
+ */
+async function updateCardComponentsTimestamp(referenceCardId: string): Promise<void> {
+  try {
+    // Find active version(s) for this card
+    const snapshot = await db
+      .collection('credit_cards_history')
+      .where('ReferenceCardId', '==', referenceCardId)
+      .where('effectiveTo', '==', ONGOING_SENTINEL_DATE)
+      .get();
+
+    if (snapshot.empty) {
+      console.warn(`No active version found for ReferenceCardId: ${referenceCardId}`);
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const batch = db.batch();
+
+    snapshot.docs.forEach((doc) => {
+      batch.update(doc.ref, { componentsLastUpdated: now });
+    });
+
+    await batch.commit();
+  } catch (error) {
+    console.error('Error updating card componentsLastUpdated:', error);
+    // Don't throw - this is a secondary operation, component save should still succeed
+  }
+}
+
 // ===== CREDITS =====
 
 /**
@@ -70,7 +102,14 @@ router.post('/credits', async (req: Request, res: Response) => {
           ? ONGOING_SENTINEL_DATE
           : creditData.EffectiveTo;
     }
+    // Set LastUpdated timestamp
+    const now = new Date().toISOString();
+    (creditData as any).LastUpdated = now;
+
     const docRef = await db.collection('credit_cards_credits').add(creditData);
+
+    // Update parent card's componentsLastUpdated
+    await updateCardComponentsTimestamp(creditData.ReferenceCardId);
 
     res.status(201).json({ id: docRef.id });
   } catch (error) {
@@ -98,8 +137,19 @@ router.put('/credits/:creditId', async (req: Request, res: Response) => {
           ? ONGOING_SENTINEL_DATE
           : creditData.EffectiveTo;
     }
+    // Set LastUpdated timestamp
+    (creditData as any).LastUpdated = new Date().toISOString();
+
+    // Get ReferenceCardId before update
+    const creditDoc = await db.collection('credit_cards_credits').doc(creditId).get();
+    const referenceCardId = creditDoc.data()?.ReferenceCardId;
 
     await db.collection('credit_cards_credits').doc(creditId).update(creditData);
+
+    // Update parent card's componentsLastUpdated
+    if (referenceCardId) {
+      await updateCardComponentsTimestamp(referenceCardId);
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -115,7 +165,17 @@ router.put('/credits/:creditId', async (req: Request, res: Response) => {
 router.delete('/credits/:creditId', async (req: Request, res: Response) => {
   try {
     const { creditId } = req.params;
+
+    // Get ReferenceCardId before delete
+    const creditDoc = await db.collection('credit_cards_credits').doc(creditId).get();
+    const referenceCardId = creditDoc.data()?.ReferenceCardId;
+
     await db.collection('credit_cards_credits').doc(creditId).delete();
+
+    // Update parent card's componentsLastUpdated
+    if (referenceCardId) {
+      await updateCardComponentsTimestamp(referenceCardId);
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -182,7 +242,14 @@ router.post('/perks', async (req: Request, res: Response) => {
           ? ONGOING_SENTINEL_DATE
           : perkData.EffectiveTo;
     }
+    // Set LastUpdated timestamp
+    const now = new Date().toISOString();
+    (perkData as any).LastUpdated = now;
+
     const docRef = await db.collection('credit_cards_perks').add(perkData);
+
+    // Update parent card's componentsLastUpdated
+    await updateCardComponentsTimestamp(perkData.ReferenceCardId);
 
     res.status(201).json({ id: docRef.id });
   } catch (error) {
@@ -207,8 +274,19 @@ router.put('/perks/:perkId', async (req: Request, res: Response) => {
           ? ONGOING_SENTINEL_DATE
           : perkData.EffectiveTo;
     }
+    // Set LastUpdated timestamp
+    (perkData as any).LastUpdated = new Date().toISOString();
+
+    // Get ReferenceCardId before update
+    const perkDoc = await db.collection('credit_cards_perks').doc(perkId).get();
+    const referenceCardId = perkDoc.data()?.ReferenceCardId;
 
     await db.collection('credit_cards_perks').doc(perkId).update(perkData);
+
+    // Update parent card's componentsLastUpdated
+    if (referenceCardId) {
+      await updateCardComponentsTimestamp(referenceCardId);
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -224,7 +302,17 @@ router.put('/perks/:perkId', async (req: Request, res: Response) => {
 router.delete('/perks/:perkId', async (req: Request, res: Response) => {
   try {
     const { perkId } = req.params;
+
+    // Get ReferenceCardId before delete
+    const perkDoc = await db.collection('credit_cards_perks').doc(perkId).get();
+    const referenceCardId = perkDoc.data()?.ReferenceCardId;
+
     await db.collection('credit_cards_perks').doc(perkId).delete();
+
+    // Update parent card's componentsLastUpdated
+    if (referenceCardId) {
+      await updateCardComponentsTimestamp(referenceCardId);
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -291,7 +379,14 @@ router.post('/multipliers', async (req: Request, res: Response) => {
           ? ONGOING_SENTINEL_DATE
           : multiplierData.EffectiveTo;
     }
+    // Set LastUpdated timestamp
+    const now = new Date().toISOString();
+    (multiplierData as any).LastUpdated = now;
+
     const docRef = await db.collection('credit_cards_multipliers').add(multiplierData);
+
+    // Update parent card's componentsLastUpdated
+    await updateCardComponentsTimestamp(multiplierData.ReferenceCardId);
 
     res.status(201).json({ id: docRef.id });
   } catch (error) {
@@ -316,8 +411,19 @@ router.put('/multipliers/:multiplierId', async (req: Request, res: Response) => 
           ? ONGOING_SENTINEL_DATE
           : multiplierData.EffectiveTo;
     }
+    // Set LastUpdated timestamp
+    (multiplierData as any).LastUpdated = new Date().toISOString();
+
+    // Get ReferenceCardId before update
+    const multiplierDoc = await db.collection('credit_cards_multipliers').doc(multiplierId).get();
+    const referenceCardId = multiplierDoc.data()?.ReferenceCardId;
 
     await db.collection('credit_cards_multipliers').doc(multiplierId).update(multiplierData);
+
+    // Update parent card's componentsLastUpdated
+    if (referenceCardId) {
+      await updateCardComponentsTimestamp(referenceCardId);
+    }
 
     res.json({ success: true });
   } catch (error) {
@@ -333,7 +439,17 @@ router.put('/multipliers/:multiplierId', async (req: Request, res: Response) => 
 router.delete('/multipliers/:multiplierId', async (req: Request, res: Response) => {
   try {
     const { multiplierId } = req.params;
+
+    // Get ReferenceCardId before delete
+    const multiplierDoc = await db.collection('credit_cards_multipliers').doc(multiplierId).get();
+    const referenceCardId = multiplierDoc.data()?.ReferenceCardId;
+
     await db.collection('credit_cards_multipliers').doc(multiplierId).delete();
+
+    // Update parent card's componentsLastUpdated
+    if (referenceCardId) {
+      await updateCardComponentsTimestamp(referenceCardId);
+    }
 
     res.json({ success: true });
   } catch (error) {

@@ -41,6 +41,10 @@ export interface CardPerk {
 
 /**
 * Represents a credit/benefit associated with a credit card
+*
+* Anniversary-Based Credits:
+* - isAnniversaryBased: When true, credit periods are based on user's card open date
+*   rather than calendar year. Anniversary credits are always annual (one year duration).
 */
 export interface CardCredit {
   id: string;
@@ -56,6 +60,9 @@ export interface CardCredit {
   EffectiveFrom: string;
   EffectiveTo: string;
   LastUpdated: string;
+
+  // Anniversary-based credit field
+  isAnniversaryBased?: boolean;  // true = anniversary-based, false/undefined = calendar
 }
 
 /**
@@ -224,6 +231,7 @@ export interface CreditCardDetails extends CreditCard {
   effectiveFrom: string;
   effectiveTo: string;
   lastUpdated: string;
+  componentsLastUpdated?: string;
 }
 
 /**
@@ -244,5 +252,6 @@ export interface CreditCardDetailsEnhanced extends CreditCard {
   effectiveFrom: string;
   effectiveTo: string;
   lastUpdated: string;
+  componentsLastUpdated?: string;
 }
 

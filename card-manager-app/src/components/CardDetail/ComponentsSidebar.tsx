@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import type { CardCredit, CardPerk, CardMultiplier } from '@/types';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { ChevronRight, Plus, Search } from 'lucide-react';
 import { ComponentTabs } from './ComponentTabs';
 import './ComponentsSidebar.scss';
+
+type ComponentStatusFilter = 'active' | 'inactive' | 'all';
 
 interface ComponentsSidebarProps {
   collapsed: boolean;
@@ -31,16 +34,41 @@ export function ComponentsSidebar({
   onAdd,
 }: ComponentsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ComponentStatusFilter>('active');
 
-  const filterComponents = <T extends { id: string; Title?: string; Name?: string }>(
+  const isComponentActive = (effectiveTo: string): boolean => {
+    const ONGOING_SENTINEL = '9999-12-31';
+    if (effectiveTo === ONGOING_SENTINEL) return true;
+
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    return effectiveTo >= todayStr;
+  };
+
+  const filterComponents = <T extends { id: string; Title?: string; Name?: string; EffectiveTo: string }>(
     components: T[]
   ): T[] => {
-    if (!searchQuery.trim()) return components;
-    const query = searchQuery.toLowerCase();
-    return components.filter(component => {
-      const title = (component.Title ?? component.Name ?? '').toLowerCase();
-      return component.id.toLowerCase().includes(query) || title.includes(query);
-    });
+    let filtered = components;
+
+    // Apply status filter
+    if (statusFilter === 'active') {
+      filtered = filtered.filter(c => isComponentActive(c.EffectiveTo));
+    } else if (statusFilter === 'inactive') {
+      filtered = filtered.filter(c => !isComponentActive(c.EffectiveTo));
+    }
+    // 'all' shows everything
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(component => {
+        const title = (component.Title ?? component.Name ?? '').toLowerCase();
+        return component.id.toLowerCase().includes(query) || title.includes(query);
+      });
+    }
+
+    return filtered;
   };
 
   const filteredCredits = filterComponents(credits);
@@ -94,6 +122,18 @@ export function ComponentsSidebar({
           placeholder="Search components..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      <div className="filter-row">
+        <Select
+          value={statusFilter}
+          onChange={(value) => setStatusFilter(value as ComponentStatusFilter)}
+          options={[
+            { value: 'active', label: 'Show Active Only' },
+            { value: 'inactive', label: 'Show Inactive Only' },
+            { value: 'all', label: 'Show All' },
+          ]}
         />
       </div>
 

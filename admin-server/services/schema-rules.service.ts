@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-export type SchemaRuleType = 'card' | 'credit' | 'perk' | 'multiplier';
+export type SchemaRuleType = 'card' | 'credit' | 'perk' | 'multiplier' | 'rotating-categories';
 
 const RULES_DIR = path.resolve(__dirname, '../constants/schema-rules');
 
@@ -13,6 +13,7 @@ const FILE_MAP: Record<SchemaRuleType, string> = {
   credit: 'CreditCardSchemaRulesCredit.md',
   perk: 'CreditCardSchemaRulesPerk.md',
   multiplier: 'CreditCardSchemaRulesMultiplier.md',
+  'rotating-categories': 'CreditCardSchemaRulesRotatingCategories.md',
 };
 
 /**
@@ -104,7 +105,17 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
     rules.push('- For streaming/entertainment: Category="general", SubCategory="entertainment" is acceptable');
     rules.push('- PORTAL BOOKING: When perk requires booking through issuer/network service (Visa Luxury Hotel Collection, Amex Travel, Chase Travel, etc.), use Category="travel", SubCategory="portal"');
   }
-  
+
+  if (type === 'rotating-categories') {
+    rules.push('- Output must be a JSON ARRAY of schedule entry objects');
+    rules.push('- category: lowercase string (e.g., "dining", "gas", "shopping")');
+    rules.push('- subCategory: lowercase string or empty string "" if none');
+    rules.push('- periodType: must be one of "quarter", "month", "half_year", "year"');
+    rules.push('- periodValue: required for quarter (1-4), month (1-12), half_year (1-2); omit for year');
+    rules.push('- year: number (e.g., 2025)');
+    rules.push('- title: REQUIRED - human-readable display name (e.g., "Amazon.com purchases", NOT just "shopping")');
+  }
+
   return '## Critical Field Rules\n\n' + rules.join('\n');
 }
 

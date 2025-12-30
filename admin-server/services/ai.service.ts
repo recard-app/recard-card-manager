@@ -5,10 +5,11 @@ import {
   AI_CREDIT_SCHEMA,
   AI_PERK_SCHEMA,
   AI_MULTIPLIER_SCHEMA,
+  AI_ROTATING_CATEGORIES_SCHEMA,
 } from '../constants/ai-response-schema';
 
 // Types
-export type GenerationType = 'card' | 'credit' | 'perk' | 'multiplier';
+export type GenerationType = 'card' | 'credit' | 'perk' | 'multiplier' | 'rotating-categories';
 
 export interface GeneratedField {
   key: string;
@@ -18,7 +19,7 @@ export interface GeneratedField {
 
 export interface GeneratedItem {
   fields: GeneratedField[];
-  json: Record<string, unknown>;
+  json: Record<string, unknown> | unknown[];
 }
 
 export interface TokenUsage {
@@ -71,6 +72,11 @@ function getModelsForGeneration(type: GenerationType, batchMode: boolean, isRefi
     return [selectedModel, MODELS.GEMINI_3_FLASH_PREVIEW];
   }
 
+  // Rotating categories always uses Flash (simple array output)
+  if (type === 'rotating-categories') {
+    return [MODELS.GEMINI_3_FLASH_PREVIEW];
+  }
+
   // Default: Card details and batch mode use Pro with Flash fallback
   if (type === 'card' || batchMode) {
     return [MODELS.GEMINI_3_PRO_PREVIEW, MODELS.GEMINI_3_FLASH_PREVIEW];
@@ -96,6 +102,7 @@ const CARD_SCHEMA = AI_CARD_SCHEMA;
 const CREDIT_SCHEMA = AI_CREDIT_SCHEMA;
 const PERK_SCHEMA = AI_PERK_SCHEMA;
 const MULTIPLIER_SCHEMA = AI_MULTIPLIER_SCHEMA;
+const ROTATING_CATEGORIES_SCHEMA = AI_ROTATING_CATEGORIES_SCHEMA;
 
 const CATEGORIES = {
   travel: ['flights', 'hotels', 'portal', 'lounge access', 'ground transportation', 'car rental', 'tsa'],
@@ -159,6 +166,35 @@ ${schemaRules}
 =====================================`;
 
     case 'credit':
+      const anniversaryRules = `
+=== ANNIVERSARY-BASED CREDITS ===
+The isAnniversaryBased field indicates whether a credit resets on the cardholder's card open date anniversary vs calendar boundaries.
+
+SET isAnniversaryBased: true WHEN:
+- Credit resets on "card year", "membership year", "anniversary year", or "card member year"
+- Credit mentions "upon renewal", "each year you hold the card", or similar
+- Common examples: Priority Pass visits, airline companion certificates, lounge visit allotments
+
+SET isAnniversaryBased: false (DEFAULT) WHEN:
+- Credit resets on calendar boundaries (Jan 1, quarterly on Jan/Apr/Jul/Oct, monthly)
+- Credit mentions "per calendar year", "each month", "per quarter"
+- Common examples: Monthly statement credits, quarterly bonuses, calendar year travel credits
+
+DETECTION TIPS:
+| Language Pattern           | isAnniversaryBased |
+|---------------------------|-------------------|
+| "per card year"           | true              |
+| "per membership year"     | true              |
+| "upon renewal"            | true              |
+| "each anniversary"        | true              |
+| "per calendar year"       | false             |
+| "monthly" / "each month"  | false             |
+| "quarterly"               | false             |
+| "annually" (ambiguous)    | Check context     |
+
+WHEN UNSURE: Default to false (calendar-based)
+=====================================`;
+
       if (batchMode) {
         return `${baseInstructions}
 
@@ -171,6 +207,8 @@ If no credits are found, return an empty array: []
 
 ${categoryInfo}
 
+${anniversaryRules}
+
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
 =====================================`;
@@ -181,6 +219,8 @@ Extract credit/benefit details and output a JSON object with the following schem
 ${JSON.stringify(CREDIT_SCHEMA, null, 2)}
 
 ${categoryInfo}
+
+${anniversaryRules}
 
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
@@ -382,6 +422,53 @@ Note: Multiple categories can exist for the same period (e.g., Q1 2025 with both
 ${schemaRules}
 =====================================`;
 
+    case 'rotating-categories':
+      return `${baseInstructions}
+
+Extract rotating category schedule entries from the provided text and output a JSON ARRAY.
+
+Each object in the array should have:
+- category: string (lowercase, e.g., "dining", "gas", "shopping", "groceries")
+- subCategory: string (lowercase or empty string "" if none)
+- periodType: "quarter" | "month" | "half_year" | "year"
+- periodValue: number (1-4 for quarter, 1-12 for month, 1-2 for half_year; omit for year)
+- year: number (e.g., 2025)
+- title: string (REQUIRED - descriptive display name)
+
+${categoryInfo}
+
+=== CRITICAL RULES ===
+1. Output must be a JSON ARRAY, even for a single entry: [{...}]
+2. The "title" field is REQUIRED and must be human-readable
+   - Good: "Amazon.com purchases", "Restaurants & Dining", "Gas Stations"
+   - Bad: "shopping", "dining" (too generic)
+3. category and subCategory must be lowercase
+4. periodValue is required for quarter, month, and half_year period types
+
+=== EXAMPLE OUTPUT ===
+[
+  {
+    "category": "shopping",
+    "subCategory": "amazon",
+    "periodType": "quarter",
+    "periodValue": 1,
+    "year": 2025,
+    "title": "Amazon.com purchases"
+  },
+  {
+    "category": "dining",
+    "subCategory": "",
+    "periodType": "quarter",
+    "periodValue": 2,
+    "year": 2025,
+    "title": "Restaurants & Dining"
+  }
+]
+
+=== SCHEMA RULES (FOLLOW EXACTLY) ===
+${schemaRules}
+=====================================`;
+
     default:
       return baseInstructions;
   }
@@ -391,6 +478,7 @@ function schemaToFields(generationType: GenerationType): GeneratedField[] {
   const schema = generationType === 'card' ? CARD_SCHEMA :
                  generationType === 'credit' ? CREDIT_SCHEMA :
                  generationType === 'perk' ? PERK_SCHEMA :
+                 generationType === 'rotating-categories' ? ROTATING_CATEGORIES_SCHEMA :
                  MULTIPLIER_SCHEMA;
 
   return Object.entries(schema).map(([key, description]) => ({
@@ -431,6 +519,7 @@ function jsonToFields(json: Record<string, unknown>, generationType: GenerationT
     TimePeriod: 'Time Period',
     Requirements: 'Requirements',
     Details: 'Details',
+    isAnniversaryBased: 'Anniversary Based',
     Name: 'Name',
     Multiplier: 'Multiplier',
     EffectiveFrom: 'Effective From',
@@ -617,10 +706,10 @@ function extractJsonFromText(text: string): string {
 
 function parseAndValidateResponse(text: string, generationType: GenerationType, batchMode: boolean): ParsedResponse {
   const extracted = extractJsonFromText(text);
-  
+
   try {
     const json = JSON.parse(extracted);
-    
+
     // Handle batch mode - response should be an array
     if (batchMode && Array.isArray(json)) {
       const items: GeneratedItem[] = json.map((item: Record<string, unknown>) => ({
@@ -629,7 +718,13 @@ function parseAndValidateResponse(text: string, generationType: GenerationType, 
       }));
       return { items };
     }
-    
+
+    // For rotating-categories, keep the array as a single item (for bulk copy/upload)
+    // The fields will be empty since it's an array, but json will have the full array
+    if (generationType === 'rotating-categories' && Array.isArray(json)) {
+      return { items: [{ fields: [], json }] };
+    }
+
     // Single item mode - wrap in array
     const fields = jsonToFields(json, generationType);
     return { items: [{ fields, json }] };

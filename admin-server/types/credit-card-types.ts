@@ -55,6 +55,10 @@ export interface CardPerk {
 *
 * The sentinel value "9999-12-31" represents an ongoing/present credit with no end date.
 * This value is used instead of empty string for better Firestore indexing and queries.
+*
+* Anniversary-Based Credits:
+* - isAnniversaryBased: When true, credit periods are based on user's card open date
+*   rather than calendar year. Anniversary credits are always annual (one year duration).
 */
 export interface CardCredit {
   id: string;
@@ -70,6 +74,9 @@ export interface CardCredit {
   EffectiveFrom: string;   // ISO date: "2025-01-01"
   EffectiveTo: string;      // ISO date: "2025-12-31" or "9999-12-31" for ongoing
   LastUpdated: string;
+
+  // Anniversary-based credit fields
+  isAnniversaryBased?: boolean;  // true = anniversary-based (always annual), false/undefined = calendar
 }
 
 /**
@@ -122,5 +129,6 @@ export interface CreditCardDetails extends CreditCard {
   effectiveFrom: string;   // ISO date: "2025-01-01"
   effectiveTo: string;     // ISO date: "2025-12-31" or "9999-12-31" for ongoing
   lastUpdated: string;     // ISO timestamp
+  componentsLastUpdated?: string; // ISO timestamp - updated when any component changes
 }
 

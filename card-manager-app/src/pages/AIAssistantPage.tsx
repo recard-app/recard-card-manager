@@ -26,6 +26,7 @@ const GENERATION_TYPE_OPTIONS = [
   { value: 'credit', label: 'Credit' },
   { value: 'perk', label: 'Perk' },
   { value: 'multiplier', label: 'Multiplier' },
+  { value: 'rotating-categories', label: 'Rotating Categories' },
 ];
 
 export function AIAssistantPage() {
@@ -60,11 +61,18 @@ export function AIAssistantPage() {
   const [pendingJsonImport, setPendingJsonImport] = useState<Record<string, unknown> | null>(null);
 
   // Check if batch mode is available for current type
-  const canBatch = generationType !== 'card';
+  // Rotating categories always returns an array, so batch mode doesn't apply
+  const canBatch = generationType !== 'card' && generationType !== 'rotating-categories';
 
   // Auto-select model based on generation type and batch mode
-  // Single component (non-batch) → Flash, everything else → Pro
+  // Single component (non-batch) → Flash, rotating-categories → Flash, everything else → Pro
   useEffect(() => {
+    // Rotating categories always uses Flash
+    if (generationType === 'rotating-categories') {
+      setSelectedModel(AI_MODELS.GEMINI_3_FLASH_PREVIEW);
+      return;
+    }
+
     const isComponent = generationType !== 'card';
     const isSingleComponent = isComponent && !batchMode;
 
@@ -221,13 +229,13 @@ export function AIAssistantPage() {
       const previousOutput = result.items.length === 1
         ? result.items[0].json
         : result.items.map(item => item.json);
-      
+
       const data = await AIService.generate({
         rawData,
         generationType,
         batchMode: result.items.length > 1, // Use batch mode if we're refining multiple items
         refinementPrompt,
-        previousOutput,
+        previousOutput: previousOutput as Record<string, unknown> | Record<string, unknown>[],
       });
       // Validate the result and add validation status
       const validatedData = validateGenerationResult(data, generationType);
@@ -284,6 +292,10 @@ export function AIAssistantPage() {
       toast.warning('Please select a card first');
       return;
     }
+    // rotating-categories returns an array, not a single object - this button is hidden for that type
+    if (Array.isArray(item.json)) {
+      return;
+    }
     setPendingJsonImport(item.json);
     setModalKey(k => k + 1);
     setModalOpen(true);
@@ -300,6 +312,10 @@ export function AIAssistantPage() {
 
   const getItemTitle = (item: GeneratedItem): string => {
     const json = item.json;
+    // Handle array type (rotating-categories returns an array)
+    if (Array.isArray(json)) {
+      return `Rotating Categories (${json.length} entries)`;
+    }
     return (json.Title as string) || (json.Name as string) || (json.CardName as string) || (json.id as string) || 'Item';
   };
 
@@ -347,6 +363,10 @@ export function AIAssistantPage() {
   };
 
   const getCardColors = (item: GeneratedItem): { primary: string; secondary: string } => {
+    // Only applicable for card type (which is always an object, not array)
+    if (Array.isArray(item.json)) {
+      return { primary: '#5A5F66', secondary: '#F2F4F6' };
+    }
     const primary = item.json.CardPrimaryColor as string | undefined;
     const secondary = item.json.CardSecondaryColor as string | undefined;
     return {
@@ -530,8 +550,8 @@ export function AIAssistantPage() {
           </div>
         </div>
 
-        {/* Card selector section - only shown for components after generation */}
-        {result && generationType !== 'card' && (
+        {/* Card selector section - only shown for components after generation (not for card or rotating-categories) */}
+        {result && generationType !== 'card' && generationType !== 'rotating-categories' && (
           <div className="card-selector-section">
             <div className="section-header">
               <h2>Create Component</h2>
@@ -650,7 +670,7 @@ export function AIAssistantPage() {
                         <span className="item-number">[{index + 1}]</span>
                         <span className="item-title">{getItemTitle(item)}</span>
                       </div>
-                      {generationType !== 'card' && (
+                      {generationType !== 'card' && generationType !== 'rotating-categories' && (
                         <Button
                           variant="outline"
                           size="sm"

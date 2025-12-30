@@ -71,6 +71,7 @@ export interface CardWithStatus {
   effectiveFrom?: string;
   effectiveTo?: string;
   lastUpdated?: string;
+  componentsLastUpdated?: string;
 }
 
 /**

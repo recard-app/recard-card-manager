@@ -53,6 +53,7 @@ export const CreditSchema = z.object({
   Details: z.string().optional(),
   EffectiveFrom: z.string().regex(isoDateYYYYMMDD),
   EffectiveTo: z.string().regex(isoDateYYYYMMDD).optional(),
+  isAnniversaryBased: z.boolean().optional(),  // true = anniversary-based, false/undefined = calendar
 });
 
 export const PerkSchema = z.object({

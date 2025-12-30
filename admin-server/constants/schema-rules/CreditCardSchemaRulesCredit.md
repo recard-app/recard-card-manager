@@ -251,6 +251,64 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureCredit.json`
 
 ---
 
+### isAnniversaryBased
+
+| Property | Value |
+|----------|-------|
+| **Type** | `boolean` |
+| **Required** | No (optional, defaults to false) |
+| **Description** | Indicates whether the credit resets on the card anniversary date vs calendar boundaries. |
+
+**When to Use `true`:**
+- Credit resets on the cardholder's card open date anniversary
+- Common examples:
+  - Priority Pass lounge visits (e.g., "10 visits per card year")
+  - Companion certificates (e.g., "issued each anniversary")
+  - Annual travel credits tied to membership year
+  - Credits with language like "per card year" or "membership year"
+
+**When to Use `false` (default):**
+- Credit resets on calendar boundaries (monthly, quarterly, annually on Jan 1)
+- Common examples:
+  - Monthly statement credits
+  - Quarterly bonus categories
+  - Calendar year travel credits
+  - Credits with language like "per calendar year" or "each month"
+
+**Detection Tips:**
+
+| Language Pattern | isAnniversaryBased |
+|-----------------|-------------------|
+| "per card year" | `true` |
+| "per membership year" | `true` |
+| "upon renewal" | `true` |
+| "each anniversary" | `true` |
+| "per calendar year" | `false` |
+| "monthly" / "each month" | `false` |
+| "quarterly" | `false` |
+| "annually" (ambiguous) | Check context |
+
+**Examples:**
+```json
+// Anniversary-based credit (resets on card anniversary)
+{
+  "Title": "Priority Pass Visits",
+  "TimePeriod": "annually",
+  "isAnniversaryBased": true
+}
+
+// Calendar-based credit (resets on Jan 1)
+{
+  "Title": "$300 Annual Travel Credit",
+  "TimePeriod": "annually",
+  "isAnniversaryBased": false
+}
+```
+
+**Note:** When `isAnniversaryBased` is `true`, the `TimePeriod` must always be `"annually"` since anniversary credits are always annual (one year from card open date to the next).
+
+---
+
 ### Requirements
 
 | Property | Value |

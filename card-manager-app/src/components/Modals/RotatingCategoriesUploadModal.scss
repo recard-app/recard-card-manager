@@ -1,0 +1,92 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.rotating-categories-upload {
+  @include flex-column;
+  gap: $spacing-lg;
+}
+
+.upload-info {
+  background-color: $neutral-gray-50;
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-md;
+  padding: $spacing-md;
+
+  .info-text {
+    font-size: $font-size-sm;
+    color: $neutral-gray-600;
+    margin: 0 0 $spacing-sm 0;
+  }
+}
+
+.expected-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.field-tag {
+  display: inline-block;
+  background-color: $neutral-gray-100;
+  color: $primary-blue;
+  font-size: $font-size-xs;
+  font-weight: 500;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  padding: 2px 8px;
+  border-radius: $border-radius-sm;
+}
+
+.json-input-wrapper {
+  @include flex-column;
+  gap: $spacing-xs;
+}
+
+.json-input-label {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: $neutral-gray-600;
+}
+
+.json-textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: $spacing-md;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: $font-size-sm;
+  line-height: 1.5;
+  color: $neutral-gray-800;
+  background-color: $neutral-gray-50;
+  border: 1px solid $neutral-gray-300;
+  border-radius: $border-radius-md;
+  resize: vertical;
+  transition: border-color 0.15s ease;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-blue;
+    box-shadow: 0 0 0 3px rgba($raw-primary-blue, 0.1);
+  }
+
+  &::placeholder {
+    color: $neutral-gray-300;
+  }
+
+  &--error {
+    border-color: $error-red;
+
+    &:focus {
+      border-color: $error-red;
+      box-shadow: 0 0 0 3px rgba($error-red, 0.1);
+    }
+  }
+}
+
+.json-error {
+  font-size: $font-size-xs;
+  color: $error-red;
+  margin-top: $spacing-xs;
+  white-space: pre-line;
+}

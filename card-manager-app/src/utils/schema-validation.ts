@@ -49,6 +49,7 @@ export const SCHEMA_FIELDS: Record<GenerationType, string[]> = {
     'TimePeriod',
     'Requirements',
     'Details',
+    'isAnniversaryBased',
   ],
   perk: [
     'Title',
@@ -69,6 +70,14 @@ export const SCHEMA_FIELDS: Record<GenerationType, string[]> = {
     'multiplierType',
     'allowedCategories',
     'scheduleEntries',
+  ],
+  'rotating-categories': [
+    'category',
+    'subCategory',
+    'periodType',
+    'periodValue',
+    'year',
+    'title',
   ],
 };
 
@@ -109,6 +118,8 @@ export function validateField(
       return validatePerkField(key, value);
     case 'multiplier':
       return validateMultiplierField(key, value);
+    case 'rotating-categories':
+      return validateRotatingCategoryField(key, value);
     default:
       return { valid: true };
   }
@@ -200,6 +211,16 @@ function validateCreditField(key: string, value: unknown): FieldValidationResult
       }
       if (!VALID_CREDIT_TIME_PERIODS.includes(value as CreditTimePeriod)) {
         return { valid: false, reason: 'Must be monthly, quarterly, semiannually, or annually' };
+      }
+      return { valid: true };
+
+    case 'isAnniversaryBased':
+      if (value === undefined || value === null) {
+        // Optional field - defaults to false
+        return { valid: true };
+      }
+      if (typeof value !== 'boolean') {
+        return { valid: false, reason: 'Must be true or false' };
       }
       return { valid: true };
 
@@ -365,6 +386,68 @@ function validateMultiplierField(key: string, value: unknown): FieldValidationRe
   }
 }
 
+function validateRotatingCategoryField(key: string, value: unknown): FieldValidationResult {
+  switch (key) {
+    case 'category':
+      if (typeof value !== 'string') {
+        return { valid: false, reason: 'Must be a string' };
+      }
+      if (value.trim() === '') {
+        return { valid: false, reason: 'Cannot be empty' };
+      }
+      return { valid: true };
+
+    case 'subCategory':
+      if (typeof value !== 'string') {
+        return { valid: false, reason: 'Must be a string' };
+      }
+      return { valid: true };
+
+    case 'periodType':
+      if (typeof value !== 'string') {
+        return { valid: false, reason: 'Must be a string' };
+      }
+      if (!VALID_SCHEDULE_PERIOD_TYPES.includes(value as SchedulePeriodType)) {
+        return { valid: false, reason: 'Must be quarter, month, half_year, or year' };
+      }
+      return { valid: true };
+
+    case 'periodValue':
+      // periodValue is optional for 'year' periodType, required for others
+      if (value === undefined || value === null) {
+        return { valid: true }; // Validation at object level will check context
+      }
+      if (typeof value !== 'number') {
+        return { valid: false, reason: 'Must be a number' };
+      }
+      if (value < 1 || value > 12) {
+        return { valid: false, reason: 'Must be between 1 and 12' };
+      }
+      return { valid: true };
+
+    case 'year':
+      if (typeof value !== 'number') {
+        return { valid: false, reason: 'Must be a number' };
+      }
+      if (value < 2000 || value > 2100) {
+        return { valid: false, reason: 'Must be between 2000 and 2100' };
+      }
+      return { valid: true };
+
+    case 'title':
+      if (typeof value !== 'string') {
+        return { valid: false, reason: 'Must be a string' };
+      }
+      if (value.trim() === '') {
+        return { valid: false, reason: 'Cannot be empty' };
+      }
+      return { valid: true };
+
+    default:
+      return { valid: true };
+  }
+}
+
 // ============================================
 // OBJECT-LEVEL VALIDATION
 // ============================================
@@ -380,18 +463,23 @@ export interface ObjectValidationResult {
  */
 export function validateResponse(
   type: GenerationType,
-  obj: Record<string, unknown>
+  obj: Record<string, unknown> | unknown[]
 ): ObjectValidationResult {
+  // Special handling for rotating-categories which returns an array
+  if (type === 'rotating-categories' && Array.isArray(obj)) {
+    return validateRotatingCategoriesArray(obj);
+  }
+
   const expectedFields = SCHEMA_FIELDS[type];
   const fieldResults: Record<string, FieldValidationResult> = {};
   const invalidFields: string[] = [];
 
   // Check each expected field
   for (const field of expectedFields) {
-    const value = obj[field];
+    const value = (obj as Record<string, unknown>)[field];
     const result = validateField(type, field, value);
     fieldResults[field] = result;
-    
+
     if (!result.valid) {
       invalidFields.push(field);
     }
@@ -413,11 +501,66 @@ export function validateResponse(
 }
 
 /**
+ * Validates an array of rotating category entries
+ */
+function validateRotatingCategoriesArray(arr: unknown[]): ObjectValidationResult {
+  const fieldResults: Record<string, FieldValidationResult> = {};
+  const invalidFields: string[] = [];
+  const expectedFields = SCHEMA_FIELDS['rotating-categories'];
+
+  if (arr.length === 0) {
+    fieldResults['array'] = { valid: false, reason: 'Array is empty' };
+    invalidFields.push('array');
+    return { valid: false, invalidFields, fieldResults };
+  }
+
+  // Validate each entry in the array
+  for (let i = 0; i < arr.length; i++) {
+    const entry = arr[i];
+
+    if (typeof entry !== 'object' || entry === null) {
+      fieldResults[`[${i}]`] = { valid: false, reason: 'Entry must be an object' };
+      invalidFields.push(`[${i}]`);
+      continue;
+    }
+
+    const entryObj = entry as Record<string, unknown>;
+
+    // Check each expected field
+    for (const field of expectedFields) {
+      const value = entryObj[field];
+      const result = validateRotatingCategoryField(field, value);
+
+      if (!result.valid) {
+        const fieldKey = `[${i}].${field}`;
+        fieldResults[fieldKey] = result;
+        invalidFields.push(fieldKey);
+      }
+    }
+
+    // Check for unexpected fields
+    for (const key of Object.keys(entryObj)) {
+      if (!expectedFields.includes(key)) {
+        const fieldKey = `[${i}].${key}`;
+        fieldResults[fieldKey] = { valid: false, reason: 'Unexpected field' };
+        invalidFields.push(fieldKey);
+      }
+    }
+  }
+
+  return {
+    valid: invalidFields.length === 0,
+    invalidFields,
+    fieldResults,
+  };
+}
+
+/**
  * Validates a response object and returns just a boolean
  */
 export function isValidResponse(
   type: GenerationType,
-  obj: Record<string, unknown>
+  obj: Record<string, unknown> | unknown[]
 ): boolean {
   return validateResponse(type, obj).valid;
 }

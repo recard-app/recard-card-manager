@@ -5,12 +5,13 @@ import { FormField } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { Switch } from '@/components/ui/Switch';
 import type { CardCredit } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
 import { getCurrentDate } from '@/utils/date-utils';
 import { CATEGORIES, SUBCATEGORIES, TIME_PERIODS, TIME_PERIOD_LABELS } from '@/constants/form-options';
-import { FileJson } from 'lucide-react';
+import { FileJson, CalendarDays } from 'lucide-react';
 import './CreditModal.scss';
 import { CreditFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
 import { JsonImportModal } from '@/components/Modals/JsonImportModal';
@@ -38,6 +39,8 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
     Details: '',
     EffectiveFrom: '',
     EffectiveTo: '',
+    // Anniversary-based credit field
+    isAnniversaryBased: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -64,6 +67,8 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         Details: credit.Details || '',
         EffectiveFrom: credit.EffectiveFrom,
         EffectiveTo: denormalizeEffectiveTo(credit.EffectiveTo),
+        // Anniversary field
+        isAnniversaryBased: credit.isAnniversaryBased || false,
       });
     } else {
       // Reset form for new credit
@@ -78,6 +83,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         Details: '',
         EffectiveFrom: getCurrentDate(),
         EffectiveTo: '',
+        isAnniversaryBased: false,
       });
     }
     setErrors({});
@@ -171,6 +177,15 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
       updates.Details = fields.Details;
     }
 
+    // Handle anniversary-based field
+    if ('isAnniversaryBased' in fields && typeof fields.isAnniversaryBased === 'boolean') {
+      updates.isAnniversaryBased = fields.isAnniversaryBased;
+      // If anniversary-based, force TimePeriod to annually
+      if (fields.isAnniversaryBased === true) {
+        updates.TimePeriod = 'annually';
+      }
+    }
+
     setFormData(prev => ({ ...prev, ...updates }));
   };
 
@@ -195,6 +210,8 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         Details: formData.Details.trim() || undefined,
         EffectiveFrom: formData.EffectiveFrom,
         EffectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
+        // Anniversary field
+        isAnniversaryBased: formData.isAnniversaryBased || undefined,
       };
 
       if (isEdit && credit) {
@@ -278,13 +295,43 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           helperText="Put the value per time period as a number. For example, if the perk says $120 per year split monthly, enter '10'. Not '120', '$10', or '$120'."
         />
 
-        <Select
-          label="Time Period"
-          required
-          value={formData.TimePeriod}
-          onChange={(value) => setFormData({ ...formData, TimePeriod: value })}
-          options={TIME_PERIODS.map(tp => ({ value: tp, label: TIME_PERIOD_LABELS[tp] || tp }))}
-        />
+        <div>
+          <Select
+            label="Time Period"
+            required
+            value={formData.TimePeriod}
+            onChange={(value) => setFormData({ ...formData, TimePeriod: value })}
+            options={TIME_PERIODS.map(tp => ({ value: tp, label: TIME_PERIOD_LABELS[tp] || tp }))}
+            disabled={formData.isAnniversaryBased}
+          />
+          {formData.isAnniversaryBased && (
+            <p className="field-note">Anniversary-based credits are always annual (one year from card open date to the next).</p>
+          )}
+        </div>
+
+        {/* Anniversary-Based Credit Toggle */}
+        <div className="anniversary-toggle-section">
+          <div className="toggle-row">
+            <div className="toggle-label-group">
+              <CalendarDays size={18} className="toggle-icon" />
+              <div className="toggle-text">
+                <span className="toggle-label">Anniversary-Based</span>
+                <span className="toggle-description">
+                  Reset based on card open date instead of calendar year (always annual)
+                </span>
+              </div>
+            </div>
+            <Switch
+              checked={formData.isAnniversaryBased}
+              onCheckedChange={(checked: boolean) => setFormData({
+                ...formData,
+                isAnniversaryBased: checked,
+                // Force TimePeriod to 'annually' when anniversary-based
+                ...(checked ? { TimePeriod: 'annually' } : {})
+              })}
+            />
+          </div>
+        </div>
 
         <FormField
           label="Description"

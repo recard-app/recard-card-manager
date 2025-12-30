@@ -10,10 +10,11 @@ import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo, MULTIPLIER_TYPES, SCHEDULE_PERIOD_TYPES } from '@/types';
 import { getCurrentDate } from '@/utils/date-utils';
 import { CATEGORIES, SUBCATEGORIES } from '@/constants/form-options';
-import { FileJson, Info, Plus, Trash2, Calendar, ListChecks } from 'lucide-react';
+import { FileJson, Info, Plus, Trash2, Calendar, ListChecks, Upload } from 'lucide-react';
 import './MultiplierModal.scss';
 import { MultiplierFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
 import { JsonImportModal } from '@/components/Modals/JsonImportModal';
+import { RotatingCategoriesUploadModal, type RotatingCategoryEntry } from '@/components/Modals/RotatingCategoriesUploadModal';
 
 const MULTIPLIER_TYPE_OPTIONS = [
   { value: MULTIPLIER_TYPES.STANDARD, label: 'Standard', description: 'Fixed category multiplier' },
@@ -177,6 +178,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [jsonImportModalOpen, setJsonImportModalOpen] = useState(false);
+  const [rotatingUploadModalOpen, setRotatingUploadModalOpen] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(false);
 
   // Year filter for rotating schedule
@@ -600,6 +602,45 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
     setAllowedCategories(prev => prev.filter(e => e.id !== id));
   };
 
+  // Handle uploaded rotating categories
+  const handleUploadedRotatingCategories = (entries: RotatingCategoryEntry[]) => {
+    const newEntries: (RotatingScheduleEntry & { isNew: boolean })[] = [];
+
+    for (const entry of entries) {
+      // Validate category exists
+      if (!Object.keys(CATEGORIES).includes(entry.category)) {
+        continue;
+      }
+
+      // Calculate date range from period info
+      const { startDate, endDate } = calculateDateRange(
+        entry.periodType,
+        entry.periodValue,
+        entry.year
+      );
+
+      if (startDate && endDate) {
+        newEntries.push({
+          id: generateTempId(),
+          category: entry.category,
+          subCategory: entry.subCategory,
+          periodType: entry.periodType as SchedulePeriodType,
+          periodValue: entry.periodValue,
+          year: entry.year,
+          title: entry.title,
+          startDate,
+          endDate,
+          isCustomDateRange: false,
+          isNew: true,
+        });
+      }
+    }
+
+    if (newEntries.length > 0) {
+      setScheduleEntries(prev => [...prev, ...newEntries]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -771,17 +812,30 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
         {formData.multiplierType === MULTIPLIER_TYPES.ROTATING && (
           <div className="rotating-schedule-section">
             <div className="section-header">
-              <Calendar size={16} />
-              <span>Rotating Schedule</span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAddSchedule(!showAddSchedule)}
-              >
-                <Plus size={14} />
-                Add Period
-              </Button>
+              <div className="section-title">
+                <Calendar size={16} />
+                <span>Rotating Schedule</span>
+              </div>
+              <div className="section-actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRotatingUploadModalOpen(true)}
+                >
+                  <Upload size={14} />
+                  Upload JSON
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAddSchedule(!showAddSchedule)}
+                >
+                  <Plus size={14} />
+                  Add Period
+                </Button>
+              </div>
             </div>
 
             {loadingExisting && <div className="loading-text">Loading schedule...</div>}
@@ -1071,6 +1125,12 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
         onOpenChange={setJsonImportModalOpen}
         type="multiplier"
         onImport={handleJsonImport}
+      />
+
+      <RotatingCategoriesUploadModal
+        open={rotatingUploadModalOpen}
+        onOpenChange={setRotatingUploadModalOpen}
+        onImport={handleUploadedRotatingCategories}
       />
     </Dialog>
   );

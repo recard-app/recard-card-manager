@@ -47,3 +47,57 @@
   padding-top: $spacing-lg;
   border-top: 1px solid $neutral-gray-200;
 }
+
+// Anniversary-Based Credit Toggle Section
+.anniversary-toggle-section {
+  @include flex-column;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  background: $neutral-gray-50;
+  border-radius: $border-radius-md;
+  border: 1px solid $neutral-gray-200;
+
+  .toggle-row {
+    @include flex-row;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-md;
+  }
+
+  .toggle-label-group {
+    @include flex-row;
+    align-items: flex-start;
+    gap: $spacing-sm;
+  }
+
+  .toggle-icon {
+    color: $neutral-gray-600;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .toggle-text {
+    @include flex-column;
+    gap: 2px;
+  }
+
+  .toggle-label {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $neutral-gray-800;
+  }
+
+  .toggle-description {
+    font-size: $font-size-xs;
+    color: $neutral-gray-600;
+    line-height: 1.4;
+  }
+}
+
+// Field note for disabled fields
+.field-note {
+  font-size: $font-size-xs;
+  color: $neutral-gray-600;
+  margin-top: $spacing-xs;
+  font-style: italic;
+}

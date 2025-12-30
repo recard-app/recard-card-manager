@@ -117,7 +117,10 @@ function CreditsList({ credits, onEdit, onDelete }: CreditsListProps) {
             </div>
             <div className="detail-row">
               <span className="label">Time Period:</span>
-              <span className="value">{credit.TimePeriod}</span>
+              <span className="value">
+                {credit.TimePeriod}
+                {credit.isAnniversaryBased && ' (anniversary based)'}
+              </span>
             </div>
             <div className="detail-row">
               <span className="label">Description:</span>

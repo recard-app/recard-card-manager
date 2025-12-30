@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import { API_ROUTES } from '@/lib/api-routes';
 
-export type GenerationType = 'card' | 'credit' | 'perk' | 'multiplier';
+export type GenerationType = 'card' | 'credit' | 'perk' | 'multiplier' | 'rotating-categories';
 
 // Available models for selection
 export const AI_MODELS = {
@@ -28,7 +28,7 @@ export interface GeneratedField {
 
 export interface GeneratedItem {
   fields: GeneratedField[];
-  json: Record<string, unknown>;
+  json: Record<string, unknown> | unknown[];
   isValid?: boolean;
 }
 

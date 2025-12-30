@@ -57,6 +57,7 @@ export interface AICreditResponse {
   TimePeriod: CreditTimePeriod;
   Requirements: string;
   Details: string;
+  isAnniversaryBased?: boolean;  // true = resets on card anniversary, false = calendar-based
 }
 
 export const CREDIT_SCHEMA_FIELDS = [
@@ -68,6 +69,7 @@ export const CREDIT_SCHEMA_FIELDS = [
   'TimePeriod',
   'Requirements',
   'Details',
+  'isAnniversaryBased',
 ] as const;
 
 export const VALID_CREDIT_TIME_PERIODS: CreditTimePeriod[] = [
@@ -184,8 +186,8 @@ export function isValidCardResponse(obj: unknown): obj is AICardResponse {
 export function isValidCreditResponse(obj: unknown): obj is AICreditResponse {
   if (typeof obj !== 'object' || obj === null) return false;
   const o = obj as Record<string, unknown>;
-  
-  return (
+
+  const hasRequiredFields = (
     typeof o.Title === 'string' &&
     typeof o.Category === 'string' &&
     typeof o.SubCategory === 'string' &&
@@ -196,6 +198,15 @@ export function isValidCreditResponse(obj: unknown): obj is AICreditResponse {
     typeof o.Requirements === 'string' &&
     typeof o.Details === 'string'
   );
+
+  if (!hasRequiredFields) return false;
+
+  // Validate optional isAnniversaryBased if present
+  if (o.isAnniversaryBased !== undefined && typeof o.isAnniversaryBased !== 'boolean') {
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -315,6 +326,7 @@ export const AI_CREDIT_SCHEMA = {
   TimePeriod: 'string: "monthly" | "quarterly" | "semiannually" | "annually"',
   Requirements: 'string (UPPERCASE for critical requirements)',
   Details: 'string (additional notes)',
+  isAnniversaryBased: 'boolean (true if credit resets on card anniversary date, false for calendar-based - default false)',
 };
 
 export const AI_PERK_SCHEMA = {
@@ -337,5 +349,27 @@ export const AI_MULTIPLIER_SCHEMA = {
   multiplierType: 'string: "standard" | "rotating" | "selectable" (optional, defaults to "standard")',
   allowedCategories: 'array (ONLY for selectable type) - each object: { category: string, subCategory: string, displayName: string }',
   scheduleEntries: 'array (ONLY for rotating type) - each object: { category: string, subCategory: string, periodType: "quarter"|"month"|"half_year"|"year", periodValue: number, year: number, title: string (REQUIRED - descriptive display name like "Amazon.com purchases") }',
+};
+
+// ============================================
+// ROTATING CATEGORIES SCHEMA
+// ============================================
+
+export const ROTATING_CATEGORIES_SCHEMA_FIELDS = [
+  'category',
+  'subCategory',
+  'periodType',
+  'periodValue',
+  'year',
+  'title',
+] as const;
+
+export const AI_ROTATING_CATEGORIES_SCHEMA = {
+  category: 'string (lowercase, e.g., "dining", "gas", "shopping")',
+  subCategory: 'string (lowercase or empty string "" if none)',
+  periodType: 'string: "quarter" | "month" | "half_year" | "year"',
+  periodValue: 'number (1-4 for quarter, 1-12 for month, 1-2 for half_year; omit for year)',
+  year: 'number (e.g., 2025)',
+  title: 'string (REQUIRED - descriptive display name like "Amazon.com purchases")',
 };
 

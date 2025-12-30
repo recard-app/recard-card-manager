@@ -8,7 +8,7 @@ const router = Router();
 // Validation schema for generate request
 const GenerateRequestSchema = z.object({
   rawData: z.string().min(1, 'Raw data is required'),
-  generationType: z.enum(['card', 'credit', 'perk', 'multiplier']),
+  generationType: z.enum(['card', 'credit', 'perk', 'multiplier', 'rotating-categories']),
   batchMode: z.boolean().optional(),
   refinementPrompt: z.string().optional(),
   previousOutput: z.union([
