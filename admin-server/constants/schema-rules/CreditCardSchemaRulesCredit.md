@@ -491,6 +491,7 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureCredit.json`
 | Description | No | string | Detailed explanation |
 | Value | Yes | string | Numeric, no $, PER PERIOD |
 | TimePeriod | Yes | string | monthly/quarterly/semiannually/annually (lowercase) |
+| isAnniversaryBased | No | boolean | true = anniversary-based, false/undefined = calendar |
 | Requirements | No | string | UPPERCASE for emphasis |
 | Details | No | string | Additional notes |
 | EffectiveFrom | Yes | string | YYYY-MM-DD |
