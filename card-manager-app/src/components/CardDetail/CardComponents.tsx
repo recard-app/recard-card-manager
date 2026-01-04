@@ -22,7 +22,7 @@ interface ComponentWithStatus {
   effectiveFrom: string;
   effectiveTo: string;
   isActive: boolean;
-  value?: string;
+  value?: number;
   multiplier?: number;
 }
 
