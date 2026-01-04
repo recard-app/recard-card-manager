@@ -129,7 +129,7 @@ export interface ComponentFormData {
   EffectiveFrom: string;
   EffectiveTo: string;
   // Component-specific fields
-  Value?: string;        // Credits only
+  Value?: number;        // Credits only
   TimePeriod?: string;   // Credits only
   Multiplier?: number;   // Multipliers only
   Name?: string;         // Multipliers only

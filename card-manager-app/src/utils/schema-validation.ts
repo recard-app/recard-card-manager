@@ -194,14 +194,11 @@ function validateCreditField(key: string, value: unknown): FieldValidationResult
       return { valid: true };
 
     case 'Value':
-      if (typeof value !== 'string') {
-        return { valid: false, reason: 'Must be a string' };
+      if (typeof value !== 'number') {
+        return { valid: false, reason: 'Must be a number' };
       }
-      if (value.includes('$')) {
-        return { valid: false, reason: 'Should not include $ sign' };
-      }
-      if (!/^\d+(\.\d+)?$/.test(value.trim())) {
-        return { valid: false, reason: 'Must be a numeric value (e.g., "300" or "12.95")' };
+      if (value < 0) {
+        return { valid: false, reason: 'Must be non-negative' };
       }
       return { valid: true };
 
