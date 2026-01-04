@@ -6,7 +6,11 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(100, 100, 100, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(50, 50, 50, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 10%, rgba(120, 120, 120, 0.25) 0%, transparent 40%),
+    #ffffff;
   padding: $spacing-xl;
 }
 
