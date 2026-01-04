@@ -427,7 +427,7 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureCredit.json`
   "Category": "travel",
   "SubCategory": "ground transportation",
   "Description": "$15 Uber credits per month for rides or Uber Eats. Earn an extra $20 in December every year.",
-  "Value": "15",
+  "Value": 15,
   "TimePeriod": "monthly",
   "Requirements": "MUST BE USED ON UBER.COM",
   "Details": "Monthly credits with additional benefits for US Eats Pass.",
@@ -447,7 +447,7 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureCredit.json`
   "Category": "travel",
   "SubCategory": "portal",
   "Description": "Automatically applied as a statement credit for travel purchases.",
-  "Value": "300",
+  "Value": 300,
   "TimePeriod": "annually",
   "Requirements": "MUST BE BOOKED ON CHASE TRAVEL PORTAL",
   "Details": "Covers travel-related expenses",
@@ -467,7 +467,7 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureCredit.json`
   "Category": "shopping",
   "SubCategory": "department stores",
   "Description": "Up to $100 annual credit for Saks Fifth Avenue purchases. $50 every 6 months",
-  "Value": "50",
+  "Value": 50,
   "TimePeriod": "semiannually",
   "Requirements": "Must be used on Saks.com",
   "Details": "",
@@ -489,7 +489,7 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureCredit.json`
 | Category | Yes | string | See category list |
 | SubCategory | No | string | See subcategory list or empty |
 | Description | No | string | Detailed explanation |
-| Value | Yes | string | Numeric, no $, PER PERIOD |
+| Value | Yes | number | No $, PER PERIOD |
 | TimePeriod | Yes | string | monthly/quarterly/semiannually/annually (lowercase) |
 | isAnniversaryBased | No | boolean | true = anniversary-based, false/undefined = calendar |
 | Requirements | No | string | UPPERCASE for emphasis |

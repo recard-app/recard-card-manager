@@ -47,7 +47,7 @@ export const CreditSchema = z.object({
   Category: z.string().min(1),
   SubCategory: z.string().optional(),
   Description: z.string().optional(),
-  Value: z.string().min(1),
+  Value: z.number().nonnegative(),
   TimePeriod: z.string().min(1),
   Requirements: z.string().optional(),
   Details: z.string().optional(),

@@ -61,7 +61,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         Category: credit.Category,
         SubCategory: credit.SubCategory,
         Description: credit.Description,
-        Value: credit.Value,
+        Value: String(credit.Value),
         TimePeriod: credit.TimePeriod,
         Requirements: credit.Requirements,
         Details: credit.Details || '',
@@ -160,8 +160,13 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
     if ('Description' in fields && typeof fields.Description === 'string') {
       updates.Description = fields.Description;
     }
-    if ('Value' in fields && typeof fields.Value === 'string') {
-      updates.Value = fields.Value;
+    if ('Value' in fields) {
+      // Handle both string and number values from JSON
+      if (typeof fields.Value === 'number') {
+        updates.Value = String(fields.Value);
+      } else if (typeof fields.Value === 'string') {
+        updates.Value = fields.Value;
+      }
     }
     if ('TimePeriod' in fields && typeof fields.TimePeriod === 'string') {
       // Normalize to lowercase to match TIME_PERIODS format
@@ -204,7 +209,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         Category: formData.Category.trim(),
         SubCategory: formData.SubCategory.trim(),
         Description: formData.Description.trim(),
-        Value: formData.Value.trim(),
+        Value: parseFloat(formData.Value.trim()) || 0,
         TimePeriod: formData.TimePeriod.trim(),
         Requirements: formData.Requirements.trim(),
         Details: formData.Details.trim() || undefined,

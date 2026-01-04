@@ -53,7 +53,7 @@ export interface CardCredit {
   Category: string;
   SubCategory: string;
   Description: string;
-  Value: string;
+  Value: number;
   TimePeriod: string;
   Requirements: string;
   Details?: string;

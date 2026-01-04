@@ -53,7 +53,7 @@ export interface AICreditResponse {
   Category: string;
   SubCategory: string;
   Description: string;
-  Value: string;
+  Value: number;
   TimePeriod: CreditTimePeriod;
   Requirements: string;
   Details: string;
@@ -192,7 +192,7 @@ export function isValidCreditResponse(obj: unknown): obj is AICreditResponse {
     typeof o.Category === 'string' &&
     typeof o.SubCategory === 'string' &&
     typeof o.Description === 'string' &&
-    typeof o.Value === 'string' &&
+    typeof o.Value === 'number' &&
     typeof o.TimePeriod === 'string' &&
     VALID_CREDIT_TIME_PERIODS.includes(o.TimePeriod as CreditTimePeriod) &&
     typeof o.Requirements === 'string' &&
@@ -322,7 +322,7 @@ export const AI_CREDIT_SCHEMA = {
   Category: 'string (e.g., "travel", "dining", "entertainment", "shopping")',
   SubCategory: 'string (or empty string "" if none)',
   Description: 'string (what the credit covers)',
-  Value: 'string (numeric only, NO $ sign, PER TIME PERIOD)',
+  Value: 'number (NO $ sign, PER TIME PERIOD)',
   TimePeriod: 'string: "monthly" | "quarterly" | "semiannually" | "annually"',
   Requirements: 'string (UPPERCASE for critical requirements)',
   Details: 'string (additional notes)',
