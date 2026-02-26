@@ -14,7 +14,7 @@
   justify-content: space-between;
   align-items: center;
   gap: $spacing-xs;
-  padding: $spacing-xs 0;
+  padding: $spacing-xs $spacing-sm;
   flex-shrink: 0;
 
   .header-left {

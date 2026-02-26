@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CreditCard, Sparkles, GitCompare, CircleUser, LogOut, Home } from 'lucide-react';
+import { CreditCard, Sparkles, GitCompare, CircleUser, LogOut } from 'lucide-react';
+
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -52,9 +53,7 @@ export function HomePage() {
     <div className="home-page">
       <div className="page-header">
         <div className="header-left">
-          <button className="home-link" aria-label="Home">
-            <Home size={20} />
-          </button>
+          <img src="/datatrode.svg" alt="" width={20} height={20} />
           <h1>{APP_NAME}</h1>
         </div>
         <Popover open={profileOpen} onOpenChange={() => {}}>

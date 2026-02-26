@@ -32,7 +32,7 @@ export function LoginPage() {
       <Card className="login-card">
         <div className="login-content">
           <div className="login-header">
-            <h1>{APP_NAME}</h1>
+            <h1><img src="/datatrode.svg" alt="" width={28} height={28} /> {APP_NAME}</h1>
             <p>Admin Dashboard</p>
           </div>
 
