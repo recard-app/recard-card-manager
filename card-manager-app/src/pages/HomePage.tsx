@@ -4,6 +4,7 @@ import { CreditCard, Sparkles, GitCompare, CircleUser, LogOut, Home } from 'luci
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { APP_NAME } from '@/types/constants';
 import './HomePage.scss';
 
 export function HomePage() {
@@ -54,7 +55,7 @@ export function HomePage() {
           <button className="home-link" aria-label="Home">
             <Home size={20} />
           </button>
-          <h1>ReCard Manager</h1>
+          <h1>{APP_NAME}</h1>
         </div>
         <Popover open={profileOpen} onOpenChange={() => {}}>
           <PopoverTrigger asChild>

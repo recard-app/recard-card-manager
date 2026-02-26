@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { toast } from 'sonner';
+import { APP_NAME } from '@/types/constants';
 import './LoginPage.scss';
 
 export function LoginPage() {
@@ -31,7 +32,7 @@ export function LoginPage() {
       <Card className="login-card">
         <div className="login-content">
           <div className="login-header">
-            <h1>Card Manager</h1>
+            <h1>{APP_NAME}</h1>
             <p>Admin Dashboard</p>
           </div>
 
