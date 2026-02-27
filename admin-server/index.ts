@@ -45,6 +45,11 @@ app.get('/', (req: Request, res: Response) => {
   res.send('ReCard Admin Server is running');
 });
 
+// Ping endpoint for keep-alive pinger
+app.get('/ping', (_req: Request, res: Response) => {
+  res.status(200).send('pong');
+});
+
 app.listen(PORT, () => {
   console.log(`Admin server started successfully on port ${PORT}`);
   console.log(`CORS enabled for: ${CORS_ORIGIN}`);
