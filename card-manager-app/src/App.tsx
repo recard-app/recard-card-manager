@@ -72,6 +72,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/users/:userId"
+            element={
+              <ProtectedRoute requiredFeature="user-manager">
+                <UserManagerPage />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
         <Toaster />
       </BrowserRouter>

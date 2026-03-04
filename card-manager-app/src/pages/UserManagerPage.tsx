@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Home,
   CircleUser,
@@ -49,6 +49,12 @@ const PLAN_OPTIONS = [
   { value: 'free', label: 'Free' },
   { value: 'plus', label: 'Plus' },
   { value: 'pro', label: 'Pro' },
+];
+
+const ROLE_OPTIONS = [
+  { value: 'admin', label: 'Admin' },
+  { value: 'worker', label: 'Worker' },
+  { value: 'user', label: 'User' },
 ];
 
 const STATUS_OPTIONS = [
@@ -103,6 +109,7 @@ function formatDate(dateStr: string | null): string {
 
 export function UserManagerPage() {
   const navigate = useNavigate();
+  const { userId: urlUserId } = useParams<{ userId?: string }>();
   const { user, signOut } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const profileContentRef = useRef<HTMLDivElement>(null);
@@ -112,6 +119,8 @@ export function UserManagerPage() {
   const [users, setUsers] = useState<UserListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterPlan, setFilterPlan] = useState<string>('');
+  const [filterRole, setFilterRole] = useState<string>('');
 
   // Detail state
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -183,7 +192,7 @@ export function UserManagerPage() {
   }, [loadUsers]);
 
   // Load user detail
-  const loadDetail = useCallback(async (userId: string) => {
+  const loadDetail = useCallback(async (userId: string, opts?: { clearOnError?: boolean }) => {
     setDetailLoading(true);
     try {
       const detail = await UserService.getUserDetail(userId);
@@ -193,26 +202,51 @@ export function UserManagerPage() {
       console.error('Failed to load user detail:', err);
       toast.error('Failed to load user detail');
       setUserDetail(null);
+      if (opts?.clearOnError) {
+        setSelectedUserId(null);
+        navigate('/users', { replace: true });
+      }
     } finally {
       setDetailLoading(false);
     }
-  }, []);
+  }, [navigate]);
 
   const handleSelectUser = (userId: string) => {
     setSelectedUserId(userId);
+    navigate(`/users/${userId}`, { replace: true });
     loadDetail(userId);
   };
 
+  // Sync URL param with selection on mount / URL change
+  useEffect(() => {
+    if (urlUserId && urlUserId !== selectedUserId) {
+      setSelectedUserId(urlUserId);
+      loadDetail(urlUserId, { clearOnError: true });
+    } else if (!urlUserId && selectedUserId) {
+      setSelectedUserId(null);
+      setUserDetail(null);
+    }
+  }, [urlUserId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Client-side search filter
   const filteredUsers = useMemo(() => {
-    if (!searchQuery.trim()) return users;
-    const q = searchQuery.toLowerCase();
-    return users.filter(
-      (u) =>
-        u.email.toLowerCase().includes(q) ||
-        (u.displayName && u.displayName.toLowerCase().includes(q))
-    );
-  }, [users, searchQuery]);
+    let result = users;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (u) =>
+          u.email.toLowerCase().includes(q) ||
+          (u.displayName && u.displayName.toLowerCase().includes(q))
+      );
+    }
+    if (filterPlan) {
+      result = result.filter((u) => u.subscriptionPlan === filterPlan);
+    }
+    if (filterRole) {
+      result = result.filter((u) => u.role === filterRole);
+    }
+    return result;
+  }, [users, searchQuery, filterPlan, filterRole]);
 
   // Enter subscription edit mode -- populate edit fields from current detail
   const handleEditSubscription = () => {
@@ -269,6 +303,7 @@ export function UserManagerPage() {
       setSelectedUserId(null);
       setUserDetail(null);
       setDeleteDialogOpen(false);
+      navigate('/users', { replace: true });
     } catch (err) {
       console.error('Failed to delete user:', err);
       toast.error('Failed to delete user');
@@ -347,6 +382,22 @@ export function UserManagerPage() {
                 className="search-input"
               />
             </div>
+            <div className="filter-row">
+              <Select
+                options={PLAN_OPTIONS}
+                value={filterPlan}
+                onChange={(val) => setFilterPlan(val)}
+                clearable
+                clearLabel="All Plans"
+              />
+              <Select
+                options={ROLE_OPTIONS}
+                value={filterRole}
+                onChange={(val) => setFilterRole(val)}
+                clearable
+                clearLabel="All Roles"
+              />
+            </div>
           </div>
 
           <div className="user-list-body">
@@ -356,7 +407,7 @@ export function UserManagerPage() {
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="user-list-empty">
-                {searchQuery ? 'No users match your search' : 'No users found'}
+                {(searchQuery || filterPlan || filterRole) ? 'No users match your filters' : 'No users found'}
               </div>
             ) : (
               filteredUsers.map((u) => (
@@ -388,7 +439,7 @@ export function UserManagerPage() {
 
           <div className="user-list-count">
             {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}
-            {searchQuery && ` (of ${users.length})`}
+            {(searchQuery || filterPlan || filterRole) && ` (of ${users.length})`}
           </div>
         </div>
 
