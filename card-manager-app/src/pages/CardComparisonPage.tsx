@@ -33,7 +33,7 @@ export function CardComparisonPage() {
 
   // Input and results
   const [websiteText, setWebsiteText] = useState('');
-  const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS.GEMINI_3_PRO_PREVIEW);
+  const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS.GEMINI_31_PRO_PREVIEW);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ComparisonResponse | null>(null);
 

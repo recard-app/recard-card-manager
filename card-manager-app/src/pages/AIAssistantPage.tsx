@@ -40,7 +40,7 @@ export function AIAssistantPage() {
   const [rawData, setRawData] = useState('');
   const [generationType, setGenerationType] = useState<GenerationType>('card');
   const [batchMode, setBatchMode] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS.GEMINI_3_PRO_PREVIEW);
+  const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS.GEMINI_31_PRO_PREVIEW);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('json');
@@ -79,7 +79,7 @@ export function AIAssistantPage() {
     if (isSingleComponent) {
       setSelectedModel(AI_MODELS.GEMINI_3_FLASH_PREVIEW);
     } else {
-      setSelectedModel(AI_MODELS.GEMINI_3_PRO_PREVIEW);
+      setSelectedModel(AI_MODELS.GEMINI_31_PRO_PREVIEW);
     }
   }, [generationType, batchMode]);
 

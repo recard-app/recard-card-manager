@@ -19,7 +19,7 @@ import {
 
 // Model constants (same as ai.service.ts)
 const MODELS = {
-  GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
+  GEMINI_31_PRO_PREVIEW: 'gemini-3.1-pro-preview',
   GEMINI_25_PRO: 'gemini-2.5-pro',
   GEMINI_3_FLASH_PREVIEW: 'gemini-3-flash-preview',
 };
@@ -477,7 +477,7 @@ export async function analyzeComparison(
     }
   } else {
     // Default: Pro with Flash fallback
-    modelsToTry = [MODELS.GEMINI_3_PRO_PREVIEW, MODELS.GEMINI_3_FLASH_PREVIEW];
+    modelsToTry = [MODELS.GEMINI_31_PRO_PREVIEW, MODELS.GEMINI_3_FLASH_PREVIEW];
   }
 
   // Aggregate card data from database

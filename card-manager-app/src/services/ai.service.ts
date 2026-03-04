@@ -5,7 +5,7 @@ export type GenerationType = 'card' | 'credit' | 'perk' | 'multiplier' | 'rotati
 
 // Available models for selection
 export const AI_MODELS = {
-  GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
+  GEMINI_31_PRO_PREVIEW: 'gemini-3.1-pro-preview',
   GEMINI_25_PRO: 'gemini-2.5-pro',
   GEMINI_3_FLASH_PREVIEW: 'gemini-3-flash-preview',
 } as const;
@@ -13,7 +13,7 @@ export const AI_MODELS = {
 export type AIModel = typeof AI_MODELS[keyof typeof AI_MODELS];
 
 export const AI_MODEL_OPTIONS = [
-  { value: AI_MODELS.GEMINI_3_PRO_PREVIEW, label: 'Gemini 3 Pro' },
+  { value: AI_MODELS.GEMINI_31_PRO_PREVIEW, label: 'Gemini 3.1 Pro' },
   { value: AI_MODELS.GEMINI_25_PRO, label: 'Gemini 2.5 Pro' },
   { value: AI_MODELS.GEMINI_3_FLASH_PREVIEW, label: 'Gemini 3 Flash' },
 ];

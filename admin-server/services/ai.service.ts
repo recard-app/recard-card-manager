@@ -49,7 +49,7 @@ export interface GenerateParams {
 
 // Model constants - exported for validation
 export const MODELS = {
-  GEMINI_3_PRO_PREVIEW: 'gemini-3-pro-preview',
+  GEMINI_31_PRO_PREVIEW: 'gemini-3.1-pro-preview',
   GEMINI_25_PRO: 'gemini-2.5-pro',
   GEMINI_3_FLASH_PREVIEW: 'gemini-3-flash-preview',
 };
@@ -79,7 +79,7 @@ function getModelsForGeneration(type: GenerationType, batchMode: boolean, isRefi
 
   // Default: Card details and batch mode use Pro with Flash fallback
   if (type === 'card' || batchMode) {
-    return [MODELS.GEMINI_3_PRO_PREVIEW, MODELS.GEMINI_3_FLASH_PREVIEW];
+    return [MODELS.GEMINI_31_PRO_PREVIEW, MODELS.GEMINI_3_FLASH_PREVIEW];
   }
 
   // Single item uses Flash only
