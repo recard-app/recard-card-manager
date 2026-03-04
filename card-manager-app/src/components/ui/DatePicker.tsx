@@ -33,7 +33,6 @@ export function DatePicker({
   required = false,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
-  const [inputValue, setInputValue] = React.useState("")
   const [formatWarning, setFormatWarning] = React.useState(false)
 
   // Convert YYYY-MM-DD to Date object
@@ -41,6 +40,15 @@ export function DatePicker({
 
   // Check if the date is valid
   const isValidDate = dateValue && !isNaN(dateValue.getTime())
+
+  // Initialize inputValue from the value prop so it displays correctly on mount
+  const [inputValue, setInputValue] = React.useState(() => {
+    if (value) {
+      const d = parse(value, "yyyy-MM-dd", new Date())
+      if (d && !isNaN(d.getTime())) return format(d, "MM/dd/yyyy")
+    }
+    return ""
+  })
 
   // Track previous value to detect external changes
   const prevValueRef = React.useRef(value)

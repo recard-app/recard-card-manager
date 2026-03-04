@@ -83,6 +83,18 @@ export const MultiplierSchema = z.object({
   multiplierType: z.enum(['standard', 'rotating', 'selectable']).optional(),
 });
 
+export const SubscriptionUpdateSchema = z.object({
+  subscriptionPlan: z.enum(['free', 'plus', 'pro']).optional(),
+  subscriptionStatus: z.enum(['active', 'expired', 'canceled', 'none']).optional(),
+  subscriptionBillingPeriod: z.enum(['monthly', 'yearly']).nullable().optional(),
+  subscriptionStartedAt: z.string().regex(isoDateYYYYMMDD, 'Must be YYYY-MM-DD').nullable().optional(),
+  subscriptionExpiresAt: z.string().regex(isoDateYYYYMMDD, 'Must be YYYY-MM-DD').nullable().optional(),
+}).refine(
+  (data) => Object.values(data).some((v) => v !== undefined),
+  { message: 'At least one field must be provided' }
+);
+export type SubscriptionUpdate = z.infer<typeof SubscriptionUpdateSchema>;
+
 export function parseOr400<T>(parser: z.ZodType<T>, data: unknown) {
   const result = parser.safeParse(data);
   if (!result.success) {

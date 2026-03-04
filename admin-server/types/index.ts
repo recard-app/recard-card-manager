@@ -7,6 +7,23 @@ export type {
   CardMultiplier
 } from './credit-card-types';
 
+export type {
+  SubscriptionPlan,
+  SubscriptionStatus,
+  BillingPeriod,
+  RoleType,
+  UserListItem,
+  UserDetail,
+  SubscriptionUpdatePayload,
+} from './user-types';
+
+export {
+  SUBSCRIPTION_PLAN,
+  SUBSCRIPTION_STATUS,
+  BILLING_PERIOD,
+  ROLE_TYPE,
+} from './user-types';
+
 export { ONGOING_SENTINEL_DATE } from '../constants/dates';
 
 /**

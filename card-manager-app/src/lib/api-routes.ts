@@ -85,4 +85,12 @@ export const API_ROUTES = {
   COMPARISON: {
     ANALYZE: '/admin/comparison/analyze',
   },
+
+  // User management routes
+  USERS: {
+    LIST: '/admin/users',
+    DETAIL: (userId: string) => `/admin/users/${userId}`,
+    UPDATE_SUBSCRIPTION: (userId: string) => `/admin/users/${userId}/subscription`,
+    DELETE: (userId: string) => `/admin/users/${userId}`,
+  },
 };
