@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
-import { ArrowLeft, Trash2, Plus, Pencil } from 'lucide-react';
+import { Trash2, Plus, Pencil } from 'lucide-react';
+import { PageHeader } from '@/components/PageHeader';
 import { VersionsSidebar } from '@/components/CardDetail/VersionsSidebar';
 import { CardDetailsForm } from '@/components/CardDetail/CardDetailsForm';
 import { ComponentsSidebar } from '@/components/CardDetail/ComponentsSidebar';
@@ -419,15 +420,12 @@ export function CardDetailPage() {
 
   return (
     <div className="card-detail-page">
-      <div className="page-header">
-        <div className="header-content">
-          <div className="header-left">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/cards')}>
-              <ArrowLeft size={16} />
-              Back
-            </Button>
-            <div className="title-row">
-              <h1>{displayName}</h1>
+      <PageHeader
+        title={displayName}
+        backTo="/cards"
+        actions={
+          <>
+            <span className="card-issuer-badge">
               <span className="card-issuer">• {displayIssuer}</span>
               {hasVersions ? (
                 <Badge variant={isActiveVersion ? 'success' : 'default'}>
@@ -436,9 +434,7 @@ export function CardDetailPage() {
               ) : (
                 <Badge variant="warning">No Versions</Badge>
               )}
-            </div>
-          </div>
-          <div className="header-actions">
+            </span>
             <Button
               size="sm"
               variant="outline"
@@ -459,9 +455,9 @@ export function CardDetailPage() {
               <Trash2 size={14} />
               Delete Card
             </Button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="detail-layout">
         <VersionsSidebar

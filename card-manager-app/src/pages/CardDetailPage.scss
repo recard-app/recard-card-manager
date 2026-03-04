@@ -9,75 +9,38 @@
   min-width: 1000px;
 }
 
-.page-header {
-  flex-shrink: 0;
+// Card detail page header overrides
+.card-detail-page > .page-header {
   background: $neutral-white;
   border-bottom: 1px solid $neutral-gray-200;
   padding: $spacing-sm $spacing-md;
   box-shadow: $shadow-sm;
+}
 
-  .header-content {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: $spacing-md;
-    width: 100%;
-    max-width: 1600px;
-    margin: 0 auto;
+.card-issuer-badge {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  .card-issuer {
+    font-size: $font-size-sm;
+    color: $neutral-gray-600;
+  }
+}
+
+.header-actions {
+  // Ensure consistent icon spacing across header action buttons
+  button svg {
+    margin-right: 0.25rem;
   }
 
-  .header-left {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: $spacing-md;
-    flex: 0 1 auto;
-    justify-content: flex-start;
-  }
+  .delete-card-button {
+    background-color: $error-red;
+    color: white;
+    border-color: $error-red;
 
-  .title-row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: $spacing-sm;
-
-    h1 {
-      font-size: $font-size-lg;
-      font-weight: 600;
-      color: $neutral-gray-800;
-      margin: 0;
-    }
-
-    .card-issuer {
-      font-size: $font-size-sm;
-      color: $neutral-gray-600;
-      margin: 0;
-    }
-  }
-
-  .header-actions {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-end;
-    flex: 0 0 auto;
-    gap: $spacing-sm;
-
-    // Ensure consistent icon spacing across header action buttons
-    button svg {
-      margin-right: 0.25rem;
-    }
-
-    .delete-card-button {
-      background-color: $error-red;
-      color: white;
-      border-color: $error-red;
-
-      &:hover:not(:disabled) {
-        filter: brightness(0.9);
-      }
-
+    &:hover:not(:disabled) {
+      filter: brightness(0.9);
     }
   }
 }

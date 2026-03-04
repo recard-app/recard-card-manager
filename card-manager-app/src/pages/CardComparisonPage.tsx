@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Home, CircleUser, LogOut, Loader2, RefreshCw } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Combobox } from '@/components/ui/Combobox';
 import { Select } from '@/components/ui/Select';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/PageHeader';
+import { ProfilePopover } from '@/components/ProfilePopover';
 import { CardService } from '@/services/card.service';
 import { ComparisonService } from '@/services/comparison.service';
 import { ComparisonResults } from '@/components/comparison/ComparisonResults';
@@ -17,12 +16,6 @@ import type { ComparisonResponse } from '@/types/comparison-types';
 import './CardComparisonPage.scss';
 
 export function CardComparisonPage() {
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileContentRef = useRef<HTMLDivElement>(null);
-  const profileTriggerRef = useRef<HTMLButtonElement>(null);
-
   // Card and version selection
   const [cards, setCards] = useState<CardWithStatus[]>([]);
   const [loadingCards, setLoadingCards] = useState(true);
@@ -142,44 +135,6 @@ export function CardComparisonPage() {
     loadVersions();
   }, [selectedCardId]);
 
-  // Close profile dropdown on click outside
-  useEffect(() => {
-    if (!profileOpen) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      const isOutsideContent =
-        profileContentRef.current &&
-        !profileContentRef.current.contains(target);
-      const isOutsideTrigger =
-        profileTriggerRef.current &&
-        !profileTriggerRef.current.contains(target);
-
-      if (isOutsideContent && isOutsideTrigger) {
-        setProfileOpen(false);
-      }
-    };
-
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 0);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [profileOpen]);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/login');
-    } catch (err) {
-      console.error('Failed to sign out:', err);
-      toast.error('Failed to sign out');
-    }
-  };
-
   const handleCompare = async () => {
     if (!selectedCardId) {
       toast.warning('Please select a card');
@@ -229,45 +184,7 @@ export function CardComparisonPage() {
 
   return (
     <div className="card-comparison-page">
-      {/* Page Header */}
-      <div className="page-header">
-        <div className="header-left">
-          <Link to="/" className="home-link">
-            <Home size={20} />
-          </Link>
-          <h1>Card Comparison</h1>
-        </div>
-
-        <Popover open={profileOpen} onOpenChange={setProfileOpen}>
-          <PopoverTrigger asChild>
-            <button
-              ref={profileTriggerRef}
-              className="profile-trigger"
-              aria-label="Profile menu"
-            >
-              <CircleUser size={24} />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            ref={profileContentRef}
-            className="profile-dropdown"
-            align="end"
-            sideOffset={4}
-          >
-            <div className="profile-info">
-              <div className="profile-name">
-                {user?.displayName || 'User'}
-              </div>
-              <div className="profile-email">{user?.email}</div>
-            </div>
-            <div className="profile-divider" />
-            <button className="profile-logout" onClick={handleSignOut}>
-              <LogOut size={14} />
-              Sign out
-            </button>
-          </PopoverContent>
-        </Popover>
-      </div>
+      <PageHeader title="Card Comparison" actions={<ProfilePopover />} />
 
       {/* Main Content */}
       <div className="comparison-content">

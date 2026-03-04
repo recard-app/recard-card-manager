@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Home, CircleUser, LogOut, Copy, Check, Loader2, ChevronDown, ChevronRight, CheckCircle, XCircle, ChevronsUpDown, Plus, RefreshCw } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Copy, Check, Loader2, ChevronDown, ChevronRight, CheckCircle, XCircle, ChevronsUpDown, Plus, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/PageHeader';
+import { ProfilePopover } from '@/components/ProfilePopover';
 import { cn } from '@/lib/utils';
 import { AIService, AI_MODELS, AI_MODEL_OPTIONS } from '@/services/ai.service';
 import type { GenerationType, GenerationResult, GeneratedItem, GeneratedField, AIModel } from '@/services/ai.service';
@@ -30,12 +29,6 @@ const GENERATION_TYPE_OPTIONS = [
 ];
 
 export function AIAssistantPage() {
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileContentRef = useRef<HTMLDivElement>(null);
-  const profileTriggerRef = useRef<HTMLButtonElement>(null);
-
   // Form state
   const [rawData, setRawData] = useState('');
   const [generationType, setGenerationType] = useState<GenerationType>('card');
@@ -140,40 +133,6 @@ export function AIAssistantPage() {
   useEffect(() => {
     loadCards();
   }, []);
-
-  // Close profile dropdown on click outside
-  useEffect(() => {
-    if (!profileOpen) return;
-    
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      const isOutsideContent = profileContentRef.current && !profileContentRef.current.contains(target);
-      const isOutsideTrigger = profileTriggerRef.current && !profileTriggerRef.current.contains(target);
-      
-      if (isOutsideContent && isOutsideTrigger) {
-        setProfileOpen(false);
-      }
-    };
-    
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 0);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [profileOpen]);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/login');
-    } catch (err) {
-      console.error('Failed to sign out:', err);
-      toast.error('Failed to sign out');
-    }
-  };
 
   const handleGenerate = async () => {
     if (!rawData.trim()) {
@@ -451,46 +410,7 @@ export function AIAssistantPage() {
 
   return (
     <div className="ai-assistant-page">
-      <div className="page-header">
-        <div className="header-left">
-          <Link to="/" className="home-link" aria-label="Back to home">
-            <Home size={20} />
-          </Link>
-          <h1>AI Data Entry Assistant</h1>
-        </div>
-        <Popover open={profileOpen} onOpenChange={() => {}}>
-          <PopoverTrigger asChild>
-            <button
-              ref={profileTriggerRef}
-              className="profile-trigger"
-              onClick={(e) => {
-                e.preventDefault();
-                setProfileOpen(!profileOpen);
-              }}
-              aria-label="User profile"
-            >
-              <CircleUser size={24} />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent
-            ref={profileContentRef}
-            className="profile-dropdown"
-            align="end"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-            onCloseAutoFocus={(e) => e.preventDefault()}
-          >
-            <div className="profile-info">
-              <div className="profile-name">{user?.displayName || 'User'}</div>
-              <div className="profile-email">{user?.email || ''}</div>
-            </div>
-            <div className="profile-divider" />
-            <button className="profile-logout" onClick={handleSignOut}>
-              <LogOut size={16} />
-              Sign out
-            </button>
-          </PopoverContent>
-        </Popover>
-      </div>
+      <PageHeader title="AI Data Entry Assistant" actions={<ProfilePopover />} />
 
       <div className="assistant-content">
         <div className="input-section">

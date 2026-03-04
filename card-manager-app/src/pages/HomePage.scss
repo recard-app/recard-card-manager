@@ -10,39 +10,6 @@
   gap: $spacing-sm;
 }
 
-.page-header {
-  @include flex-row;
-  justify-content: space-between;
-  align-items: center;
-  gap: $spacing-xs;
-  padding: $spacing-xs $spacing-sm;
-  flex-shrink: 0;
-
-  .header-left {
-    @include flex-row;
-    align-items: center;
-    gap: $spacing-sm;
-  }
-
-  h1 {
-    font-size: 18px;
-    font-weight: 700;
-    color: $neutral-gray-800;
-    margin: 0;
-  }
-}
-
-.home-link {
-  @include flex-center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: transparent;
-  border-radius: $border-radius-sm;
-  color: $neutral-gray-600;
-  cursor: default;
-}
-
 .nav-cards {
   @include flex-column;
   gap: $spacing-md;

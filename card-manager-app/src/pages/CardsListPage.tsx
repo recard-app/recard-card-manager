@@ -8,9 +8,10 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Check, Filter, CircleUser, LogOut, Home } from 'lucide-react';
+import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Check, Filter } from 'lucide-react';
 import { CreateCardModal } from '@/components/Modals/CreateCardModal';
-import { useAuth } from '@/contexts/AuthContext';
+import { PageHeader } from '@/components/PageHeader';
+import { ProfilePopover } from '@/components/ProfilePopover';
 import './CardsListPage.scss';
 
 type SortColumn = 'CardName' | 'CardIssuer' | 'status' | 'lastUpdated';
@@ -151,7 +152,6 @@ function MultiSelectFilter<T extends string>({
 
 export function CardsListPage() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
   const [cards, setCards] = useState<CardWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -164,43 +164,6 @@ export function CardsListPage() {
   const [sortColumn, setSortColumn] = useState<SortColumn | null>('CardName');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showCardId, setShowCardId] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileContentRef = useRef<HTMLDivElement>(null);
-  const profileTriggerRef = useRef<HTMLButtonElement>(null);
-
-  // Close profile dropdown on click outside
-  useEffect(() => {
-    if (!profileOpen) return;
-    
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      const isOutsideContent = profileContentRef.current && !profileContentRef.current.contains(target);
-      const isOutsideTrigger = profileTriggerRef.current && !profileTriggerRef.current.contains(target);
-      
-      if (isOutsideContent && isOutsideTrigger) {
-        setProfileOpen(false);
-      }
-    };
-    
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 0);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [profileOpen]);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      navigate('/login');
-    } catch (err) {
-      console.error('Failed to sign out:', err);
-      toast.error('Failed to sign out');
-    }
-  };
 
   useEffect(() => {
     loadCards();
@@ -488,80 +451,45 @@ export function CardsListPage() {
 
   return (
     <div className="cards-list-page">
-      <div className="page-header">
-        <div className="header-left">
-          <Link to="/" className="home-link" aria-label="Back to home">
-            <Home size={20} />
-          </Link>
-          <h1>Credit Cards</h1>
-          <div className="staleness-summary">
-            <div className="staleness-item" style={{ color: '#16a34a' }}>
-              <CheckCircle2 size={14} />
-              <span>{stalenessCounts.lt30}</span>
-            </div>
-            <div className="staleness-item" style={{ color: '#6b7280' }}>
-              <Clock size={14} />
-              <span>{stalenessCounts.gt30}</span>
-            </div>
-            <div className="staleness-item" style={{ color: '#ca8a04' }}>
-              <AlertTriangle size={14} />
-              <span>{stalenessCounts.gt60}</span>
-            </div>
-            <div className="staleness-item" style={{ color: '#dc2626' }}>
-              <AlertOctagon size={14} />
-              <span>{stalenessCounts.gt90}</span>
-            </div>
-          </div>
-        </div>
-        <div className="header-actions">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleSyncAll}
-            disabled={syncing}
-          >
-            <RefreshCw size={16} className={syncing ? 'spinning' : ''} />
-            {syncing ? 'Resyncing...' : 'Manual Resync'}
-          </Button>
-          <Button size="sm" onClick={() => setCreateCardModalOpen(true)}>
-            <Plus size={16} />
-            New Card
-          </Button>
-          
-          <Popover open={profileOpen} onOpenChange={() => {}}>
-            <PopoverTrigger asChild>
-              <button
-                ref={profileTriggerRef}
-                className="profile-trigger"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setProfileOpen(!profileOpen);
-                }}
-                aria-label="User profile"
-              >
-                <CircleUser size={24} />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              ref={profileContentRef}
-              className="profile-dropdown"
-              align="end"
-              onOpenAutoFocus={(e) => e.preventDefault()}
-              onCloseAutoFocus={(e) => e.preventDefault()}
-            >
-              <div className="profile-info">
-                <div className="profile-name">{user?.displayName || 'User'}</div>
-                <div className="profile-email">{user?.email || ''}</div>
+      <PageHeader
+        title="Credit Cards"
+        actions={
+          <>
+            <div className="staleness-summary">
+              <div className="staleness-item" style={{ color: '#16a34a' }}>
+                <CheckCircle2 size={14} />
+                <span>{stalenessCounts.lt30}</span>
               </div>
-              <div className="profile-divider" />
-              <button className="profile-logout" onClick={handleSignOut}>
-                <LogOut size={16} />
-                Sign out
-              </button>
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
+              <div className="staleness-item" style={{ color: '#6b7280' }}>
+                <Clock size={14} />
+                <span>{stalenessCounts.gt30}</span>
+              </div>
+              <div className="staleness-item" style={{ color: '#ca8a04' }}>
+                <AlertTriangle size={14} />
+                <span>{stalenessCounts.gt60}</span>
+              </div>
+              <div className="staleness-item" style={{ color: '#dc2626' }}>
+                <AlertOctagon size={14} />
+                <span>{stalenessCounts.gt90}</span>
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleSyncAll}
+              disabled={syncing}
+            >
+              <RefreshCw size={16} className={syncing ? 'spinning' : ''} />
+              {syncing ? 'Resyncing...' : 'Manual Resync'}
+            </Button>
+            <Button size="sm" onClick={() => setCreateCardModalOpen(true)}>
+              <Plus size={16} />
+              New Card
+            </Button>
+            <ProfilePopover />
+          </>
+        }
+      />
 
       <div className="filters">
         <div className="search-box">
