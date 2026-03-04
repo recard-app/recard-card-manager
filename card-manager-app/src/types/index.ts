@@ -28,3 +28,5 @@ export {
   formatSpendingCap
 } from './credit-card-types';
 export { ONGOING_SENTINEL_DATE, isOngoingDate, normalizeEffectiveTo, denormalizeEffectiveTo } from '../constants/dates';
+export type { FeatureKey, FeaturePermissions } from './permissions';
+export { DEFAULT_PERMISSIONS, hasAnyPermission } from './permissions';

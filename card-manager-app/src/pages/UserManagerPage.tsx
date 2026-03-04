@@ -1,38 +1,36 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CreditCard, Sparkles, GitCompare, CircleUser, LogOut, Users } from 'lucide-react';
-
+import { Home, CircleUser, LogOut, Users } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { APP_NAME } from '@/types/constants';
-import './HomePage.scss';
+import './UserManagerPage.scss';
 
-export function HomePage() {
+export function UserManagerPage() {
   const navigate = useNavigate();
-  const { user, signOut, permissions } = useAuth();
+  const { user, signOut } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const profileContentRef = useRef<HTMLDivElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
 
-  // Close profile dropdown on click outside
   useEffect(() => {
     if (!profileOpen) return;
-    
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       const isOutsideContent = profileContentRef.current && !profileContentRef.current.contains(target);
       const isOutsideTrigger = profileTriggerRef.current && !profileTriggerRef.current.contains(target);
-      
+
       if (isOutsideContent && isOutsideTrigger) {
         setProfileOpen(false);
       }
     };
-    
+
     const timeoutId = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
     }, 0);
-    
+
     return () => {
       clearTimeout(timeoutId);
       document.removeEventListener('mousedown', handleClickOutside);
@@ -50,9 +48,12 @@ export function HomePage() {
   };
 
   return (
-    <div className="home-page">
+    <div className="user-manager-page">
       <div className="page-header">
         <div className="header-left">
+          <Link to="/" className="home-link" aria-label="Home">
+            <Home size={20} />
+          </Link>
           <img src="/datatrode.svg" alt="" width={20} height={20} />
           <h1>{APP_NAME}</h1>
         </div>
@@ -90,54 +91,13 @@ export function HomePage() {
         </Popover>
       </div>
 
-      <div className="nav-cards">
-        {permissions['card-manager'] && (
-          <>
-            <Link to="/cards" className="nav-card">
-              <div className="nav-card-icon">
-                <CreditCard size={32} />
-              </div>
-              <div className="nav-card-content">
-                <h2>Cards Management</h2>
-                <p>View, create, and manage credit card entries and their versions</p>
-              </div>
-            </Link>
-
-            <Link to="/ai-assistant" className="nav-card">
-              <div className="nav-card-icon">
-                <Sparkles size={32} />
-              </div>
-              <div className="nav-card-content">
-                <h2>AI Data Entry Assistant</h2>
-                <p>Use AI to extract and format credit card data from raw text</p>
-              </div>
-            </Link>
-
-            <Link to="/card-comparison" className="nav-card">
-              <div className="nav-card-icon">
-                <GitCompare size={32} />
-              </div>
-              <div className="nav-card-content">
-                <h2>Card Comparison</h2>
-                <p>Compare database card data against website text to identify discrepancies</p>
-              </div>
-            </Link>
-          </>
-        )}
-
-        {permissions['user-manager'] && (
-          <Link to="/users" className="nav-card">
-            <div className="nav-card-icon">
-              <Users size={32} />
-            </div>
-            <div className="nav-card-content">
-              <h2>User Manager</h2>
-              <p>View and manage user accounts, preferences, and access</p>
-            </div>
-          </Link>
-        )}
+      <div className="user-manager-placeholder">
+        <div className="placeholder-icon">
+          <Users size={48} />
+        </div>
+        <h2>User Manager</h2>
+        <p>Coming soon</p>
       </div>
     </div>
   );
 }
-

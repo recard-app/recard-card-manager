@@ -5,7 +5,8 @@ import cardsRoutes from './routes/cards';
 import componentsRoutes from './routes/components';
 import aiRoutes from './routes/ai';
 import comparisonRoutes from './routes/comparison';
-import { isAdminEmail } from './services/permission.service';
+import usersRoutes from './routes/users';
+import { getUserPermissions } from './services/permission.service';
 
 dotenv.config();
 
@@ -22,20 +23,21 @@ app.use(express.json());
 // Handle preflight requests
 app.options('*', cors());
 
-// Public endpoint to check if an email is authorized (no auth required)
+// Public endpoint to check feature permissions for an email (no auth required)
 app.get('/admin/check-permission/:email', async (req: Request, res: Response) => {
   try {
     const { email } = req.params;
-    const allowed = await isAdminEmail(email);
-    res.json({ allowed });
+    const permissions = await getUserPermissions(email);
+    res.json({ permissions });
   } catch (error) {
     console.error('Error checking permission:', error);
-    res.status(500).json({ error: 'Failed to check permission', allowed: false });
+    res.status(500).json({ error: 'Failed to check permission', permissions: {} });
   }
 });
 
 // Routes (protected by auth middleware)
 app.use('/admin/cards', cardsRoutes);
+app.use('/admin/users', usersRoutes);
 app.use('/admin', componentsRoutes);
 app.use('/admin/ai', aiRoutes);
 app.use('/admin/comparison', comparisonRoutes);

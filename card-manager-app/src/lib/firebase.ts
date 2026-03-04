@@ -1,6 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { API_ROUTES } from './api-routes';
+import { DEFAULT_PERMISSIONS } from '@/types/permissions';
+import type { FeaturePermissions } from '@/types/permissions';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -24,24 +26,22 @@ googleProvider.setCustomParameters({
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
 
 /**
- * Check if an email is in the admin whitelist.
- * Calls the backend to verify against Firestore permissions.
- * @param email The email to check
- * @returns true if the email is authorized
+ * Get feature permissions for an email.
+ * Calls the backend to check all feature permissions.
  */
-export const isAdminEmail = async (email: string | null | undefined): Promise<boolean> => {
-  if (!email) return false;
-  
+export const getUserPermissions = async (email: string | null | undefined): Promise<FeaturePermissions> => {
+  if (!email) return { ...DEFAULT_PERMISSIONS };
+
   try {
     const response = await fetch(`${API_BASE_URL}${API_ROUTES.PERMISSIONS.CHECK(email)}`);
     if (!response.ok) {
       console.error('Permission check failed:', response.status);
-      return false;
+      return { ...DEFAULT_PERMISSIONS };
     }
     const data = await response.json();
-    return data.allowed === true;
+    return data.permissions ?? { ...DEFAULT_PERMISSIONS };
   } catch (error) {
-    console.error('Error checking permission:', error);
-    return false;
+    console.error('Error checking permissions:', error);
+    return { ...DEFAULT_PERMISSIONS };
   }
 };

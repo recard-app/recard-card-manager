@@ -1,13 +1,15 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import type { FeatureKey } from '@/types/permissions';
 
 interface ProtectedRouteProps {
   children: ReactNode;
+  requiredFeature?: FeatureKey;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading, isAuthorized } = useAuth();
+export function ProtectedRoute({ children, requiredFeature }: ProtectedRouteProps) {
+  const { user, loading, isAuthorized, permissions } = useAuth();
 
   if (loading) {
     return (
@@ -26,6 +28,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user || !isAuthorized) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (requiredFeature && !permissions[requiredFeature]) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

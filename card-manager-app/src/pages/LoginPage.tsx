@@ -18,7 +18,7 @@ export function LoginPage() {
       setLoading(true);
       setError(null);
       await signInWithGoogle();
-      navigate('/cards');
+      navigate('/');
     } catch (err: any) {
       setError(err.message);
       toast.error(err?.message || 'Failed to sign in');

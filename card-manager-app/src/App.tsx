@@ -7,6 +7,7 @@ import { CardsListPage } from '@/pages/CardsListPage';
 import { CardDetailPage } from '@/pages/CardDetailPage';
 import { AIAssistantPage } from '@/pages/AIAssistantPage';
 import { CardComparisonPage } from '@/pages/CardComparisonPage';
+import { UserManagerPage } from '@/pages/UserManagerPage';
 import { Toaster } from '@/components/shadcn/sonner';
 
 function App() {
@@ -26,7 +27,7 @@ function App() {
           <Route
             path="/cards"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredFeature="card-manager">
                 <CardsListPage />
               </ProtectedRoute>
             }
@@ -34,7 +35,7 @@ function App() {
           <Route
             path="/cards/:referenceCardId"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredFeature="card-manager">
                 <CardDetailPage />
               </ProtectedRoute>
             }
@@ -42,7 +43,7 @@ function App() {
           <Route
             path="/cards/:referenceCardId/:versionId"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredFeature="card-manager">
                 <CardDetailPage />
               </ProtectedRoute>
             }
@@ -50,7 +51,7 @@ function App() {
           <Route
             path="/ai-assistant"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredFeature="card-manager">
                 <AIAssistantPage />
               </ProtectedRoute>
             }
@@ -58,8 +59,16 @@ function App() {
           <Route
             path="/card-comparison"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredFeature="card-manager">
                 <CardComparisonPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute requiredFeature="user-manager">
+                <UserManagerPage />
               </ProtectedRoute>
             }
           />
