@@ -4,6 +4,7 @@ import { CircleUser, LogOut } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import './ProfilePopover.scss';
 
 export function ProfilePopover() {
   const navigate = useNavigate();
