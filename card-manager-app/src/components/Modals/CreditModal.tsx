@@ -212,7 +212,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         Value: parseFloat(formData.Value.trim()) || 0,
         TimePeriod: formData.TimePeriod.trim(),
         Requirements: formData.Requirements.trim(),
-        Details: formData.Details.trim() || undefined,
+        Details: formData.Details.trim(),
         EffectiveFrom: formData.EffectiveFrom,
         EffectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
         // Anniversary field

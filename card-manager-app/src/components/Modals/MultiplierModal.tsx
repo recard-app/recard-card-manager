@@ -658,7 +658,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
         Description: formData.Description.trim(),
         Multiplier: parseFloat(formData.Multiplier),
         Requirements: formData.Requirements.trim(),
-        Details: formData.Details.trim() || undefined,
+        Details: formData.Details.trim(),
         EffectiveFrom: formData.EffectiveFrom,
         EffectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
         multiplierType: formData.multiplierType,

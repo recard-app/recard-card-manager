@@ -165,7 +165,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
         SubCategory: formData.SubCategory.trim(),
         Description: formData.Description.trim(),
         Requirements: formData.Requirements.trim(),
-        Details: formData.Details.trim() || undefined,
+        Details: formData.Details.trim(),
         EffectiveFrom: formData.EffectiveFrom,
         EffectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
       };
