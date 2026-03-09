@@ -216,7 +216,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         EffectiveFrom: formData.EffectiveFrom,
         EffectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
         // Anniversary field
-        isAnniversaryBased: formData.isAnniversaryBased || undefined,
+        isAnniversaryBased: formData.isAnniversaryBased,
       };
 
       if (isEdit && credit) {

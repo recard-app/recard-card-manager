@@ -158,9 +158,9 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
         CardIssuer: formData.CardIssuer.trim(),
         CardNetwork: formData.CardNetwork.trim(),
         CardDetails: formData.CardDetails.trim(),
-        CardImage: formData.CardImage.trim() || undefined,
-        CardPrimaryColor: formData.CardPrimaryColor.trim() || undefined,
-        CardSecondaryColor: formData.CardSecondaryColor.trim() || undefined,
+        CardImage: formData.CardImage.trim(),
+        CardPrimaryColor: formData.CardPrimaryColor.trim(),
+        CardSecondaryColor: formData.CardSecondaryColor.trim(),
         AnnualFee: formData.AnnualFee ? parseFloat(formData.AnnualFee) : null,
         ForeignExchangeFee: formData.ForeignExchangeFee.trim(),
         ForeignExchangeFeePercentage: formData.ForeignExchangeFeePercentage
