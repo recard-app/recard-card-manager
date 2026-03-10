@@ -56,6 +56,8 @@ export const CreditSchema = z.object({
   isAnniversaryBased: z.boolean().optional(),  // true = anniversary-based, false/undefined = calendar
 });
 
+export const CreditUpdateSchema = CreditSchema.omit({ TimePeriod: true, isAnniversaryBased: true }).partial();
+
 export const PerkSchema = z.object({
   ReferenceCardId: z.string().min(1),
   Title: z.string().min(1),

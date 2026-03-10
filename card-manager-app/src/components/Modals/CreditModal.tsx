@@ -168,7 +168,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         updates.Value = fields.Value;
       }
     }
-    if ('TimePeriod' in fields && typeof fields.TimePeriod === 'string') {
+    if (!isEdit && 'TimePeriod' in fields && typeof fields.TimePeriod === 'string') {
       // Normalize to lowercase to match TIME_PERIODS format
       const normalized = fields.TimePeriod.toLowerCase();
       if (TIME_PERIODS.includes(normalized as typeof TIME_PERIODS[number])) {
@@ -183,7 +183,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
     }
 
     // Handle anniversary-based field
-    if ('isAnniversaryBased' in fields && typeof fields.isAnniversaryBased === 'boolean') {
+    if (!isEdit && 'isAnniversaryBased' in fields && typeof fields.isAnniversaryBased === 'boolean') {
       updates.isAnniversaryBased = fields.isAnniversaryBased;
       // If anniversary-based, force TimePeriod to annually
       if (fields.isAnniversaryBased === true) {
@@ -220,8 +220,9 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
       };
 
       if (isEdit && credit) {
-        // Preserve ReferenceCardId on update
-        await ComponentService.updateCredit(credit.id, baseCreditData);
+        // Strip immutable fields (TimePeriod, isAnniversaryBased) from edit payload
+        const { TimePeriod: _, isAnniversaryBased: __, ...editPayload } = baseCreditData;
+        await ComponentService.updateCredit(credit.id, editPayload);
       } else {
         await ComponentService.createCredit({
           ReferenceCardId: referenceCardId,
@@ -307,7 +308,8 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
             value={formData.TimePeriod}
             onChange={(value) => setFormData({ ...formData, TimePeriod: value })}
             options={TIME_PERIODS.map(tp => ({ value: tp, label: TIME_PERIOD_LABELS[tp] || tp }))}
-            disabled={formData.isAnniversaryBased}
+            disabled={isEdit || formData.isAnniversaryBased}
+            helperText={isEdit ? 'Time period cannot be changed after creation.' : undefined}
           />
           {formData.isAnniversaryBased && (
             <p className="field-note">Anniversary-based credits are always annual (one year from card open date to the next).</p>
@@ -334,8 +336,12 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
                 // Force TimePeriod to 'annually' when anniversary-based
                 ...(checked ? { TimePeriod: 'annually' } : {})
               })}
+              disabled={isEdit}
             />
           </div>
+          {isEdit && (
+            <p className="field-note">Anniversary setting cannot be changed after creation.</p>
+          )}
         </div>
 
         <FormField

@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import { db } from '../firebase-admin';
 import { CardCredit, CardPerk, CardMultiplier, ONGOING_SENTINEL_DATE } from '../types';
 import { verifyAuth } from '../middleware/auth';
-import { CreditSchema, PerkSchema, MultiplierSchema, parseOr400 } from '../validation/schemas';
+import { CreditSchema, CreditUpdateSchema, PerkSchema, MultiplierSchema, parseOr400 } from '../validation/schemas';
 
 const router = express.Router();
 
@@ -125,7 +125,12 @@ router.post('/credits', async (req: Request, res: Response) => {
 router.put('/credits/:creditId', async (req: Request, res: Response) => {
   try {
     const { creditId } = req.params;
-    const parsed = parseOr400(CreditSchema.partial(), req.body);
+    if ('TimePeriod' in req.body || 'isAnniversaryBased' in req.body) {
+      return res.status(400).json({
+        error: 'TimePeriod and isAnniversaryBased cannot be modified after creation. Delete and recreate the credit instead.',
+      });
+    }
+    const parsed = parseOr400(CreditUpdateSchema, req.body);
     if (!parsed.ok) {
       return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
     }
