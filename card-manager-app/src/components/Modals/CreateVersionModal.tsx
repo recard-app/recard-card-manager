@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { DatePicker } from '@/components/ui/DatePicker';
 import type { CreditCardDetails } from '@/types';
 import { CardService } from '@/services/card.service';
-import { normalizeEffectiveTo } from '@/types';
+import { normalizeEffectiveTo, EARLIEST_EFFECTIVE_DATE } from '@/types';
 import { getCurrentDate } from '@/utils/date-utils';
 import './CreateVersionModal.scss';
 
@@ -167,6 +167,7 @@ export function CreateVersionModal({
           value={formData.EffectiveFrom}
           onChange={(value) => setFormData({ ...formData, EffectiveFrom: value })}
           error={errors.EffectiveFrom}
+          quickAction={{ label: "Set to earliest (Jan 1, 2000)", value: EARLIEST_EFFECTIVE_DATE }}
         />
 
         <DatePicker

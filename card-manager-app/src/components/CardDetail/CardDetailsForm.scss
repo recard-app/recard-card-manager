@@ -23,6 +23,9 @@
   }
 
   .detail-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     background-color: $neutral-gray-50;
     border: 1px solid $neutral-gray-100;
     border-radius: $border-radius-md;

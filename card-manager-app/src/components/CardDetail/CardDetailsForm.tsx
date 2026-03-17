@@ -10,7 +10,7 @@ import { TextareaField } from '@/components/shadcn/form-field';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { CardService } from '@/services/card.service';
 import type { CreditCardDetails } from '@/types';
-import { normalizeEffectiveTo } from '@/types';
+import { normalizeEffectiveTo, EARLIEST_EFFECTIVE_DATE } from '@/types';
 import { formatDate } from '@/utils/date-utils';
 import { REWARDS_CURRENCIES } from '@/constants/form-options';
 import { Edit2, Trash2, FileJson } from 'lucide-react';
@@ -484,6 +484,7 @@ export function CardDetailsForm({ cardId, card, onSaved, onDeleted }: CardDetail
               value={formData.EffectiveFrom}
               onChange={(value) => setFormData({ ...formData, EffectiveFrom: value })}
               error={errors.EffectiveFrom}
+              quickAction={{ label: "Set to earliest (Jan 1, 2000)", value: EARLIEST_EFFECTIVE_DATE }}
             />
             <DatePicker
               label="Effective To (optional)"

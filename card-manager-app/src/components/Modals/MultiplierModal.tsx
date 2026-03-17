@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { DatePicker } from '@/components/ui/DatePicker';
 import type { CardMultiplier, MultiplierType, RotatingScheduleEntry, AllowedCategoryEntry, SchedulePeriodType } from '@/types';
 import { ComponentService } from '@/services/component.service';
-import { normalizeEffectiveTo, denormalizeEffectiveTo, MULTIPLIER_TYPES, SCHEDULE_PERIOD_TYPES } from '@/types';
+import { normalizeEffectiveTo, denormalizeEffectiveTo, MULTIPLIER_TYPES, SCHEDULE_PERIOD_TYPES, EARLIEST_EFFECTIVE_DATE } from '@/types';
 import { getCurrentDate } from '@/utils/date-utils';
 import { CATEGORIES, SUBCATEGORIES } from '@/constants/form-options';
 import { FileJson, Info, Plus, Trash2, Calendar, ListChecks, Upload } from 'lucide-react';
@@ -1101,6 +1101,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
           value={formData.EffectiveFrom}
           onChange={(value) => setFormData({ ...formData, EffectiveFrom: value })}
           error={errors.EffectiveFrom}
+          quickAction={{ label: "Set to earliest (Jan 1, 2000)", value: EARLIEST_EFFECTIVE_DATE }}
         />
 
         <DatePicker

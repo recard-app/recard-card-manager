@@ -27,6 +27,6 @@ export {
   isSelectableMultiplier,
   formatSpendingCap
 } from './credit-card-types';
-export { ONGOING_SENTINEL_DATE, isOngoingDate, normalizeEffectiveTo, denormalizeEffectiveTo } from '../constants/dates';
+export { ONGOING_SENTINEL_DATE, EARLIEST_EFFECTIVE_DATE, isOngoingDate, normalizeEffectiveTo, denormalizeEffectiveTo } from '../constants/dates';
 export type { FeatureKey, FeaturePermissions } from './permissions';
 export { DEFAULT_PERMISSIONS, hasAnyPermission } from './permissions';

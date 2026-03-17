@@ -20,6 +20,10 @@ interface DatePickerProps {
   helperText?: string
   disabled?: boolean
   required?: boolean
+  quickAction?: {
+    label: string
+    value: string
+  }
 }
 
 export function DatePicker({
@@ -31,6 +35,7 @@ export function DatePicker({
   helperText,
   disabled = false,
   required = false,
+  quickAction,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
   const [formatWarning, setFormatWarning] = React.useState(false)
@@ -165,6 +170,15 @@ export function DatePicker({
           />
         </PopoverContent>
       </Popover>
+      {quickAction && !disabled && (
+        <button
+          type="button"
+          className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline self-start p-0 mb-2 bg-transparent border-none cursor-pointer"
+          onClick={() => onChange(quickAction.value)}
+        >
+          {quickAction.label}
+        </button>
+      )}
       {error && (
         <span className="text-sm text-red-500">{error}</span>
       )}

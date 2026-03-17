@@ -8,7 +8,7 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { Switch } from '@/components/ui/Switch';
 import type { CardCredit } from '@/types';
 import { ComponentService } from '@/services/component.service';
-import { normalizeEffectiveTo, denormalizeEffectiveTo } from '@/types';
+import { normalizeEffectiveTo, denormalizeEffectiveTo, EARLIEST_EFFECTIVE_DATE } from '@/types';
 import { getCurrentDate } from '@/utils/date-utils';
 import { CATEGORIES, SUBCATEGORIES, TIME_PERIODS, TIME_PERIOD_LABELS } from '@/constants/form-options';
 import { FileJson, CalendarDays } from 'lucide-react';
@@ -371,6 +371,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           value={formData.EffectiveFrom}
           onChange={(value) => setFormData({ ...formData, EffectiveFrom: value })}
           error={errors.EffectiveFrom}
+          quickAction={{ label: "Set to earliest (Jan 1, 2000)", value: EARLIEST_EFFECTIVE_DATE }}
         />
 
         <DatePicker
