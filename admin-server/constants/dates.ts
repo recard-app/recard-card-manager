@@ -46,18 +46,18 @@ export const ONGOING_SENTINEL_DATE = '9999-12-31';
 /**
  * Earliest allowed effectiveFrom date
  *
- * Matches the year >= 2000 validation enforced in the main Server app
+ * Matches the year >= 2024 validation enforced in the main Server app
  * (Server/schemas/v1/request-bodies.ts). No card data should have an
  * effectiveFrom before this date.
  *
  * @example
  * ```typescript
  * if (effectiveFrom < EARLIEST_EFFECTIVE_DATE) {
- *   throw new Error('effectiveFrom must be on or after 2000-01-01');
+ *   throw new Error('effectiveFrom must be on or after 2024-01-01');
  * }
  * ```
  */
-export const EARLIEST_EFFECTIVE_DATE = '2000-01-01';
+export const EARLIEST_EFFECTIVE_DATE = '2024-01-01';
 
 /**
  * Type guard to check if a date string represents an ongoing date

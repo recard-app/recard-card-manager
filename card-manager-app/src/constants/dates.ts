@@ -5,9 +5,9 @@ export const ONGOING_SENTINEL_DATE = '9999-12-31';
 
 /**
  * Earliest allowed effectiveFrom date
- * Matches the year >= 2000 validation in the main Server app
+ * Matches the year >= 2024 validation in the main Server app
  */
-export const EARLIEST_EFFECTIVE_DATE = '2000-01-01';
+export const EARLIEST_EFFECTIVE_DATE = '2024-01-01';
 
 /**
  * Type guard to check if a date string represents an ongoing date

@@ -272,7 +272,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
           value={formData.EffectiveFrom}
           onChange={(value) => setFormData({ ...formData, EffectiveFrom: value })}
           error={errors.EffectiveFrom}
-          quickAction={{ label: "Set to earliest (Jan 1, 2000)", value: EARLIEST_EFFECTIVE_DATE }}
+          quickAction={{ label: "Set to earliest (Jan 1, 2024)", value: EARLIEST_EFFECTIVE_DATE }}
         />
 
         <DatePicker
