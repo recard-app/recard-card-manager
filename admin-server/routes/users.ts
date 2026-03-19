@@ -43,6 +43,7 @@ router.get('/', async (_req: Request, res: Response) => {
         uid: authUser.uid,
         email: authUser.email || '',
         displayName: authUser.displayName || null,
+        createdAt: authUser.metadata.creationTime || null,
         subscriptionPlan: fsData?.subscriptionPlan || 'free',
         role: fsData?.role || 'user',
       };

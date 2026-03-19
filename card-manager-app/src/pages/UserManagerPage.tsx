@@ -9,6 +9,7 @@ import {
   Trash2,
   Loader2,
   Pencil,
+  ArrowUpDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/PageHeader';
@@ -51,6 +52,15 @@ const ROLE_OPTIONS = [
   { value: 'admin', label: 'Admin' },
   { value: 'worker', label: 'Worker' },
   { value: 'user', label: 'User' },
+];
+
+const SORT_OPTIONS = [
+  { value: 'email-asc', label: 'Email (A-Z)' },
+  { value: 'email-desc', label: 'Email (Z-A)' },
+  { value: 'name-asc', label: 'Name (A-Z)' },
+  { value: 'name-desc', label: 'Name (Z-A)' },
+  { value: 'newest', label: 'Newest First' },
+  { value: 'oldest', label: 'Oldest First' },
 ];
 
 const STATUS_OPTIONS = [
@@ -112,6 +122,7 @@ export function UserManagerPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPlan, setFilterPlan] = useState<string>('');
   const [filterRole, setFilterRole] = useState<string>('');
+  const [sortBy, setSortBy] = useState<string>('newest');
 
   // Detail state
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -186,7 +197,7 @@ export function UserManagerPage() {
     }
   }, [urlUserId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Client-side search filter
+  // Client-side search filter + sort
   const filteredUsers = useMemo(() => {
     let result = users;
     if (searchQuery.trim()) {
@@ -203,8 +214,39 @@ export function UserManagerPage() {
     if (filterRole) {
       result = result.filter((u) => u.role === filterRole);
     }
-    return result;
-  }, [users, searchQuery, filterPlan, filterRole]);
+
+    // Sort
+    const sorted = [...result];
+    switch (sortBy) {
+      case 'email-asc':
+        sorted.sort((a, b) => a.email.localeCompare(b.email));
+        break;
+      case 'email-desc':
+        sorted.sort((a, b) => b.email.localeCompare(a.email));
+        break;
+      case 'name-asc':
+        sorted.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+        break;
+      case 'name-desc':
+        sorted.sort((a, b) => (b.displayName || '').localeCompare(a.displayName || ''));
+        break;
+      case 'newest':
+        sorted.sort((a, b) => {
+          if (!a.createdAt) return 1;
+          if (!b.createdAt) return -1;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        break;
+      case 'oldest':
+        sorted.sort((a, b) => {
+          if (!a.createdAt) return 1;
+          if (!b.createdAt) return -1;
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
+        break;
+    }
+    return sorted;
+  }, [users, searchQuery, filterPlan, filterRole, sortBy]);
 
   // Enter subscription edit mode -- populate edit fields from current detail
   const handleEditSubscription = () => {
@@ -314,6 +356,14 @@ export function UserManagerPage() {
                 onChange={(val) => setFilterRole(val)}
                 clearable
                 clearLabel="All Roles"
+              />
+            </div>
+            <div className="sort-row">
+              <ArrowUpDown size={14} className="sort-icon" />
+              <Select
+                options={SORT_OPTIONS}
+                value={sortBy}
+                onChange={(val) => setSortBy(val)}
               />
             </div>
           </div>

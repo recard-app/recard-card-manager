@@ -61,6 +61,23 @@
     }
   }
 
+  .sort-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    margin-top: $spacing-xs;
+
+    .sort-icon {
+      flex-shrink: 0;
+      color: $neutral-gray-300;
+    }
+
+    > *:last-child {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
   .search-input {
     width: 100%;
     padding: 8px 10px 8px 32px;
