@@ -111,7 +111,7 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureOneCard.json`
 
 **Rules:**
 - Format: Issuer name followed by card name (e.g., "American Express Gold", "Chase Sapphire Preferred")
-- Do NOT include the word "Card" at the end - it is implied
+- Do NOT include the word "Card" at the end - it is implied. Strip "Card" from the end of the name if the source text includes it. For example, "American Express Gold Card" becomes "American Express Gold"
 - Use the official card name as shown on the card issuer's website
 - Include the full name, not abbreviations
 - Title case formatting

@@ -72,7 +72,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
   // Card-specific rules - many fields are auto-generated
   if (type === 'card') {
     rules.push('- DO NOT include id, VersionName, ReferenceCardId, IsActive, CardImage, lastUpdated, effectiveFrom, effectiveTo, Perks, Credits, or Multipliers fields (auto-generated)');
-    rules.push('- CardName: Format is "Issuer CardName" (e.g., "American Express Gold", "Chase Sapphire Preferred"). Do NOT include the word "Card" at the end. No trademark/copyright/service mark symbols (TM, R, SM, C, etc.) -- use only basic keyboard characters');
+    rules.push('- CardName: Format is "Issuer CardName" (e.g., "American Express Gold", "Chase Sapphire Preferred"). ALWAYS strip the word "Card" from the end if present (e.g., "American Express Gold Card" -> "American Express Gold"). No trademark/copyright/service mark symbols (TM, R, SM, C, etc.) -- use only basic keyboard characters');
     rules.push('- AnnualFee: number (not string), no $ sign');
     rules.push('- ForeignExchangeFee: Description of the foreign exchange fee policy');
     rules.push('- ForeignExchangeFeePercentage: number (0 for no fee)');
