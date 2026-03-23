@@ -53,6 +53,17 @@
   gap: $spacing-xs;
 }
 
+.item-created-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: $font-size-xs;
+  font-weight: 500;
+  color: #16a34a;
+  flex-shrink: 0;
+  padding: 4px 8px;
+}
+
 .section-header {
   @include flex-row;
   justify-content: space-between;

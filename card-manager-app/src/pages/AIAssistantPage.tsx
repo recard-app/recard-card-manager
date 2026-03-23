@@ -32,7 +32,7 @@ export function AIAssistantPage() {
   // Form state
   const [rawData, setRawData] = useState('');
   const [generationType, setGenerationType] = useState<GenerationType>('card');
-  const [batchMode, setBatchMode] = useState(false);
+  const [batchMode, setBatchMode] = useState(true);
   const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS.GEMINI_31_PRO_PREVIEW);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GenerationResult | null>(null);
@@ -52,6 +52,8 @@ export function AIAssistantPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalKey, setModalKey] = useState(0);
   const [pendingJsonImport, setPendingJsonImport] = useState<Record<string, unknown> | null>(null);
+  const [pendingItemIndex, setPendingItemIndex] = useState<number | null>(null);
+  const [createdItems, setCreatedItems] = useState<Set<number>>(new Set());
 
   // Check if batch mode is available for current type
   // Rotating categories always returns an array, so batch mode doesn't apply
@@ -142,6 +144,7 @@ export function AIAssistantPage() {
 
     setLoading(true);
     setResult(null);
+    setCreatedItems(new Set());
     setShowRefinement(false);
     setRefinementPrompt('');
 
@@ -199,6 +202,7 @@ export function AIAssistantPage() {
       // Validate the result and add validation status
       const validatedData = validateGenerationResult(data, generationType);
       setResult(validatedData);
+      setCreatedItems(new Set());
       // Expand all items by default
       setExpandedItems(new Set(validatedData.items.map((_, i) => i)));
       setAllExpanded(true);
@@ -246,7 +250,7 @@ export function AIAssistantPage() {
     }
   };
 
-  const handleCreateComponent = (item: GeneratedItem) => {
+  const handleCreateComponent = (item: GeneratedItem, index: number) => {
     if (!selectedCardId) {
       toast.warning('Please select a card first');
       return;
@@ -256,6 +260,7 @@ export function AIAssistantPage() {
       return;
     }
     setPendingJsonImport(item.json);
+    setPendingItemIndex(index);
     setModalKey(k => k + 1);
     setModalOpen(true);
   };
@@ -591,16 +596,23 @@ export function AIAssistantPage() {
                         <span className="item-title">{getItemTitle(item)}</span>
                       </div>
                       {generationType !== 'card' && generationType !== 'rotating-categories' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="item-create-button"
-                          onClick={() => handleCreateComponent(item)}
-                          disabled={!selectedCardId}
-                        >
-                          <Plus size={14} />
-                          Create {getComponentTypeLabel()}
-                        </Button>
+                        createdItems.has(index) ? (
+                          <span className="item-created-badge">
+                            <CheckCircle size={14} />
+                            Created
+                          </span>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="item-create-button"
+                            onClick={() => handleCreateComponent(item, index)}
+                            disabled={!selectedCardId}
+                          >
+                            <Plus size={14} />
+                            Create {getComponentTypeLabel()}
+                          </Button>
+                        )
                       )}
                       <Button
                         variant="outline"
@@ -761,6 +773,9 @@ export function AIAssistantPage() {
           onSuccess={() => {
             toast.success('Credit created!');
             setModalOpen(false);
+            if (pendingItemIndex !== null) {
+              setCreatedItems(prev => new Set(prev).add(pendingItemIndex));
+            }
           }}
           initialJson={pendingJsonImport || undefined}
         />
@@ -774,6 +789,9 @@ export function AIAssistantPage() {
           onSuccess={() => {
             toast.success('Perk created!');
             setModalOpen(false);
+            if (pendingItemIndex !== null) {
+              setCreatedItems(prev => new Set(prev).add(pendingItemIndex));
+            }
           }}
           initialJson={pendingJsonImport || undefined}
         />
@@ -787,6 +805,9 @@ export function AIAssistantPage() {
           onSuccess={() => {
             toast.success('Multiplier created!');
             setModalOpen(false);
+            if (pendingItemIndex !== null) {
+              setCreatedItems(prev => new Set(prev).add(pendingItemIndex));
+            }
           }}
           initialJson={pendingJsonImport || undefined}
         />
