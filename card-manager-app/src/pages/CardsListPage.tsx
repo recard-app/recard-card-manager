@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CardService } from '@/services/card.service';
 import type { CardWithStatus, CardCharacteristics } from '@/types/ui-types';
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Check, Filter } from 'lucide-react';
+import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Check, Filter, X } from 'lucide-react';
 import { CreateCardModal } from '@/components/Modals/CreateCardModal';
 import { PageHeader } from '@/components/PageHeader';
 import { ProfilePopover } from '@/components/ProfilePopover';
@@ -150,20 +150,99 @@ function MultiSelectFilter<T extends string>({
   );
 }
 
+const VALID_SORT_COLUMNS: SortColumn[] = ['CardName', 'CardIssuer', 'status', 'lastUpdated'];
+const VALID_LAST_UPDATED: Exclude<LastUpdatedTier, 'all'>[] = ['lt30', 'gt30', 'gt60', 'gt90'];
+const VALID_CHARACTERISTICS: CardCharacteristics[] = ['standard', 'rotating', 'selectable'];
+
 export function CardsListPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [cards, setCards] = useState<CardWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
-  const [lastUpdatedFilter, setLastUpdatedFilter] = useState<Exclude<LastUpdatedTier, 'all'>[]>([]);
-  const [characteristicsFilter, setCharacteristicsFilter] = useState<CardCharacteristics[]>([]);
   const [createCardModalOpen, setCreateCardModalOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [sortColumn, setSortColumn] = useState<SortColumn | null>('CardName');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
-  const [showCardId, setShowCardId] = useState(false);
+
+  // Derive filter/sort state from URL params
+  const searchQuery = searchParams.get('q') || '';
+  const statusFilter = (searchParams.get('status')?.split(',').filter(Boolean)) || [];
+  const lastUpdatedFilter = (searchParams.get('updated')?.split(',').filter((v): v is Exclude<LastUpdatedTier, 'all'> =>
+    VALID_LAST_UPDATED.includes(v as Exclude<LastUpdatedTier, 'all'>)
+  )) || [];
+  const characteristicsFilter = (searchParams.get('chars')?.split(',').filter((v): v is CardCharacteristics =>
+    VALID_CHARACTERISTICS.includes(v as CardCharacteristics)
+  )) || [];
+  const sortColumnRaw = searchParams.get('sort');
+  const sortColumn: SortColumn | null = sortColumnRaw === 'none'
+    ? null
+    : sortColumnRaw && VALID_SORT_COLUMNS.includes(sortColumnRaw as SortColumn)
+      ? sortColumnRaw as SortColumn
+      : sortColumnRaw === null ? 'CardName' : null;
+  const sortDirRaw = searchParams.get('dir');
+  const sortDirection: SortDirection = sortDirRaw === 'desc' ? 'desc' : 'asc';
+  const showCardId = searchParams.get('showId') === '1';
+
+  // Local search input state with debounced URL sync
+  const [searchInput, setSearchInput] = useState(searchQuery);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Keep local input in sync if URL changes externally (e.g. back/forward)
+  useEffect(() => {
+    setSearchInput(searchParams.get('q') || '');
+  }, [searchParams]);
+
+  const updateParams = useCallback((updates: Record<string, string | null>) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === null || value === '') {
+          next.delete(key);
+        } else {
+          next.set(key, value);
+        }
+      }
+      // Remove default values to keep URL clean
+      if (next.get('sort') === 'CardName') next.delete('sort');
+      if (next.get('dir') === 'asc') next.delete('dir');
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      updateParams({ q: value || null });
+    }, 300);
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => () => clearTimeout(searchTimerRef.current), []);
+
+  const setStatusFilter = useCallback((vals: string[]) => {
+    updateParams({ status: vals.length > 0 ? vals.join(',') : null });
+  }, [updateParams]);
+
+  const setLastUpdatedFilter = useCallback((vals: Exclude<LastUpdatedTier, 'all'>[]) => {
+    updateParams({ updated: vals.length > 0 ? vals.join(',') : null });
+  }, [updateParams]);
+
+  const setCharacteristicsFilter = useCallback((vals: CardCharacteristics[]) => {
+    updateParams({ chars: vals.length > 0 ? vals.join(',') : null });
+  }, [updateParams]);
+
+  const hasActiveFilters = searchQuery !== '' || statusFilter.length > 0 || lastUpdatedFilter.length > 0 || characteristicsFilter.length > 0;
+  const hasNonDefaultSort = sortColumn !== 'CardName' || sortDirection !== 'asc';
+
+  const clearFilters = useCallback(() => {
+    setSearchInput('');
+    clearTimeout(searchTimerRef.current);
+    updateParams({ q: null, status: null, updated: null, chars: null, showId: null });
+  }, [updateParams]);
+
+  const clearSort = useCallback(() => {
+    updateParams({ sort: null, dir: null });
+  }, [updateParams]);
 
   useEffect(() => {
     loadCards();
@@ -203,17 +282,16 @@ export function CardsListPage() {
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn === column) {
-      // Cycle: asc -> desc -> cleared
-      setSortDirection(prev => {
-        if (prev === 'asc') return 'desc';
-        // Was desc: clear sort
-        setSortColumn(null);
-        return 'asc';
-      });
+      if (sortDirection === 'asc') {
+        // asc -> desc
+        updateParams({ sort: column, dir: 'desc' });
+      } else {
+        // desc -> cleared
+        updateParams({ sort: 'none', dir: null });
+      }
     } else {
-      // Set new column with ascending as default
-      setSortColumn(column);
-      setSortDirection('asc');
+      // New column, ascending
+      updateParams({ sort: column, dir: null });
     }
   };
 
@@ -497,15 +575,15 @@ export function CardsListPage() {
           <input
             type="text"
             placeholder="Search cards..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="search-input"
           />
         </div>
 
         <button
           className={cn('display-toggle', showCardId && 'active')}
-          onClick={() => setShowCardId(!showCardId)}
+          onClick={() => updateParams({ showId: showCardId ? null : '1' })}
         >
           {showCardId ? 'Card ID' : 'Card Name'}
         </button>
@@ -642,7 +720,21 @@ export function CardsListPage() {
       </div>
 
       <div className="summary">
-        Showing {filteredAndSortedCards.length} of {cards.length} cards
+        <div className="summary-actions">
+          {hasActiveFilters && (
+            <span className="clear-link" onClick={clearFilters}>
+              <X size={12} />
+              Clear filters
+            </span>
+          )}
+          {hasNonDefaultSort && (
+            <span className="clear-link" onClick={clearSort}>
+              <X size={12} />
+              Clear sorting
+            </span>
+          )}
+        </div>
+        <span>Showing {filteredAndSortedCards.length} of {cards.length} cards</span>
       </div>
 
       <CreateCardModal

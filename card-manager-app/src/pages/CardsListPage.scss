@@ -333,10 +333,33 @@
 }
 
 .summary {
-  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: $font-size-xs;
   color: $neutral-gray-600;
   padding: $spacing-xs 0;
   flex-shrink: 0;
+
+  .summary-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  .clear-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-style: italic;
+    text-decoration: underline;
+    cursor: pointer;
+    color: $neutral-gray-600;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: $neutral-gray-800;
+    }
+  }
 }
 
