@@ -147,10 +147,10 @@ export function CardDetailPage() {
       const versionsData = await CardService.getVersionsByReferenceCardId(refCardId);
       setVersions(versionsData);
       
-      // If we don't have a selected version but there are versions, select the first one
+      // If we don't have a selected version but there are versions, select the active one (or first)
       if (!selectedVersionId && versionsData.length > 0) {
-        const firstVersion = versionsData[0];
-        await handleVersionSelect(firstVersion.id);
+        const activeVersion = versionsData.find(v => v.IsActive);
+        await handleVersionSelect((activeVersion || versionsData[0]).id);
       }
     } catch (err: any) {
       console.error('Error loading versions:', err);

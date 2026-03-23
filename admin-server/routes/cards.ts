@@ -621,8 +621,12 @@ router.get('/:referenceCardId/versions', async (req: Request, res: Response) => 
       });
     });
 
-    // Sort by effectiveFrom descending (most recent first)
-    versions.sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom));
+    // Active version first, then by effectiveFrom descending (most recent first)
+    versions.sort((a, b) => {
+      if (a.IsActive && !b.IsActive) return -1;
+      if (!a.IsActive && b.IsActive) return 1;
+      return b.effectiveFrom.localeCompare(a.effectiveFrom);
+    });
 
     res.json(versions);
   } catch (error) {
