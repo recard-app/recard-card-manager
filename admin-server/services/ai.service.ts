@@ -195,6 +195,44 @@ DETECTION TIPS:
 WHEN UNSURE: Default to false (calendar-based)
 =====================================`;
 
+      const nonMonetaryRules = `
+=== NON-MONETARY CREDITS ===
+The isNonMonetary field indicates the credit value is a count/quantity, not a dollar amount.
+
+SET isNonMonetary: true WHEN:
+- The benefit is measured in uses, visits, passes, nights, subscriptions, or other non-dollar units
+- The value represents a COUNT of something, not a dollar amount
+- The benefit RECURS every year (or more frequently) -- it renews/resets on a regular cadence
+- Common examples:
+  - Priority Pass lounge visits (e.g., "10 complimentary visits per year" -> Value: 10, annually)
+  - Companion certificates/passes (e.g., "1 companion pass per card year" -> Value: 1, annually)
+  - Free hotel night certificates that renew annually (e.g., "1 free night each card year" -> Value: 1, annually)
+  - Lounge access visits with a cap (e.g., "4 visits per quarter" -> Value: 4, quarterly)
+  - Recurring complimentary subscriptions (e.g., "DoorDash DashPass included each year you hold the card" -> Value: 1, annually)
+  - Guest passes that renew (e.g., "2 guest passes per year" -> Value: 2, annually)
+
+SET isNonMonetary: false (DEFAULT) WHEN:
+- The benefit is a dollar amount, statement credit, or cash value
+- The card gives you MONEY or a dollar credit toward something
+- Common examples:
+  - "$300 annual travel credit" -> Value: 300, isNonMonetary: false
+  - "$10/month Uber Cash" -> Value: 10, isNonMonetary: false
+  - "$100 hotel credit" -> Value: 100, isNonMonetary: false
+  - "$12.95/month Walmart+ credit" -> Value: 12.95, isNonMonetary: false (this is a DOLLAR credit toward the subscription cost)
+
+CLASSIFY AS PERK (NOT a credit at all) WHEN:
+- The benefit is one-time only and does NOT renew/recur (e.g., "complimentary DoorDash DashPass for 1 year" as a sign-up bonus -- this is a one-time perk, not a recurring credit)
+- The benefit recurs less frequently than annually (e.g., "Global Entry credit every 4 years")
+- The benefit has no trackable count or value (e.g., "lounge access" without a visit limit)
+- KEY TEST: Ask "does this benefit reset/renew on a regular cadence (monthly, quarterly, semiannually, annually, or per card year)?" If NO, it is a PERK, not a credit.
+
+NOTE: A subscription credit that gives you a DOLLAR AMOUNT toward the subscription cost (e.g., "$12.95 monthly statement credit for Walmart+") is monetary (isNonMonetary: false). A subscription that is COMPLIMENTARY / included free AND renews each year (e.g., "complimentary DoorDash DashPass membership, renews annually") is non-monetary (isNonMonetary: true, Value: 1). A subscription that is given ONCE and does NOT renew (e.g., "1 year of DoorDash DashPass as a sign-up bonus") is a PERK, not a credit.
+
+IMPORTANT: Non-monetary credits must RECUR with a cadence of 1 year or shorter (monthly, quarterly, semiannually, annually). One-time benefits that happen to be non-monetary do NOT belong here -- they are PERKS.
+
+WHEN UNSURE: Default to false (monetary). If unsure whether something recurs, classify as a Perk.
+=====================================`;
+
       if (batchMode) {
         return `${baseInstructions}
 
@@ -209,6 +247,8 @@ ${categoryInfo}
 
 ${anniversaryRules}
 
+${nonMonetaryRules}
+
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
 =====================================`;
@@ -221,6 +261,8 @@ ${JSON.stringify(CREDIT_SCHEMA, null, 2)}
 ${categoryInfo}
 
 ${anniversaryRules}
+
+${nonMonetaryRules}
 
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
@@ -520,6 +562,7 @@ function jsonToFields(json: Record<string, unknown>, generationType: GenerationT
     Requirements: 'Requirements',
     Details: 'Details',
     isAnniversaryBased: 'Anniversary Based',
+    isNonMonetary: 'Non-Monetary',
     Name: 'Name',
     Multiplier: 'Multiplier',
     EffectiveFrom: 'Effective From',

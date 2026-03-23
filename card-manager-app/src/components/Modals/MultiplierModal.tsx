@@ -8,7 +8,6 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import type { CardMultiplier, MultiplierType, RotatingScheduleEntry, AllowedCategoryEntry, SchedulePeriodType } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo, MULTIPLIER_TYPES, SCHEDULE_PERIOD_TYPES, EARLIEST_EFFECTIVE_DATE } from '@/types';
-import { getCurrentDate } from '@/utils/date-utils';
 import { CATEGORIES, SUBCATEGORIES } from '@/constants/form-options';
 import { FileJson, Info, Plus, Trash2, Calendar, ListChecks, Upload } from 'lucide-react';
 import './MultiplierModal.scss';
@@ -287,7 +286,7 @@ export function MultiplierModal({ open, onOpenChange, referenceCardId, multiplie
         Multiplier: '',
         Requirements: '',
         Details: '',
-        EffectiveFrom: getCurrentDate(),
+        EffectiveFrom: EARLIEST_EFFECTIVE_DATE,
         EffectiveTo: '',
         multiplierType: MULTIPLIER_TYPES.STANDARD,
       });

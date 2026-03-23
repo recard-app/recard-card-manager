@@ -50,6 +50,7 @@ export const SCHEMA_FIELDS: Record<GenerationType, string[]> = {
     'Requirements',
     'Details',
     'isAnniversaryBased',
+    'isNonMonetary',
   ],
   perk: [
     'Title',
@@ -212,6 +213,16 @@ function validateCreditField(key: string, value: unknown): FieldValidationResult
       return { valid: true };
 
     case 'isAnniversaryBased':
+      if (value === undefined || value === null) {
+        // Optional field - defaults to false
+        return { valid: true };
+      }
+      if (typeof value !== 'boolean') {
+        return { valid: false, reason: 'Must be true or false' };
+      }
+      return { valid: true };
+
+    case 'isNonMonetary':
       if (value === undefined || value === null) {
         // Optional field - defaults to false
         return { valid: true };

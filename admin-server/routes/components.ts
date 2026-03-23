@@ -125,9 +125,9 @@ router.post('/credits', async (req: Request, res: Response) => {
 router.put('/credits/:creditId', async (req: Request, res: Response) => {
   try {
     const { creditId } = req.params;
-    if ('TimePeriod' in req.body || 'isAnniversaryBased' in req.body) {
+    if ('TimePeriod' in req.body || 'isAnniversaryBased' in req.body || 'isNonMonetary' in req.body) {
       return res.status(400).json({
-        error: 'TimePeriod and isAnniversaryBased cannot be modified after creation. Delete and recreate the credit instead.',
+        error: 'TimePeriod, isAnniversaryBased, and isNonMonetary cannot be modified after creation. Delete and recreate the credit instead.',
       });
     }
     const parsed = parseOr400(CreditUpdateSchema, req.body);

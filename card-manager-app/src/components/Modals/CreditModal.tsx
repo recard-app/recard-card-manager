@@ -9,9 +9,8 @@ import { Switch } from '@/components/ui/Switch';
 import type { CardCredit } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo, EARLIEST_EFFECTIVE_DATE } from '@/types';
-import { getCurrentDate } from '@/utils/date-utils';
 import { CATEGORIES, SUBCATEGORIES, TIME_PERIODS, TIME_PERIOD_LABELS } from '@/constants/form-options';
-import { FileJson, CalendarDays } from 'lucide-react';
+import { FileJson, CalendarDays, Hash } from 'lucide-react';
 import './CreditModal.scss';
 import { CreditFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
 import { JsonImportModal } from '@/components/Modals/JsonImportModal';
@@ -41,6 +40,8 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
     EffectiveTo: '',
     // Anniversary-based credit field
     isAnniversaryBased: false,
+    // Non-monetary credit field
+    isNonMonetary: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -69,6 +70,8 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         EffectiveTo: denormalizeEffectiveTo(credit.EffectiveTo),
         // Anniversary field
         isAnniversaryBased: credit.isAnniversaryBased || false,
+        // Non-monetary field
+        isNonMonetary: credit.isNonMonetary || false,
       });
     } else {
       // Reset form for new credit
@@ -81,9 +84,10 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         TimePeriod: '',
         Requirements: '',
         Details: '',
-        EffectiveFrom: getCurrentDate(),
+        EffectiveFrom: EARLIEST_EFFECTIVE_DATE,
         EffectiveTo: '',
         isAnniversaryBased: false,
+        isNonMonetary: false,
       });
     }
     setErrors({});
@@ -191,6 +195,11 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
       }
     }
 
+    // Handle non-monetary field
+    if (!isEdit && 'isNonMonetary' in fields && typeof fields.isNonMonetary === 'boolean') {
+      updates.isNonMonetary = fields.isNonMonetary;
+    }
+
     setFormData(prev => ({ ...prev, ...updates }));
   };
 
@@ -217,11 +226,13 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         EffectiveTo: normalizeEffectiveTo(formData.EffectiveTo),
         // Anniversary field
         isAnniversaryBased: formData.isAnniversaryBased,
+        // Non-monetary field
+        isNonMonetary: formData.isNonMonetary,
       };
 
       if (isEdit && credit) {
-        // Strip immutable fields (TimePeriod, isAnniversaryBased) from edit payload
-        const { TimePeriod: _, isAnniversaryBased: __, ...editPayload } = baseCreditData;
+        // Strip immutable fields (TimePeriod, isAnniversaryBased, isNonMonetary) from edit payload
+        const { TimePeriod: _, isAnniversaryBased: __, isNonMonetary: ___, ...editPayload } = baseCreditData;
         await ComponentService.updateCredit(credit.id, editPayload);
       } else {
         await ComponentService.createCredit({
@@ -291,7 +302,7 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
         )}
 
         <FormField
-          label="Value ($)"
+          label={formData.isNonMonetary ? "Value (count)" : "Value ($)"}
           required
           type="text"
           value={formData.Value}
@@ -341,6 +352,32 @@ export function CreditModal({ open, onOpenChange, referenceCardId, credit, onSuc
           </div>
           {isEdit && (
             <p className="field-note">Anniversary setting cannot be changed after creation.</p>
+          )}
+        </div>
+
+        {/* Non-Monetary Credit Toggle */}
+        <div className="anniversary-toggle-section">
+          <div className="toggle-row">
+            <div className="toggle-label-group">
+              <Hash size={18} className="toggle-icon" />
+              <div className="toggle-text">
+                <span className="toggle-label">Non-Monetary</span>
+                <span className="toggle-description">
+                  Value is a count, not dollars (e.g., lounge visits, companion passes)
+                </span>
+              </div>
+            </div>
+            <Switch
+              checked={formData.isNonMonetary}
+              onCheckedChange={(checked: boolean) => setFormData({
+                ...formData,
+                isNonMonetary: checked,
+              })}
+              disabled={isEdit}
+            />
+          </div>
+          {isEdit && (
+            <p className="field-note">Non-monetary setting cannot be changed after creation.</p>
           )}
         </div>
 

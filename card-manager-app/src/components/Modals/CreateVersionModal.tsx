@@ -7,7 +7,6 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import type { CreditCardDetails } from '@/types';
 import { CardService } from '@/services/card.service';
 import { normalizeEffectiveTo, EARLIEST_EFFECTIVE_DATE } from '@/types';
-import { getCurrentDate } from '@/utils/date-utils';
 import './CreateVersionModal.scss';
 
 interface CreateVersionModalProps {
@@ -42,7 +41,7 @@ export function CreateVersionModal({
   useEffect(() => {
     setFormData({
       VersionName: currentCard ? '' : 'V1',  // Default to V1 for first version
-      EffectiveFrom: getCurrentDate(),
+      EffectiveFrom: EARLIEST_EFFECTIVE_DATE,
       EffectiveTo: '',
     });
     setErrors({});

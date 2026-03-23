@@ -63,6 +63,9 @@ export interface CardCredit {
 
   // Anniversary-based credit field
   isAnniversaryBased?: boolean;  // true = anniversary-based, false/undefined = calendar
+
+  // Non-monetary credit field
+  isNonMonetary?: boolean;  // true = value is a count, not dollars (e.g., lounge visits)
 }
 
 /**

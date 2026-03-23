@@ -15,7 +15,7 @@ A Credit represents a statement credit, reimbursement, or dollar-value benefit a
 
 ### What Does NOT Qualify as a Credit?
 - Multipliers/rewards rates (e.g., "3X on dining") → use Multiplier
-- Non-monetary perks (e.g., "lounge access") → use Perk
+- Non-monetary perks without a trackable recurring count (e.g., "lounge access" without a visit limit) -> use Perk. Note: countable non-monetary benefits (e.g., "10 Priority Pass visits per year") ARE credits with `isNonMonetary: true`
 - Benefits with a cadence longer than annually (e.g., every 2 years, every 4 years) → use Perk
 
 ### Cadence Rule (CRITICAL)
@@ -309,6 +309,80 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureCredit.json`
 
 ---
 
+### isNonMonetary
+
+| Property | Value |
+|----------|-------|
+| **Type** | `boolean` |
+| **Required** | No (optional, defaults to false) |
+| **Description** | Indicates whether the credit value is a count/quantity rather than a dollar amount. |
+
+**When to Use `true`:**
+- The benefit is measured in uses, visits, passes, nights, subscriptions, or other non-dollar units
+- The value represents a COUNT of something, not a dollar amount
+- **The benefit RECURS** on a regular cadence (monthly, quarterly, semiannually, annually, or per card year)
+- Common examples:
+  - Priority Pass lounge visits (e.g., "10 complimentary visits per year")
+  - Companion certificates/passes that renew (e.g., "1 companion pass per card year")
+  - Free hotel night certificates that renew annually (e.g., "1 free night each card year")
+  - Lounge access visits with a cap (e.g., "4 visits per quarter")
+  - Recurring complimentary subscriptions (e.g., "DoorDash DashPass included each year you hold the card")
+  - Guest passes that renew (e.g., "2 guest passes per year")
+
+**When to Use `false` (default):**
+- The benefit is a dollar amount, statement credit, or cash value
+- Common examples:
+  - "$300 annual travel credit"
+  - "$10/month Uber Cash"
+  - "$12.95/month Walmart+ credit" (dollar credit toward subscription cost)
+
+**When to classify as a PERK instead (not a credit at all):**
+- The benefit is **one-time only** and does NOT renew/recur (e.g., "complimentary DoorDash DashPass for 1 year" as a sign-up bonus)
+- The benefit recurs less frequently than annually (e.g., "Global Entry credit every 4 years")
+- The benefit has no trackable count or value (e.g., "lounge access" without a visit limit)
+- **Key test:** Ask "does this benefit reset/renew on a regular cadence?" If NO, it is a PERK.
+
+**Key Distinction:** A subscription credit that gives a DOLLAR AMOUNT toward a subscription cost (e.g., "$12.95 monthly statement credit for Walmart+") is monetary (`isNonMonetary: false`). A subscription that is COMPLIMENTARY / included free AND renews each year (e.g., "complimentary DoorDash DashPass membership, renews annually") is non-monetary (`isNonMonetary: true`, Value: 1). A subscription given ONCE that does NOT renew (e.g., "1 year of DoorDash DashPass as a sign-up bonus") is a **PERK**, not a credit.
+
+**Behavior When `true`:**
+- Excluded from all dollar-value statistics (usedValue, possibleValue, unusedValue)
+- Included in expiring credit counts (but not expiring dollar values)
+- Displayed without `$` prefix in the UI
+- Must RECUR with a cadence of 1 year or shorter (monthly, quarterly, semiannually, annually)
+
+**Examples:**
+```json
+// Non-monetary credit (lounge visits)
+{
+  "Title": "Priority Pass Visits",
+  "Value": 10,
+  "TimePeriod": "annually",
+  "isAnniversaryBased": true,
+  "isNonMonetary": true
+}
+
+// Non-monetary credit (companion pass)
+{
+  "Title": "Companion Pass",
+  "Value": 1,
+  "TimePeriod": "annually",
+  "isAnniversaryBased": true,
+  "isNonMonetary": true
+}
+
+// Monetary credit (dollar statement credit)
+{
+  "Title": "$300 Annual Travel Credit",
+  "Value": 300,
+  "TimePeriod": "annually",
+  "isNonMonetary": false
+}
+```
+
+**Note:** When `isNonMonetary` is `true`, the `Value` field represents a count (e.g., 10 visits, 1 pass) rather than a dollar amount. This field is immutable after creation -- delete and recreate the credit to change it.
+
+---
+
 ### Requirements
 
 | Property | Value |
@@ -492,6 +566,7 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureCredit.json`
 | Value | Yes | number | No $, PER PERIOD |
 | TimePeriod | Yes | string | monthly/quarterly/semiannually/annually (lowercase) |
 | isAnniversaryBased | No | boolean | true = anniversary-based, false/undefined = calendar |
+| isNonMonetary | No | boolean | true = count/quantity, false/undefined = monetary |
 | Requirements | No | string | UPPERCASE for emphasis |
 | Details | No | string | Additional notes |
 | EffectiveFrom | Yes | string | YYYY-MM-DD |

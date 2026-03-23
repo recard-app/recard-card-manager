@@ -58,6 +58,7 @@ export interface AICreditResponse {
   Requirements: string;
   Details: string;
   isAnniversaryBased?: boolean;  // true = resets on card anniversary, false = calendar-based
+  isNonMonetary?: boolean;  // true = value is a count/quantity, not dollars
 }
 
 export const CREDIT_SCHEMA_FIELDS = [
@@ -70,6 +71,7 @@ export const CREDIT_SCHEMA_FIELDS = [
   'Requirements',
   'Details',
   'isAnniversaryBased',
+  'isNonMonetary',
 ] as const;
 
 export const VALID_CREDIT_TIME_PERIODS: CreditTimePeriod[] = [
@@ -206,6 +208,11 @@ export function isValidCreditResponse(obj: unknown): obj is AICreditResponse {
     return false;
   }
 
+  // Validate optional isNonMonetary if present
+  if (o.isNonMonetary !== undefined && typeof o.isNonMonetary !== 'boolean') {
+    return false;
+  }
+
   return true;
 }
 
@@ -327,6 +334,7 @@ export const AI_CREDIT_SCHEMA = {
   Requirements: 'string (UPPERCASE for critical requirements)',
   Details: 'string (additional notes)',
   isAnniversaryBased: 'boolean (true if credit resets on card anniversary date, false for calendar-based - default false)',
+  isNonMonetary: 'boolean (true if value is a count/quantity, not dollars - e.g., lounge visits, companion passes, hotel nights, complimentary subscriptions - default false)',
 };
 
 export const AI_PERK_SCHEMA = {

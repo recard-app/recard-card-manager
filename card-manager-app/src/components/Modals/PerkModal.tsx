@@ -8,7 +8,6 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import type { CardPerk } from '@/types';
 import { ComponentService } from '@/services/component.service';
 import { normalizeEffectiveTo, denormalizeEffectiveTo, EARLIEST_EFFECTIVE_DATE } from '@/types';
-import { getCurrentDate } from '@/utils/date-utils';
 import { CATEGORIES, SUBCATEGORIES } from '@/constants/form-options';
 import { FileJson } from 'lucide-react';
 import './PerkModal.scss';
@@ -64,7 +63,7 @@ export function PerkModal({ open, onOpenChange, referenceCardId, perk, onSuccess
         Description: '',
         Requirements: '',
         Details: '',
-        EffectiveFrom: getCurrentDate(),
+        EffectiveFrom: EARLIEST_EFFECTIVE_DATE,
         EffectiveTo: '',
       });
     }
