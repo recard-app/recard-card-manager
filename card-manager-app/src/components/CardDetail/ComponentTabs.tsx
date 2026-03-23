@@ -113,7 +113,13 @@ function CreditsList({ credits, onEdit, onDelete }: CreditsListProps) {
           <div className="component-details">
             <div className="detail-row">
               <span className="label">Value:</span>
-              <span className="value">{credit.Value}</span>
+              <span className="value">
+                {credit.isNonMonetary ? (
+                  <>{credit.Value} <span className="non-monetary-tag">non-monetary</span></>
+                ) : (
+                  <>${credit.Value}</>
+                )}
+              </span>
             </div>
             <div className="detail-row">
               <span className="label">Time Period:</span>

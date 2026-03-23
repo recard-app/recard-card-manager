@@ -130,6 +130,19 @@
 
     .value {
       color: $neutral-gray-800;
+
+      .non-monetary-tag {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 500;
+        color: $neutral-gray-600;
+        background: $neutral-gray-100;
+        border: 1px solid $neutral-gray-200;
+        padding: 1px 6px;
+        border-radius: $border-radius-sm;
+        margin-left: 4px;
+        vertical-align: middle;
+      }
     }
 
     .multiplier-type-value {
