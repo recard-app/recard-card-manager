@@ -913,7 +913,7 @@ export async function generateData(params: GenerateParams): Promise<GenerationRe
           config: {
             temperature: 0.1, // Low temperature for more deterministic JSON output
             topP: 0.8,
-            maxOutputTokens: 8192, // Increased for full card data with all credits/perks/multipliers
+            maxOutputTokens: 65536, // Large limit to handle batch generation of 20+ perks/credits/multipliers
           },
         });
 
