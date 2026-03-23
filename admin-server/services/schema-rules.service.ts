@@ -17,16 +17,19 @@ const FILE_MAP: Record<SchemaRuleType, string> = {
 };
 
 /**
- * Extracts "What Qualifies" and "What Does NOT Qualify" sections
+ * Extracts "What Qualifies", classification rules, and "What Does NOT Qualify" sections
  */
 function extractQualificationRules(content: string): string {
   const qualifies = content.match(/### What Qualifies[\s\S]*?(?=###|---)/);
   const notQualifies = content.match(/### What Does NOT Qualify[\s\S]*?(?=###|---)/);
-  
+  // Also extract the Redeemable vs Auto-Applied / Auto-Applied vs Redeemable section
+  const classificationRules = content.match(/### (?:Redeemable vs Auto-Applied|Auto-Applied vs Redeemable)[\s\S]*?(?=###|---)/);
+
   let result = '';
   if (qualifies) result += qualifies[0].trim() + '\n\n';
+  if (classificationRules) result += classificationRules[0].trim() + '\n\n';
   if (notQualifies) result += notQualifies[0].trim();
-  
+
   return result.trim();
 }
 
@@ -104,6 +107,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
     rules.push('- For hotel programs/status: Category="travel", SubCategory="hotels" (MUST include the s)');
     rules.push('- For streaming/entertainment: Category="general", SubCategory="entertainment" is acceptable');
     rules.push('- PORTAL BOOKING: When perk requires booking through issuer/network service (Visa Luxury Hotel Collection, Amex Travel, Chase Travel, etc.), use Category="travel", SubCategory="portal"');
+    rules.push('- SEPARATION: Do NOT include benefits that clearly belong in Credits (redeemable statement credits, dollar-value benefits, trackable passes/vouchers). If unsure, include it (better to duplicate than miss)');
   }
 
   if (type === 'rotating-categories') {

@@ -279,6 +279,26 @@ ${JSON.stringify(PERK_SCHEMA, null, 2)}
 Output format: JSON array, e.g., [{...}, {...}, {...}]
 If no perks are found, return an empty array: []
 
+=== CREDIT vs PERK SEPARATION (CRITICAL) ===
+Do NOT include benefits that belong in Credits. If a benefit is redeemable (the cardholder must claim, spend, or use it), has a specific dollar value or trackable count, and recurs on a cadence of 1 year or less -- it is a CREDIT, not a perk. Do not duplicate it here.
+
+Examples of things that are CREDITS (do NOT include as perks):
+- "$300 annual travel credit" (redeemable statement credit)
+- "$10/month Uber Cash" (redeemable cash)
+- "10 Priority Pass lounge visits per year" (redeemable passes)
+- "$50 semiannual Saks credit" (redeemable statement credit)
+- "1 free hotel night certificate annually" (redeemable certificate)
+
+Examples of things that ARE perks (include these):
+- Hilton Gold status (auto-applied)
+- Recurring discount on a membership (auto-applied)
+- Complimentary DoorDash DashPass (auto-activated)
+- 10,000 bonus points on card anniversary (auto-deposited)
+- Trip cancellation insurance (passive benefit)
+
+If UNSURE whether something is a credit or perk, include it here (better to duplicate than miss).
+=====================================
+
 ${categoryInfo}
 
 === PERKS TO EXCLUDE (DO NOT CREATE) ===
@@ -302,6 +322,11 @@ ${schemaRules}
 
 Extract perk/benefit details and output a JSON object with the following schema:
 ${JSON.stringify(PERK_SCHEMA, null, 2)}
+
+=== CREDIT vs PERK SEPARATION (CRITICAL) ===
+Do NOT include benefits that belong in Credits. If a benefit is redeemable (the cardholder must claim, spend, or use it), has a specific dollar value or trackable count, and recurs on a cadence of 1 year or less -- it is a CREDIT, not a perk. Do not duplicate it here.
+If UNSURE whether something is a credit or perk, include it here (better to duplicate than miss).
+=====================================
 
 ${categoryInfo}
 

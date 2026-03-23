@@ -35,10 +35,14 @@ The key test for whether a recurring benefit is a Credit or a Perk is: **Does th
 | Marriott Silver Elite status | **Perk** | Auto-applied to your account |
 | Complimentary DoorDash DashPass access | **Perk** | Membership auto-activated |
 | $5/month discount on a streaming service | **Perk** | Discount applied automatically |
+| 10,000 bonus points every card anniversary | **Perk** | Points auto-deposited, no action needed |
+| 5,000 miles annually for holding the card | **Perk** | Auto-deposited, cardholder does nothing |
 
 **Discounts are always Perks, NOT Credits** -- even if they are recurring. A discount reduces the price of something; it is not a redeemable benefit with a trackable value the cardholder claims.
 
 **Statuses are always Perks, NOT Credits** -- even if they recur annually. A hotel or airline status upgrade is auto-applied to the cardholder's account; they do not "redeem" it.
+
+**Auto-deposited points/rewards are always Perks, NOT Credits** -- even if they recur annually. If points, miles, or rewards are automatically deposited into the cardholder's account without any action required (e.g., "10,000 bonus points every card anniversary", "5,000 points annually just for holding the card"), this is a Perk. The cardholder does nothing to receive them.
 
 ### What Does NOT Qualify as a Credit?
 - Multipliers/rewards rates (e.g., "3X on dining") → use Multiplier
@@ -47,6 +51,10 @@ The key test for whether a recurring benefit is a Credit or a Perk is: **Does th
 - **Auto-applied discounts** (e.g., recurring discount on a subscription or membership) → use Perk
 - **Status upgrades** (e.g., Hilton Gold, Marriott Silver Elite) → use Perk, even if they renew annually
 - **Auto-activated memberships or access** where the cardholder does not redeem a specific credit or pass → use Perk
+- **Auto-deposited points or rewards** (e.g., "10,000 bonus points on card anniversary") → use Perk, even if they recur annually. The cardholder takes no action to receive them.
+
+### Separation Rule (CRITICAL)
+Credits and perks must be kept **separate**. If a benefit clearly meets the criteria for a credit (redeemable, has a dollar value or trackable count, recurring cadence of 1 year or less), it belongs in credits ONLY -- do not also place it in perks. If you are **unsure** whether something is a credit or a perk, include it in **both** credits and perks rather than risk missing it entirely.
 
 ### Cadence Rule (CRITICAL)
 Credits MUST have a recurring cadence of one year or less:

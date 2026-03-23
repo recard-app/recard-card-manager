@@ -17,6 +17,7 @@ A Perk represents a non-monetary benefit, feature, or service associated with a 
 - **Auto-applied discounts** on memberships or subscriptions (e.g., recurring discount on Target Circle membership, reduced price on a streaming service)
 - **Status upgrades** that are automatically applied to the cardholder's account (e.g., Hilton Gold status, Marriott Silver Elite)
 - **Auto-activated memberships** where the cardholder doesn't redeem a specific credit (e.g., complimentary DoorDash DashPass)
+- **Auto-deposited points or rewards** that the cardholder receives without taking any action (e.g., "10,000 bonus points on card anniversary", "5,000 miles annually for holding the card")
 
 ### Auto-Applied vs Redeemable (CRITICAL)
 The key test for whether a recurring benefit is a Perk or a Credit is: **Is it auto-applied/passive, or does the cardholder need to redeem it?**
@@ -32,6 +33,7 @@ The key test for whether a recurring benefit is a Perk or a Credit is: **Is it a
 | **Auto-applied discounts** | $5/month off Target Circle, reduced streaming price | Discount applied automatically -- not a redeemable credit |
 | **Auto-activated memberships** | Complimentary DoorDash DashPass, Instacart+ | Membership is activated -- cardholder doesn't claim a credit |
 | **Recurring subscription discounts** | Discounted Walmart+ membership | Price reduction, not a statement credit to redeem |
+| **Auto-deposited points/rewards** | 10,000 bonus points on anniversary, 5,000 miles yearly | Points deposited automatically -- cardholder does nothing |
 
 **These are Credits (not Perks):**
 
@@ -42,7 +44,10 @@ The key test for whether a recurring benefit is a Perk or a Credit is: **Is it a
 | **Statement credits** | $300 travel credit | Must make purchases to use it |
 | **Redeemable cash/points** | $10/month Uber Cash | Must spend the cash |
 
-**Key principle:** Discounts are never credits, even if recurring. Statuses are never credits, even if they renew annually. If the cardholder doesn't actively "redeem" or "claim" the benefit, it's a perk.
+**Key principle:** Discounts are never credits, even if recurring. Statuses are never credits, even if they renew annually. Auto-deposited points/rewards are never credits, even if they recur yearly. If the cardholder doesn't actively "redeem" or "claim" the benefit, it's a perk.
+
+### Separation Rule (CRITICAL)
+Credits and perks must be kept **separate**. If a benefit clearly meets the criteria for a credit (redeemable, has a dollar value or trackable count, recurring cadence of 1 year or less), it belongs in credits -- do NOT also include it as a perk. Only classify something as a perk if it is truly auto-applied/passive. If you are **unsure** whether something is a credit or a perk, include it in **both** rather than risk missing it entirely.
 
 ### What Does NOT Qualify as a Perk?
 - Statement credits with dollar values → use Credit
