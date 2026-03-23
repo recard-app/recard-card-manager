@@ -12,11 +12,41 @@ A Credit represents a statement credit, reimbursement, or dollar-value benefit a
 - Statement credits with a specific dollar value
 - Reimbursements for specific purchases
 - Dollar-value benefits that appear on your statement
+- **Redeemable benefits**: passes, vouchers, or free access that the cardholder must actively claim or use (e.g., "10 Priority Pass visits per year", "1 companion pass per card year", "1 free hotel night annually")
+- Benefits where something is **completely free** and the cardholder redeems/uses it on a recurring basis
+
+### Redeemable vs Auto-Applied (CRITICAL)
+The key test for whether a recurring benefit is a Credit or a Perk is: **Does the cardholder need to redeem, claim, or actively use it?**
+
+- **Credits** = Benefits that must be **redeemed or claimed**. The cardholder takes an action to use the benefit each time (e.g., using a lounge pass, booking a free night, spending a statement credit).
+- **Perks** = Benefits that are **auto-applied or passively received**. The cardholder gets the benefit without needing to redeem anything (e.g., status upgrades, recurring discounts, automatic membership access).
+
+**Examples:**
+
+| Benefit | Classification | Why |
+|---------|---------------|-----|
+| 10 Priority Pass lounge visits/year | **Credit** (isNonMonetary: true) | Must redeem each visit |
+| 1 companion pass per card year | **Credit** (isNonMonetary: true) | Must redeem the pass |
+| 1 free hotel night certificate annually | **Credit** (isNonMonetary: true) | Must book/redeem the night |
+| $300 annual travel credit | **Credit** | Must make purchases to use it |
+| $10/month Uber Cash | **Credit** | Must spend the Uber Cash |
+| Hilton Gold status | **Perk** | Auto-applied to your account |
+| Recurring discount on Target membership | **Perk** | Discount applied automatically |
+| Marriott Silver Elite status | **Perk** | Auto-applied to your account |
+| Complimentary DoorDash DashPass access | **Perk** | Membership auto-activated |
+| $5/month discount on a streaming service | **Perk** | Discount applied automatically |
+
+**Discounts are always Perks, NOT Credits** -- even if they are recurring. A discount reduces the price of something; it is not a redeemable benefit with a trackable value the cardholder claims.
+
+**Statuses are always Perks, NOT Credits** -- even if they recur annually. A hotel or airline status upgrade is auto-applied to the cardholder's account; they do not "redeem" it.
 
 ### What Does NOT Qualify as a Credit?
 - Multipliers/rewards rates (e.g., "3X on dining") → use Multiplier
 - Non-monetary perks without a trackable recurring count (e.g., "lounge access" without a visit limit) -> use Perk. Note: countable non-monetary benefits (e.g., "10 Priority Pass visits per year") ARE credits with `isNonMonetary: true`
 - Benefits with a cadence longer than annually (e.g., every 2 years, every 4 years) → use Perk
+- **Auto-applied discounts** (e.g., recurring discount on a subscription or membership) → use Perk
+- **Status upgrades** (e.g., Hilton Gold, Marriott Silver Elite) → use Perk, even if they renew annually
+- **Auto-activated memberships or access** where the cardholder does not redeem a specific credit or pass → use Perk
 
 ### Cadence Rule (CRITICAL)
 Credits MUST have a recurring cadence of one year or less:

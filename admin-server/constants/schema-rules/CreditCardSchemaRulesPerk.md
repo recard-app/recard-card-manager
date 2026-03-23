@@ -14,10 +14,41 @@ A Perk represents a non-monetary benefit, feature, or service associated with a 
 - Memberships and subscriptions (when there's no specific dollar credit)
 - Status benefits (hotel/airline status)
 - Convenience features (TSA PreCheck, Global Entry credit eligibility)
+- **Auto-applied discounts** on memberships or subscriptions (e.g., recurring discount on Target Circle membership, reduced price on a streaming service)
+- **Status upgrades** that are automatically applied to the cardholder's account (e.g., Hilton Gold status, Marriott Silver Elite)
+- **Auto-activated memberships** where the cardholder doesn't redeem a specific credit (e.g., complimentary DoorDash DashPass)
+
+### Auto-Applied vs Redeemable (CRITICAL)
+The key test for whether a recurring benefit is a Perk or a Credit is: **Is it auto-applied/passive, or does the cardholder need to redeem it?**
+
+- **Perks** = Benefits that are **auto-applied or passively received**. The cardholder gets the benefit without needing to redeem anything.
+- **Credits** = Benefits that must be **redeemed or claimed**. The cardholder takes an action to use the benefit each period.
+
+**These are always Perks (never Credits):**
+
+| Benefit Type | Example | Why It's a Perk |
+|-------------|---------|-----------------|
+| **Status upgrades** | Hilton Gold status, Marriott Silver Elite | Auto-applied to loyalty account -- not redeemed |
+| **Auto-applied discounts** | $5/month off Target Circle, reduced streaming price | Discount applied automatically -- not a redeemable credit |
+| **Auto-activated memberships** | Complimentary DoorDash DashPass, Instacart+ | Membership is activated -- cardholder doesn't claim a credit |
+| **Recurring subscription discounts** | Discounted Walmart+ membership | Price reduction, not a statement credit to redeem |
+
+**These are Credits (not Perks):**
+
+| Benefit Type | Example | Why It's a Credit |
+|-------------|---------|-------------------|
+| **Passes/vouchers** | 10 Priority Pass visits/year | Must redeem each visit |
+| **Free certificates** | 1 free hotel night annually | Must book/redeem the night |
+| **Statement credits** | $300 travel credit | Must make purchases to use it |
+| **Redeemable cash/points** | $10/month Uber Cash | Must spend the cash |
+
+**Key principle:** Discounts are never credits, even if recurring. Statuses are never credits, even if they renew annually. If the cardholder doesn't actively "redeem" or "claim" the benefit, it's a perk.
 
 ### What Does NOT Qualify as a Perk?
 - Statement credits with dollar values → use Credit
 - Multipliers/rewards rates → use Multiplier
+- **Redeemable passes, vouchers, or certificates** with a trackable count that reset on a regular cadence → use Credit with `isNonMonetary: true`
+- **Dollar-value benefits** the cardholder must spend or claim → use Credit
 
 ### Perks to EXCLUDE (Do NOT create entries for these)
 The following are either redundant (covered elsewhere) or standard for all cards and should NOT be added as perks:
@@ -38,9 +69,11 @@ The following are either redundant (covered elsewhere) or standard for all cards
 - Basic insurance (purchase protection, extended warranty) and support are too ubiquitous to be meaningful differentiators
 
 ### Gray Area: Credits vs Perks
-Some benefits blur the line:
+Some benefits blur the line. Use the **redeemable vs auto-applied** test:
 - **TSA PreCheck/Global Entry Credit** - Almost always a Perk because the cadence is every 4-5 years. Use Perk with Category="travel", SubCategory="tsa".
-- **Streaming Subscriptions** - If there's a specific dollar credit that resets monthly/quarterly/semiannually/annually, it's a Credit. If it's "complimentary access," it's a Perk.
+- **Streaming Subscriptions** - If there's a specific dollar **statement credit** the cardholder redeems (e.g., "$12.95/month credit toward Walmart+"), it's a Credit. If it's a **discount** on the subscription price or **complimentary access** that's auto-applied, it's a Perk.
+- **Hotel/Airline Status** - Always a Perk. Status is auto-applied to the cardholder's loyalty account. Even if it renews annually, the cardholder does not "redeem" a status.
+- **Membership Discounts** - Always a Perk. A recurring discount on a membership (e.g., "$5 off Target Circle each month") is auto-applied, not redeemed. However, a statement credit that reimburses the full cost of a membership (e.g., "$12.95 statement credit for Walmart+ membership fee") IS a Credit because the cardholder pays and gets reimbursed.
 
 ### Multi-Year Cadence Benefits (CRITICAL)
 **Any benefit with a cadence longer than annually belongs in Perks, NOT Credits.**
@@ -589,9 +622,11 @@ Here are the most common perks found on credit cards:
 
 ## Difference Between Perks, Credits, and Multipliers
 
-| Type | Has Dollar Value? | Appears on Statement? | Example |
-|------|------------------|----------------------|---------|
-| **Credit** | Yes, specific $ | Yes, as credit | "$300 travel credit" |
-| **Multiplier** | No | Yes, as rewards | "3X points on dining" |
-| **Perk** | No | No | "Priority Pass access" |
+| Type | Has Dollar Value? | Appears on Statement? | Redeemable? | Example |
+|------|------------------|----------------------|-------------|---------|
+| **Credit** | Yes, specific $ or count | Yes, as credit | Yes -- must claim/use | "$300 travel credit", "10 lounge visits" |
+| **Multiplier** | No | Yes, as rewards | N/A | "3X points on dining" |
+| **Perk** | No | No | No -- auto-applied | "Hilton Gold status", "DoorDash DashPass access" |
+
+**Key distinction:** Credits are **redeemed** (cardholder takes action to claim). Perks are **auto-applied** (cardholder receives passively). Discounts and statuses are always perks, even if recurring. Passes, vouchers, and statement credits are always credits.
 
