@@ -37,12 +37,21 @@ The key test for whether a recurring benefit is a Credit or a Perk is: **Does th
 | $5/month discount on a streaming service | **Perk** | Discount applied automatically |
 | 10,000 bonus points every card anniversary | **Perk** | Points auto-deposited, no action needed |
 | 5,000 miles annually for holding the card | **Perk** | Auto-deposited, cardholder does nothing |
+| 1,500 PQP each year | **Perk** | Qualifying points auto-awarded, not redeemed |
+| Earn 1 PQP per $15 spent | **Perk** | Spending-based earning rate, not a redeemable credit |
 
 **Discounts are always Perks, NOT Credits** -- even if they are recurring. A discount reduces the price of something; it is not a redeemable benefit with a trackable value the cardholder claims.
 
 **Statuses are always Perks, NOT Credits** -- even if they recur annually. A hotel or airline status upgrade is auto-applied to the cardholder's account; they do not "redeem" it.
 
-**Auto-deposited points/rewards are always Perks, NOT Credits** -- even if they recur annually. If points, miles, or rewards are automatically deposited into the cardholder's account without any action required (e.g., "10,000 bonus points every card anniversary", "5,000 points annually just for holding the card"), this is a Perk. The cardholder does nothing to receive them.
+**Auto-awarded points, miles, qualifying points, or rewards are always Perks, NOT Credits** -- even if they recur annually and have a specific numeric value. If points are automatically deposited/awarded to the cardholder's account without any action required, this is a Perk. This includes:
+- Bonus points/miles deposited on card anniversary (e.g., "10,000 bonus miles each year")
+- Premier qualifying points/miles awarded automatically (e.g., "1,500 PQP each year", "500 PQF each year")
+- Status-qualifying metrics (PQP, PQF, EQM, EQS, MQM, MQS, etc.)
+- Points earned per dollar spent (e.g., "earn 1 PQP per $15 spent") -- this is a spending-based earning rate, NOT a redeemable credit
+- Any points/miles the cardholder receives just for holding the card or spending on it
+
+These are NOT "countable non-monetary benefits" even though they have numbers. The key distinction: a lounge visit pass must be actively redeemed (credit), but PQP/bonus points just appear in your account (perk).
 
 ### What Does NOT Qualify as a Credit?
 - Multipliers/rewards rates (e.g., "3X on dining") → use Multiplier
@@ -51,7 +60,7 @@ The key test for whether a recurring benefit is a Credit or a Perk is: **Does th
 - **Auto-applied discounts** (e.g., recurring discount on a subscription or membership) → use Perk
 - **Status upgrades** (e.g., Hilton Gold, Marriott Silver Elite) → use Perk, even if they renew annually
 - **Auto-activated memberships or access** where the cardholder does not redeem a specific credit or pass → use Perk
-- **Auto-deposited points or rewards** (e.g., "10,000 bonus points on card anniversary") → use Perk, even if they recur annually. The cardholder takes no action to receive them.
+- **Auto-awarded points, miles, or qualifying points** (e.g., "10,000 bonus points on card anniversary", "1,500 PQP each year", "earn 1 PQP per $15 spent") → use Perk. These are passively received, not redeemed. Includes all status-qualifying metrics (PQP, PQF, EQM, EQS, MQM, MQS, etc.).
 
 ### Separation Rule (CRITICAL)
 Credits and perks must be kept **separate**. If a benefit clearly meets the criteria for a credit (redeemable, has a dollar value or trackable count, recurring cadence of 1 year or less), it belongs in credits ONLY -- do not also place it in perks. If you are **unsure** whether something is a credit or a perk, include it in **both** credits and perks rather than risk missing it entirely.

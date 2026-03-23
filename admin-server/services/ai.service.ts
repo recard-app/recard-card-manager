@@ -201,14 +201,13 @@ The isNonMonetary field indicates the credit value is a count/quantity, not a do
 
 SET isNonMonetary: true WHEN:
 - The benefit is measured in uses, visits, passes, nights, subscriptions, or other non-dollar units
-- The value represents a COUNT of something, not a dollar amount
+- The value represents a COUNT of something the cardholder must ACTIVELY REDEEM/USE, not a dollar amount
 - The benefit RECURS every year (or more frequently) -- it renews/resets on a regular cadence
 - Common examples:
   - Priority Pass lounge visits (e.g., "10 complimentary visits per year" -> Value: 10, annually)
   - Companion certificates/passes (e.g., "1 companion pass per card year" -> Value: 1, annually)
   - Free hotel night certificates that renew annually (e.g., "1 free night each card year" -> Value: 1, annually)
   - Lounge access visits with a cap (e.g., "4 visits per quarter" -> Value: 4, quarterly)
-  - Recurring complimentary subscriptions (e.g., "DoorDash DashPass included each year you hold the card" -> Value: 1, annually)
   - Guest passes that renew (e.g., "2 guest passes per year" -> Value: 2, annually)
 
 SET isNonMonetary: false (DEFAULT) WHEN:
@@ -224,7 +223,13 @@ CLASSIFY AS PERK (NOT a credit at all) WHEN:
 - The benefit is one-time only and does NOT renew/recur (e.g., "complimentary DoorDash DashPass for 1 year" as a sign-up bonus -- this is a one-time perk, not a recurring credit)
 - The benefit recurs less frequently than annually (e.g., "Global Entry credit every 4 years")
 - The benefit has no trackable count or value (e.g., "lounge access" without a visit limit)
-- KEY TEST: Ask "does this benefit reset/renew on a regular cadence (monthly, quarterly, semiannually, annually, or per card year)?" If NO, it is a PERK, not a credit.
+- **The benefit is auto-awarded points, miles, qualifying points, or rewards that are deposited/credited to the cardholder's account automatically without any action required.** This includes:
+  - Bonus points/miles deposited annually (e.g., "10,000 bonus miles on card anniversary")
+  - Premier qualifying points/miles awarded automatically (e.g., "1,500 PQP each year", "500 PQF each year")
+  - Points earned per dollar spent (e.g., "earn 1 PQP per $15 spent") -- this is a multiplier/earning rate OR a perk, NEVER a credit
+  - Status-qualifying metrics of any kind (PQP, PQF, EQM, EQS, etc.)
+  - Any points/miles the cardholder receives just for holding the card or spending on it
+- KEY TEST: Ask "does the cardholder need to actively redeem, claim, or use this benefit?" If the answer is NO (points just show up in their account), it is a PERK, not a credit.
 
 NOTE: A subscription credit that gives you a DOLLAR AMOUNT toward the subscription cost (e.g., "$12.95 monthly statement credit for Walmart+") is monetary (isNonMonetary: false). A subscription that is COMPLIMENTARY / included free AND renews each year (e.g., "complimentary DoorDash DashPass membership, renews annually") is non-monetary (isNonMonetary: true, Value: 1). A subscription that is given ONCE and does NOT renew (e.g., "1 year of DoorDash DashPass as a sign-up bonus") is a PERK, not a credit.
 
@@ -294,6 +299,9 @@ Examples of things that ARE perks (include these):
 - Recurring discount on a membership (auto-applied)
 - Complimentary DoorDash DashPass (auto-activated)
 - 10,000 bonus points on card anniversary (auto-deposited)
+- 1,500 PQP each year (qualifying points auto-awarded)
+- Earn 1 PQP per $15 spent (spending-based earning rate, not redeemable)
+- Any auto-awarded points, miles, or status-qualifying metrics (PQP, PQF, EQM, EQS, MQM, MQS, etc.)
 - Trip cancellation insurance (passive benefit)
 
 If UNSURE whether something is a credit or perk, include it here (better to duplicate than miss).

@@ -17,7 +17,7 @@ A Perk represents a non-monetary benefit, feature, or service associated with a 
 - **Auto-applied discounts** on memberships or subscriptions (e.g., recurring discount on Target Circle membership, reduced price on a streaming service)
 - **Status upgrades** that are automatically applied to the cardholder's account (e.g., Hilton Gold status, Marriott Silver Elite)
 - **Auto-activated memberships** where the cardholder doesn't redeem a specific credit (e.g., complimentary DoorDash DashPass)
-- **Auto-deposited points or rewards** that the cardholder receives without taking any action (e.g., "10,000 bonus points on card anniversary", "5,000 miles annually for holding the card")
+- **Auto-awarded points, miles, or qualifying points** that the cardholder receives without taking any action (e.g., "10,000 bonus points on card anniversary", "1,500 PQP each year", "earn 1 PQP per $15 spent"). This includes all status-qualifying metrics (PQP, PQF, EQM, EQS, MQM, MQS, etc.) and bonus points/miles for holding the card or spending on it.
 
 ### Auto-Applied vs Redeemable (CRITICAL)
 The key test for whether a recurring benefit is a Perk or a Credit is: **Is it auto-applied/passive, or does the cardholder need to redeem it?**
@@ -33,7 +33,7 @@ The key test for whether a recurring benefit is a Perk or a Credit is: **Is it a
 | **Auto-applied discounts** | $5/month off Target Circle, reduced streaming price | Discount applied automatically -- not a redeemable credit |
 | **Auto-activated memberships** | Complimentary DoorDash DashPass, Instacart+ | Membership is activated -- cardholder doesn't claim a credit |
 | **Recurring subscription discounts** | Discounted Walmart+ membership | Price reduction, not a statement credit to redeem |
-| **Auto-deposited points/rewards** | 10,000 bonus points on anniversary, 5,000 miles yearly | Points deposited automatically -- cardholder does nothing |
+| **Auto-awarded points/miles/qualifying points** | 10,000 bonus points on anniversary, 1,500 PQP each year, earn 1 PQP per $15 spent | Points/qualifying metrics awarded automatically -- cardholder does nothing to receive them |
 
 **These are Credits (not Perks):**
 
