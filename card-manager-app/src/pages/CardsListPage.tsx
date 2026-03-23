@@ -184,7 +184,7 @@ export function CardsListPage() {
 
   // Local search input state with debounced URL sync
   const [searchInput, setSearchInput] = useState(searchQuery);
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep local input in sync if URL changes externally (e.g. back/forward)
   useEffect(() => {
@@ -210,14 +210,14 @@ export function CardsListPage() {
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
-    clearTimeout(searchTimerRef.current);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     searchTimerRef.current = setTimeout(() => {
       updateParams({ q: value || null });
     }, 300);
   };
 
   // Cleanup timer on unmount
-  useEffect(() => () => clearTimeout(searchTimerRef.current), []);
+  useEffect(() => () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); }, []);
 
   const setStatusFilter = useCallback((vals: string[]) => {
     updateParams({ status: vals.length > 0 ? vals.join(',') : null });
@@ -236,7 +236,7 @@ export function CardsListPage() {
 
   const clearFilters = useCallback(() => {
     setSearchInput('');
-    clearTimeout(searchTimerRef.current);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     updateParams({ q: null, status: null, updated: null, chars: null, showId: null });
   }, [updateParams]);
 
