@@ -125,7 +125,7 @@ function CreditsList({ credits, onEdit, onDelete }: CreditsListProps) {
               <span className="label">Time Period:</span>
               <span className="value">
                 {credit.TimePeriod}
-                {credit.isAnniversaryBased && ' (anniversary based)'}
+                {credit.isAnniversaryBased && <span className="non-monetary-tag">anniversary based</span>}
               </span>
             </div>
             <div className="detail-row">
