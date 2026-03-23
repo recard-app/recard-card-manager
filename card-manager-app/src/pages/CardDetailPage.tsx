@@ -423,18 +423,20 @@ export function CardDetailPage() {
       <PageHeader
         title={displayName}
         backTo="/cards"
+        titleExtra={
+          <span className="card-issuer-badge">
+            <span className="card-issuer">• {displayIssuer}</span>
+            {hasVersions ? (
+              <Badge variant={isActiveVersion ? 'success' : 'default'}>
+                {isActiveVersion ? 'Active' : 'Inactive'}
+              </Badge>
+            ) : (
+              <Badge variant="warning">No Versions</Badge>
+            )}
+          </span>
+        }
         actions={
           <>
-            <span className="card-issuer-badge">
-              <span className="card-issuer">• {displayIssuer}</span>
-              {hasVersions ? (
-                <Badge variant={isActiveVersion ? 'success' : 'default'}>
-                  {isActiveVersion ? 'Active' : 'Inactive'}
-                </Badge>
-              ) : (
-                <Badge variant="warning">No Versions</Badge>
-              )}
-            </span>
             <Button
               size="sm"
               variant="outline"

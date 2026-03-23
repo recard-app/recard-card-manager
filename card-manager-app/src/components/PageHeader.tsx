@@ -6,12 +6,13 @@ import './PageHeader.scss';
 
 interface PageHeaderProps {
   title: string;
+  titleExtra?: ReactNode;
   actions?: ReactNode;
   backTo?: string;
   className?: string;
 }
 
-export function PageHeader({ title, actions, backTo, className }: PageHeaderProps) {
+export function PageHeader({ title, titleExtra, actions, backTo, className }: PageHeaderProps) {
   return (
     <div className={`page-header${className ? ` ${className}` : ''}`}>
       <div className="header-left">
@@ -26,6 +27,7 @@ export function PageHeader({ title, actions, backTo, className }: PageHeaderProp
         </Link>
         <span className="header-separator">|</span>
         <h1>{title}</h1>
+        {titleExtra}
       </div>
       {actions && <div className="header-actions">{actions}</div>}
     </div>
