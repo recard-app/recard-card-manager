@@ -39,8 +39,18 @@ The key test for whether a recurring benefit is a Credit or a Perk is: **Does th
 | 5,000 miles annually for holding the card | **Perk** | Auto-deposited, cardholder does nothing |
 | 1,500 PQP each year | **Perk** | Qualifying points auto-awarded, not redeemed |
 | Earn 1 PQP per $15 spent | **Perk** | Spending-based earning rate, not a redeemable credit |
+| Use Bilt Cash toward hotel bookings | **Perk** | Requires spending earned points/cash, not a free credit |
+| Redeem Bilt Cash toward fitness class | **Perk** | Requires spending earned points/cash, not a free credit |
+| Cover guest fees by redeeming $35 Bilt Cash | **Perk** | Requires spending earned points/cash, not a free credit |
 
 **Discounts are always Perks, NOT Credits** -- even if they are recurring. A discount reduces the price of something; it is not a redeemable benefit with a trackable value the cardholder claims.
+
+**Benefits that require redeeming special points/cash are always Perks, NOT Credits** -- if using the benefit requires the cardholder to spend proprietary points, cash, or rewards currency (e.g., "requires redeeming Bilt Cash", "redeem points toward...", "use points as a credit toward..."), it is a Perk. A credit should be something the cardholder receives for free or as a statement credit -- not something they pay for with their own earned points/cash. Examples:
+- "Use Bilt Cash as a credit toward hotel bookings" → **Perk** (requires spending Bilt Cash)
+- "Redeem Bilt Cash toward a fitness class" → **Perk** (requires spending Bilt Cash)
+- "Cover guest pass fees by redeeming $35 of Bilt Cash per person" → **Perk** (requires spending Bilt Cash)
+- "Redeem points for statement credit toward travel" → **Perk** (requires spending points)
+- "$300 annual travel credit" → **Credit** (free statement credit, no points spent)
 
 **Statuses are always Perks, NOT Credits** -- even if they recur annually. A hotel or airline status upgrade is auto-applied to the cardholder's account; they do not "redeem" it.
 
@@ -61,9 +71,13 @@ These are NOT "countable non-monetary benefits" even though they have numbers. T
 - **Status upgrades** (e.g., Hilton Gold, Marriott Silver Elite) → use Perk, even if they renew annually
 - **Auto-activated memberships or access** where the cardholder does not redeem a specific credit or pass → use Perk
 - **Auto-awarded points, miles, or qualifying points** (e.g., "10,000 bonus points on card anniversary", "1,500 PQP each year", "earn 1 PQP per $15 spent") → use Perk. These are passively received, not redeemed. Includes all status-qualifying metrics (PQP, PQF, EQM, EQS, MQM, MQS, etc.).
+- **Benefits requiring redemption of points/cash** (e.g., "redeem Bilt Cash toward hotel bookings", "use points as credit toward travel", "requires redeeming $35 of Bilt Cash") → use Perk. If the cardholder must spend their own earned points or proprietary cash to access the benefit, it is NOT a free credit.
 
 ### Separation Rule (CRITICAL)
 Credits and perks must be kept **separate**. If a benefit clearly meets the criteria for a credit (redeemable, has a dollar value or trackable count, recurring cadence of 1 year or less), it belongs in credits ONLY -- do not also place it in perks. If you are **unsure** whether something is a credit or a perk, include it in **both** credits and perks rather than risk missing it entirely.
+
+### Multi-Card Pages (CRITICAL)
+Source text may list benefits for **multiple cards** on the same page. Only extract benefits that apply to the **specific card being entered**. If a benefit says something like "Platinum Card only", "exclusive to Gold Card", "available on Reserve card", or similar language restricting it to a different card, **skip it entirely**. When in doubt about which card a benefit belongs to, skip it rather than assign it to the wrong card.
 
 ### Cadence Rule (CRITICAL)
 Credits MUST have a recurring cadence of one year or less:

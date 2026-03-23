@@ -229,7 +229,14 @@ CLASSIFY AS PERK (NOT a credit at all) WHEN:
   - Points earned per dollar spent (e.g., "earn 1 PQP per $15 spent") -- this is a multiplier/earning rate OR a perk, NEVER a credit
   - Status-qualifying metrics of any kind (PQP, PQF, EQM, EQS, etc.)
   - Any points/miles the cardholder receives just for holding the card or spending on it
-- KEY TEST: Ask "does the cardholder need to actively redeem, claim, or use this benefit?" If the answer is NO (points just show up in their account), it is a PERK, not a credit.
+- **The benefit requires the cardholder to SPEND their own earned points, proprietary cash, or rewards currency to access it.** This includes:
+  - "Redeem Bilt Cash toward hotel bookings" -- cardholder pays with Bilt Cash, not a free credit
+  - "Requires redeeming $35 of Bilt Cash per person" -- cardholder pays with Bilt Cash
+  - "Redeem Bilt Cash toward a fitness class" -- cardholder pays with Bilt Cash
+  - "Use points as a credit toward travel purchases" -- cardholder spends points
+  - Any benefit where the language says "redeem [points/cash]", "use [points/cash] toward", or "requires redeeming"
+  - A credit must be FREE to the cardholder (statement credit, complimentary pass). If they have to spend earned points/cash, it is a feature/option (perk), not a credit.
+- KEY TEST: Ask "does the cardholder need to actively redeem, claim, or use this benefit?" If the answer is NO (points just show up in their account), it is a PERK, not a credit. ALSO ask "does the cardholder need to SPEND their own points/cash to access this?" If YES, it is a PERK, not a credit.
 
 NOTE: A subscription credit that gives you a DOLLAR AMOUNT toward the subscription cost (e.g., "$12.95 monthly statement credit for Walmart+") is monetary (isNonMonetary: false). A subscription that is COMPLIMENTARY / included free AND renews each year (e.g., "complimentary DoorDash DashPass membership, renews annually") is non-monetary (isNonMonetary: true, Value: 1). A subscription that is given ONCE and does NOT renew (e.g., "1 year of DoorDash DashPass as a sign-up bonus") is a PERK, not a credit.
 
@@ -247,6 +254,10 @@ ${JSON.stringify(CREDIT_SCHEMA, null, 2)}
 
 Output format: JSON array, e.g., [{...}, {...}, {...}]
 If no credits are found, return an empty array: []
+
+=== MULTI-CARD PAGES ===
+The source text may list benefits for MULTIPLE different cards on the same page. Only extract credits for the specific card being entered. If a credit mentions it is exclusive to a different card (e.g., "Platinum Card only", "Reserve card exclusive"), SKIP it entirely.
+=====================================
 
 ${categoryInfo}
 
@@ -302,9 +313,14 @@ Examples of things that ARE perks (include these):
 - 1,500 PQP each year (qualifying points auto-awarded)
 - Earn 1 PQP per $15 spent (spending-based earning rate, not redeemable)
 - Any auto-awarded points, miles, or status-qualifying metrics (PQP, PQF, EQM, EQS, MQM, MQS, etc.)
+- Benefits requiring redemption of points/cash (e.g., "redeem Bilt Cash toward hotel bookings", "use points as credit toward travel")
 - Trip cancellation insurance (passive benefit)
 
 If UNSURE whether something is a credit or perk, include it here (better to duplicate than miss).
+=====================================
+
+=== MULTI-CARD PAGES ===
+The source text may list benefits for MULTIPLE different cards on the same page. Only extract perks for the specific card being entered. If a perk mentions it is exclusive to a different card (e.g., "Platinum Card only", "Reserve card exclusive"), SKIP it entirely.
 =====================================
 
 ${categoryInfo}
@@ -336,6 +352,10 @@ Do NOT include benefits that belong in Credits. If a benefit is redeemable (the 
 If UNSURE whether something is a credit or perk, include it here (better to duplicate than miss).
 =====================================
 
+=== MULTI-CARD PAGES ===
+The source text may list benefits for MULTIPLE different cards on the same page. Only extract perks for the specific card being entered. If a perk mentions it is exclusive to a different card (e.g., "Platinum Card only", "Reserve card exclusive"), SKIP it entirely.
+=====================================
+
 ${categoryInfo}
 
 === PERKS TO EXCLUDE (DO NOT CREATE) ===
@@ -365,6 +385,10 @@ ${JSON.stringify(MULTIPLIER_SCHEMA, null, 2)}
 
 Output format: JSON array, e.g., [{...}, {...}, {...}]
 If no multipliers are found, return an empty array: []
+
+=== MULTI-CARD PAGES ===
+The source text may list benefits for MULTIPLE different cards on the same page. Only extract multipliers for the specific card being entered. If a multiplier mentions it is exclusive to a different card (e.g., "Platinum Card only", "Reserve card exclusive"), SKIP it entirely.
+=====================================
 
 ${categoryInfo}
 

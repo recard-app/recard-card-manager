@@ -24,11 +24,14 @@ function extractQualificationRules(content: string): string {
   const notQualifies = content.match(/### What Does NOT Qualify[\s\S]*?(?=###|---)/);
   // Also extract the Redeemable vs Auto-Applied / Auto-Applied vs Redeemable section
   const classificationRules = content.match(/### (?:Redeemable vs Auto-Applied|Auto-Applied vs Redeemable)[\s\S]*?(?=###|---)/);
+  // Extract the Multi-Card Pages section
+  const multiCardRules = content.match(/### Multi-Card Pages[\s\S]*?(?=###|---)/);
 
   let result = '';
   if (qualifies) result += qualifies[0].trim() + '\n\n';
   if (classificationRules) result += classificationRules[0].trim() + '\n\n';
-  if (notQualifies) result += notQualifies[0].trim();
+  if (notQualifies) result += notQualifies[0].trim() + '\n\n';
+  if (multiCardRules) result += multiCardRules[0].trim();
 
   return result.trim();
 }
@@ -83,6 +86,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
     rules.push('- TimePeriod: lowercase only - "monthly" | "quarterly" | "semiannually" | "annually"');
     rules.push('- CADENCE RULE: Credits MUST have a cadence of one year or less. Benefits with cadence >1 year (e.g., every 4 years for TSA/Global Entry) are PERKS, not Credits');
     rules.push('- AUTO-AWARDED POINTS ARE NOT CREDITS: Bonus points, miles, PQP, PQF, EQM, EQS, MQM, MQS, or any auto-deposited rewards/qualifying metrics are PERKS, not credits -- even if they have a numeric value and recur annually. The cardholder does not redeem them.');
+    rules.push('- POINTS/CASH REDEMPTION BENEFITS ARE NOT CREDITS: If using a benefit requires the cardholder to SPEND their own earned points or proprietary cash (e.g., "redeem Bilt Cash", "use points toward"), it is a PERK. Credits must be FREE to the cardholder.');
     rules.push('- Requirements: Use UPPERCASE for critical requirements (e.g., "MUST BE BOOKED ON CHASE TRAVEL PORTAL")');
     rules.push('- SubCategory: Leave as empty string "" if no subcategory applies. IMPORTANT: Use "hotels" (with s), NOT "hotel"');
   }

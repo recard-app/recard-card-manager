@@ -18,6 +18,9 @@ A Multiplier represents a rewards earning rate for specific spending categories.
 - Statement credits with dollar values → use Credit
 - Non-monetary perks → use Perk
 
+### Multi-Card Pages (CRITICAL)
+Source text may list benefits for **multiple cards** on the same page. Only extract multipliers that apply to the **specific card being entered**. If a multiplier says something like "Platinum Card only", "exclusive to Gold Card", "available on Reserve card", or similar language restricting it to a different card, **skip it entirely**. When in doubt about which card a multiplier belongs to, skip it rather than assign it to the wrong card.
+
 ### Master Template Reference
 
 See: `Data/CreditCards/DATAENTRYSampleJsonStructureMultiplier.json`
