@@ -42,6 +42,9 @@ The key test for whether a recurring benefit is a Credit or a Perk is: **Does th
 | Use Bilt Cash toward hotel bookings | **Perk** | Requires spending earned points/cash, not a free credit |
 | Redeem Bilt Cash toward fitness class | **Perk** | Requires spending earned points/cash, not a free credit |
 | Cover guest fees by redeeming $35 Bilt Cash | **Perk** | Requires spending earned points/cash, not a free credit |
+| 20% back on in-flight purchases | **Perk** | Percentage savings, no fixed dollar value to track |
+| TakeOff 15 (save 15% on award travel) | **Perk** | Percentage discount on redemption, not a statement credit |
+| MQD Boost (earn $1 MQD per $20 spent) | **Perk** | Status-qualifying metric, auto-awarded through spending |
 
 **Discounts are always Perks, NOT Credits** -- even if they are recurring. A discount reduces the price of something; it is not a redeemable benefit with a trackable value the cardholder claims.
 
@@ -72,6 +75,9 @@ These are NOT "countable non-monetary benefits" even though they have numbers. T
 - **Auto-activated memberships or access** where the cardholder does not redeem a specific credit or pass → use Perk
 - **Auto-awarded points, miles, or qualifying points** (e.g., "10,000 bonus points on card anniversary", "1,500 PQP each year", "earn 1 PQP per $15 spent") → use Perk. These are passively received, not redeemed. Includes all status-qualifying metrics (PQP, PQF, EQM, EQS, MQM, MQS, etc.).
 - **Benefits requiring redemption of points/cash** (e.g., "redeem Bilt Cash toward hotel bookings", "use points as credit toward travel", "requires redeeming $35 of Bilt Cash") → use Perk. If the cardholder must spend their own earned points or proprietary cash to access the benefit, it is NOT a free credit.
+- **Percentage-back savings on purchases** (e.g., "20% back on in-flight purchases", "15% back at select restaurants", "save 15% on award travel") → use Perk. These have no fixed dollar value or trackable count -- the savings varies based on spending and is not a credit.
+- **Percentage discounts on bookings or redemptions** (e.g., "save 15% when booking award travel with miles", "TakeOff 15") → use Perk. A percentage discount on a purchase or redemption is a pricing benefit, not a statement credit.
+- **Spending-based qualification boosts** (e.g., "earn $1 MQD per $20 spent", "MQD Boost") → use Perk. These are status-qualifying metrics earned through spending, not redeemable credits. Even though they have a "per dollar" rate, they are auto-awarded qualification metrics, not credits or multipliers.
 
 ### Separation Rule (CRITICAL)
 Credits and perks must be kept **separate**. If a benefit clearly meets the criteria for a credit (redeemable, has a dollar value or trackable count, recurring cadence of 1 year or less), it belongs in credits ONLY -- do not also place it in perks. If you are **unsure** whether something is a credit or a perk, include it in **both** credits and perks rather than risk missing it entirely.

@@ -115,6 +115,7 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureOneCard.json`
 - Use the official card name as shown on the card issuer's website
 - Include the full name, not abbreviations
 - Title case formatting
+- **No special symbols**: Do NOT include trademark (TM), registered trademark (R), copyright (C), or any other special Unicode symbols. Use only basic keyboard characters (letters, numbers, spaces, hyphens, ampersands, apostrophes).
 
 **Good Examples:**
 - `Chase Sapphire Reserve`
@@ -124,6 +125,7 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureOneCard.json`
 - `American Express Blue Cash Everyday`
 - `Capital One Venture X`
 - `Citi Costco`
+- `United Club Infinite`
 
 **Bad Examples:**
 - `Chase Sapphire Reserve Card` (do not include "Card")
@@ -132,6 +134,8 @@ See: `Data/CreditCards/DATAENTRYSampleJsonStructureOneCard.json`
 - `chase sapphire reserve` (wrong case)
 - `CHASE SAPPHIRE RESERVE` (all caps)
 - `Sapphire Reserve` (missing issuer name)
+- `United Club Infinite(SM)` (no trademark/service mark symbols)
+- `Chase Freedom Flex(R)` (no registered trademark symbols)
 
 ---
 

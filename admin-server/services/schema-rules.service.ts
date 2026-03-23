@@ -72,7 +72,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
   // Card-specific rules - many fields are auto-generated
   if (type === 'card') {
     rules.push('- DO NOT include id, VersionName, ReferenceCardId, IsActive, CardImage, lastUpdated, effectiveFrom, effectiveTo, Perks, Credits, or Multipliers fields (auto-generated)');
-    rules.push('- CardName: Format is "Issuer CardName" (e.g., "American Express Gold", "Chase Sapphire Preferred"). Do NOT include the word "Card" at the end');
+    rules.push('- CardName: Format is "Issuer CardName" (e.g., "American Express Gold", "Chase Sapphire Preferred"). Do NOT include the word "Card" at the end. No trademark/copyright/service mark symbols (TM, R, SM, C, etc.) -- use only basic keyboard characters');
     rules.push('- AnnualFee: number (not string), no $ sign');
     rules.push('- ForeignExchangeFee: Description of the foreign exchange fee policy');
     rules.push('- ForeignExchangeFeePercentage: number (0 for no fee)');
@@ -81,7 +81,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
   
   if (type === 'credit') {
     rules.push('- DO NOT include id, ReferenceCardId, LastUpdated, EffectiveFrom, or EffectiveTo fields (auto-generated)');
-    rules.push('- Title: Title Case. Only include $ amount for Annually/Semiannually/Quarterly credits, NOT for Monthly');
+    rules.push('- Title: Title Case. Only include $ amount for Annually/Semiannually/Quarterly credits, NOT for Monthly. No trademark/copyright symbols -- basic keyboard characters only');
     rules.push('- Value: Numeric string WITHOUT $ sign, PER TIME PERIOD (not annual total)');
     rules.push('- TimePeriod: lowercase only - "monthly" | "quarterly" | "semiannually" | "annually"');
     rules.push('- CADENCE RULE: Credits MUST have a cadence of one year or less. Benefits with cadence >1 year (e.g., every 4 years for TSA/Global Entry) are PERKS, not Credits');
@@ -93,7 +93,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
   
   if (type === 'multiplier') {
     rules.push('- DO NOT include id, ReferenceCardId, LastUpdated, EffectiveFrom, or EffectiveTo fields (auto-generated)');
-    rules.push('- Name: Title Case category name (e.g., "Dining", "Travel", "Flights"). Do NOT include multiplier value in Name');
+    rules.push('- Name: Title Case category name (e.g., "Dining", "Travel", "Flights"). Do NOT include multiplier value in Name. No trademark/copyright symbols -- basic keyboard characters only');
     rules.push('- Multiplier: number type (not string), e.g., 3 for 3X, 1.5 for 1.5%');
     rules.push('- Category: Use "portal" for issuer travel portal purchases (not "travel")');
     rules.push('- Description: Explain what purchases qualify, not just repeat the category name');
@@ -103,7 +103,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
   
   if (type === 'perk') {
     rules.push('- DO NOT include id, ReferenceCardId, LastUpdated, EffectiveFrom, or EffectiveTo fields (auto-generated)');
-    rules.push('- Title: Title Case (e.g., "Priority Pass Select", "Global Entry Credit")');
+    rules.push('- Title: Title Case (e.g., "Priority Pass Select", "Global Entry Credit"). No trademark/copyright symbols -- basic keyboard characters only');
     rules.push('- Description: Required - explain what the perk provides');
     rules.push('- Details: Include coverage limits for insurance perks (e.g., "Up to $500 per claim")');
     rules.push('- SubCategory: Leave as empty string "" if no subcategory applies. IMPORTANT: Use "hotels" (with s), NOT "hotel"');
@@ -112,7 +112,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
     rules.push('- For hotel programs/status: Category="travel", SubCategory="hotels" (MUST include the s)');
     rules.push('- For streaming/entertainment: Category="general", SubCategory="entertainment" is acceptable');
     rules.push('- PORTAL BOOKING: When perk requires booking through issuer/network service (Visa Luxury Hotel Collection, Amex Travel, Chase Travel, etc.), use Category="travel", SubCategory="portal"');
-    rules.push('- SEPARATION: Do NOT include benefits that clearly belong in Credits (redeemable statement credits, dollar-value benefits, trackable passes/vouchers). If unsure, include it (better to duplicate than miss)');
+    rules.push('- SEPARATION: Do NOT include benefits that clearly belong in Credits (redeemable statement credits, dollar-value benefits, trackable passes/vouchers) or Multipliers (earning rates like "3X on dining", "2% back on groceries"). Multipliers are NEVER perks. If unsure between credit and perk, include it (better to duplicate than miss)');
   }
 
   if (type === 'rotating-categories') {

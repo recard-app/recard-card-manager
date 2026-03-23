@@ -120,7 +120,7 @@ const CATEGORIES = {
 };
 
 function getSystemPrompt(generationType: GenerationType, batchMode: boolean = false): string {
-  const baseInstructions = `You are a credit card data extraction assistant. 
+  const baseInstructions = `You are a credit card data extraction assistant.
 
 CRITICAL JSON REQUIREMENTS:
 1. Output ONLY valid, complete JSON - no text before or after
@@ -129,6 +129,7 @@ CRITICAL JSON REQUIREMENTS:
 4. Ensure ALL strings are properly closed with quotes
 5. Ensure ALL objects and arrays are properly closed with braces/brackets
 6. The response must be parseable by JSON.parse() without any modifications
+7. Do NOT include trademark (TM), registered (R), service mark (SM), copyright (C), or any other special Unicode symbols in ANY text fields. Strip them from source text. Use only basic keyboard characters.
 
 Your response should start with { and end with } (or [ and ] for arrays). Nothing else.`;
 
@@ -295,10 +296,28 @@ ${JSON.stringify(PERK_SCHEMA, null, 2)}
 Output format: JSON array, e.g., [{...}, {...}, {...}]
 If no perks are found, return an empty array: []
 
-=== CREDIT vs PERK SEPARATION (CRITICAL) ===
-Do NOT include benefits that belong in Credits. If a benefit is redeemable (the cardholder must claim, spend, or use it), has a specific dollar value or trackable count, and recurs on a cadence of 1 year or less -- it is a CREDIT, not a perk. Do not duplicate it here.
+=== CREDIT vs PERK vs MULTIPLIER SEPARATION (CRITICAL) ===
+Do NOT include benefits that belong in Credits or Multipliers.
 
-Examples of things that are CREDITS (do NOT include as perks):
+MULTIPLIERS (do NOT include as perks):
+Any benefit describing an earning rate per dollar spent IN THE CARD'S MAIN REWARDS CURRENCY is a MULTIPLIER. This includes:
+- "3X points on dining" / "3X on restaurants"
+- "2% cash back on groceries" (when cash back IS the card's rewards currency)
+- "5X on flights booked through portal"
+- "1 mile per dollar on all purchases"
+- "2X on travel" / "4X on dining worldwide"
+- "10X on hotels booked through Amex Travel"
+- Any "NX on [category]" or "N% back on [broad category]" pattern earning the card's primary currency
+These are NEVER perks. They belong in the Multipliers section.
+
+HOWEVER, these ARE perks (not multipliers):
+- Percentage-back statement credits on narrow/specific purchases (e.g., "20% back on in-flight purchases", "15% back on in-flight Wi-Fi") -- these pay as statement credits, not in the card's rewards currency
+- Percentage discounts on bookings/redemptions (e.g., "TakeOff 15 -- save 15% on award travel with miles")
+- Status-qualifying metric boosts (e.g., "earn $1 MQD per $20 spent", "MQD Boost")
+Key test: if a percentage benefit pays as a STATEMENT CREDIT rather than in the card's main rewards currency (points/miles), and applies to very specific purchases, it is a PERK.
+
+CREDITS (do NOT include as perks):
+If a benefit is redeemable (the cardholder must claim, spend, or use it), has a specific dollar value or trackable count, and recurs on a cadence of 1 year or less -- it is a CREDIT. Do not duplicate it here.
 - "$300 annual travel credit" (redeemable statement credit)
 - "$10/month Uber Cash" (redeemable cash)
 - "10 Priority Pass lounge visits per year" (redeemable passes)
@@ -311,12 +330,12 @@ Examples of things that ARE perks (include these):
 - Complimentary DoorDash DashPass (auto-activated)
 - 10,000 bonus points on card anniversary (auto-deposited)
 - 1,500 PQP each year (qualifying points auto-awarded)
-- Earn 1 PQP per $15 spent (spending-based earning rate, not redeemable)
 - Any auto-awarded points, miles, or status-qualifying metrics (PQP, PQF, EQM, EQS, MQM, MQS, etc.)
 - Benefits requiring redemption of points/cash (e.g., "redeem Bilt Cash toward hotel bookings", "use points as credit toward travel")
 - Trip cancellation insurance (passive benefit)
 
 If UNSURE whether something is a credit or perk, include it here (better to duplicate than miss).
+But if something is clearly a multiplier (earning rate per dollar), NEVER include it as a perk.
 =====================================
 
 === MULTI-CARD PAGES ===
@@ -347,9 +366,12 @@ ${schemaRules}
 Extract perk/benefit details and output a JSON object with the following schema:
 ${JSON.stringify(PERK_SCHEMA, null, 2)}
 
-=== CREDIT vs PERK SEPARATION (CRITICAL) ===
-Do NOT include benefits that belong in Credits. If a benefit is redeemable (the cardholder must claim, spend, or use it), has a specific dollar value or trackable count, and recurs on a cadence of 1 year or less -- it is a CREDIT, not a perk. Do not duplicate it here.
-If UNSURE whether something is a credit or perk, include it here (better to duplicate than miss).
+=== CREDIT vs PERK vs MULTIPLIER SEPARATION (CRITICAL) ===
+Do NOT include benefits that belong in Credits or Multipliers.
+MULTIPLIERS: Any earning rate per dollar spent IN THE CARD'S MAIN REWARDS CURRENCY (e.g., "3X on dining", "2% back on groceries", "5X on flights") is a MULTIPLIER -- NEVER a perk.
+BUT: Percentage-back STATEMENT CREDITS on narrow/specific purchases (e.g., "20% back on in-flight food", "15% back on Wi-Fi") ARE perks -- they pay as statement credits, not the card's rewards currency.
+CREDITS: If redeemable with a dollar value or trackable count recurring yearly or more often, it is a CREDIT -- do not duplicate here.
+If UNSURE whether something is a credit or perk, include it here. But if it is clearly a multiplier, NEVER include it.
 =====================================
 
 === MULTI-CARD PAGES ===

@@ -17,6 +17,11 @@ A Multiplier represents a rewards earning rate for specific spending categories.
 ### What Does NOT Qualify as a Multiplier?
 - Statement credits with dollar values → use Credit
 - Non-monetary perks → use Perk
+- **Status-qualifying metric boosts** (e.g., "earn $1 MQD per $20 spent", "MQD Boost", "earn MQM per dollar spent") → use Perk. These are qualification metrics (MQD, MQM, MQS, PQP, PQF, EQM, EQS), not rewards earning rates. They help the cardholder earn airline/hotel status, not spendable points/miles/cash back.
+- **Percentage-back savings or statement credits on specific purchases** (e.g., "20% back on in-flight purchases", "15% back on in-flight Wi-Fi", "save 15% on award travel") → use Perk. These are NOT multipliers because:
+  - They pay out as a **statement credit or percentage savings**, not in the card's main rewards currency (points/miles)
+  - They apply to very **narrow/specific purchases** (e.g., beverages on a specific airline's flights, not a broad spending category)
+  - A multiplier earns rewards in the card's primary currency (e.g., "3X Membership Rewards points on dining"). If the benefit pays back as a statement credit or percentage discount instead, it is a Perk.
 
 ### Multi-Card Pages (CRITICAL)
 Source text may list benefits for **multiple cards** on the same page. Only extract multipliers that apply to the **specific card being entered**. If a multiplier says something like "Platinum Card only", "exclusive to Gold Card", "available on Reserve card", or similar language restricting it to a different card, **skip it entirely**. When in doubt about which card a multiplier belongs to, skip it rather than assign it to the wrong card.

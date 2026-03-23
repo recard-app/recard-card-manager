@@ -19,6 +19,7 @@ A Perk represents a non-monetary benefit, feature, or service associated with a 
 - **Auto-activated memberships** where the cardholder doesn't redeem a specific credit (e.g., complimentary DoorDash DashPass)
 - **Auto-awarded points, miles, or qualifying points** that the cardholder receives without taking any action (e.g., "10,000 bonus points on card anniversary", "1,500 PQP each year", "earn 1 PQP per $15 spent"). This includes all status-qualifying metrics (PQP, PQF, EQM, EQS, MQM, MQS, etc.) and bonus points/miles for holding the card or spending on it.
 - **Benefits that require redeeming points or proprietary cash** to access (e.g., "redeem Bilt Cash toward hotel bookings", "use points as a credit toward travel purchases", "requires redeeming $35 of Bilt Cash per person"). If the cardholder must spend their own earned points/cash to get the benefit, it is a perk (an option/feature available to them), NOT a free credit.
+- **Percentage-back savings on purchases** (e.g., "20% back on in-flight purchases", "15% back on in-flight Wi-Fi", "15% back at select restaurants"). These have no fixed dollar value or trackable count -- the savings varies based on spending. They are perks, not credits or multipliers. Key indicator: if the benefit pays as a **statement credit** or percentage savings rather than in the card's main rewards currency (points/miles), it is a perk -- especially when it applies to narrow/specific purchases (e.g., beverages on Delta flights).
 
 ### Auto-Applied vs Redeemable (CRITICAL)
 The key test for whether a recurring benefit is a Perk or a Credit is: **Is it auto-applied/passive, or does the cardholder need to redeem it?**
@@ -36,6 +37,9 @@ The key test for whether a recurring benefit is a Perk or a Credit is: **Is it a
 | **Recurring subscription discounts** | Discounted Walmart+ membership | Price reduction, not a statement credit to redeem |
 | **Auto-awarded points/miles/qualifying points** | 10,000 bonus points on anniversary, 1,500 PQP each year, earn 1 PQP per $15 spent | Points/qualifying metrics awarded automatically -- cardholder does nothing to receive them |
 | **Benefits requiring redemption of points/cash** | Redeem Bilt Cash toward hotel bookings, use points as credit toward travel, redeem $35 Bilt Cash for guest pass | Cardholder must spend their own earned points/cash -- this is a feature/option, not a free credit |
+| **Percentage-back savings on purchases** | 20% back on in-flight purchases, 15% back at certain restaurants, percentage savings as statement credit | Percentage-based savings with no fixed dollar value or cap -- not a trackable credit |
+| **Percentage discounts on bookings/redemptions** | TakeOff 15 (save 15% on award travel with miles), save 10% on hotel bookings | Pricing discount on a purchase or redemption -- not a statement credit |
+| **Spending-based qualification boosts** | Earn $1 MQD per $20 spent, MQD Boost, earn MQM per dollar spent | Status-qualifying metric earned through spending -- auto-awarded, not redeemed |
 
 **These are Credits (not Perks):**
 
@@ -53,7 +57,7 @@ Credits and perks must be kept **separate**. If a benefit clearly meets the crit
 
 ### What Does NOT Qualify as a Perk?
 - Statement credits with dollar values → use Credit
-- Multipliers/rewards rates → use Multiplier
+- **Multipliers/rewards rates** → use Multiplier. Any benefit that describes earning points, miles, or cash back at a rate per dollar spent (e.g., "3X on dining", "2% back on groceries", "1 mile per dollar", "5X on flights booked through portal") is a MULTIPLIER, not a perk. Do NOT include earning rates as perks.
 - **Redeemable passes, vouchers, or certificates** with a trackable count that reset on a regular cadence → use Credit with `isNonMonetary: true`
 - **Dollar-value benefits** the cardholder must spend or claim → use Credit
 
