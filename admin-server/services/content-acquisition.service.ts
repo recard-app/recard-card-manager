@@ -636,7 +636,9 @@ export async function scrapeCardUrls(
       // No room left -- mark this and all remaining parts as truncated
       for (let j = i; j < contentParts.length; j++) {
         const truncatedUrl = contentParts[j].url;
-        const urlResult = urlResults.find(r => r.url === truncatedUrl && r.status === 'ok');
+        const urlResult = urlResults.find(
+          r => r.url === truncatedUrl && (r.status === 'ok' || r.status === 'redirected')
+        );
         if (urlResult) {
           urlResult.contentTokensOriginal = urlResult.contentTokens;
           urlResult.contentTokens = 0;
@@ -653,7 +655,9 @@ export async function scrapeCardUrls(
       partContent = partContent.substring(0, remainingChars);
       const truncatedTokens = estimateTokens(partContent);
 
-      const urlResult = urlResults.find(r => r.url === part.url && r.status === 'ok');
+      const urlResult = urlResults.find(
+        r => r.url === part.url && (r.status === 'ok' || r.status === 'redirected')
+      );
       if (urlResult) {
         urlResult.contentTokensOriginal = originalTokens;
         urlResult.contentTokens = truncatedTokens;

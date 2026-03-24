@@ -196,8 +196,13 @@ export function CompletedReviewsTab() {
   const handleRetry = async (cardId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await ReviewService.queueReviews([cardId]);
-      toast.success('Review queued');
+      const result = await ReviewService.queueReviews([cardId]);
+      if (result.reviewIds.length > 0) {
+        toast.success('Review queued');
+      } else {
+        const reason = result.skipped[0]?.reason ?? 'Card was skipped';
+        toast.info(`Review not queued: ${reason}`);
+      }
     } catch {
       toast.error('Failed to queue review');
     }

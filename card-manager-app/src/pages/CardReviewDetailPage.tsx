@@ -38,6 +38,34 @@ import type { CreditCardName } from '@/types/ui-types';
 import './CardReviewDetailPage.scss';
 
 type ComparisonTab = 'cardDetails' | 'credits' | 'perks' | 'multipliers' | 'urls';
+type ReviewUrlResult = NonNullable<ReviewResult['urlResults']>[number];
+
+function isUrlHealthy(urlResult: ReviewUrlResult): boolean {
+  return (urlResult.status === 'ok' || urlResult.status === 'redirected') && !urlResult.truncated;
+}
+
+function isUrlNeedsReview(urlResult: ReviewUrlResult): boolean {
+  return urlResult.status === 'broken' || urlResult.status === 'stale' || urlResult.truncated;
+}
+
+function sanitizeReviewedIndexes(
+  indexes: number[] | undefined,
+  maxLength: number,
+  isReviewable: (index: number) => boolean
+): number[] {
+  if (!indexes || indexes.length === 0 || maxLength <= 0) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(indexes.filter(index =>
+      Number.isInteger(index) &&
+      index >= 0 &&
+      index < maxLength &&
+      isReviewable(index)
+    ))
+  );
+}
 
 function formatTimestamp(timestamp: string): string {
   const d = new Date(timestamp);
@@ -131,7 +159,7 @@ export function CardReviewDetailPage() {
           cr.credits.every((c, i) => c.status === 'match' || nextItems.credits.includes(i)) &&
           cr.perks.every((p, i) => p.status === 'match' || nextItems.perks.includes(i)) &&
           cr.multipliers.every((m, i) => m.status === 'match' || nextItems.multipliers.includes(i)) &&
-          (!review.urlResults || review.urlResults.every((u, i) => (u.status === 'ok' && !u.truncated) || nextItems.urls.includes(i)));
+          (!review.urlResults || review.urlResults.every((u, i) => isUrlHealthy(u) || nextItems.urls.includes(i)));
 
         if (allChecked) {
           setReviewStatus('reviewed');
@@ -153,7 +181,7 @@ export function CardReviewDetailPage() {
       if (section === 'cardDetails' && cr) {
         indices = cr.cardDetails.map((f, i) => (f.status !== 'match' && f.status !== 'missing_from_website') ? i : -1).filter(i => i >= 0);
       } else if (section === 'urls' && review?.urlResults) {
-        indices = review.urlResults.map((u, i) => (u.status !== 'ok' || u.truncated) ? i : -1).filter(i => i >= 0);
+        indices = review.urlResults.map((u, i) => isUrlNeedsReview(u) ? i : -1).filter(i => i >= 0);
       } else if (cr && section in cr) {
         const items = cr[section as 'credits' | 'perks' | 'multipliers'];
         indices = items.map((c, i) => c.status !== 'match' ? i : -1).filter(i => i >= 0);
@@ -167,7 +195,7 @@ export function CardReviewDetailPage() {
           cr.credits.every((c, i) => c.status === 'match' || nextItems.credits.includes(i)) &&
           cr.perks.every((p, i) => p.status === 'match' || nextItems.perks.includes(i)) &&
           cr.multipliers.every((m, i) => m.status === 'match' || nextItems.multipliers.includes(i)) &&
-          (!review?.urlResults || review.urlResults.every((u, i) => (u.status === 'ok' && !u.truncated) || nextItems.urls.includes(i)));
+          (!review?.urlResults || review.urlResults.every((u, i) => isUrlHealthy(u) || nextItems.urls.includes(i)));
 
         if (allChecked) {
           setReviewStatus('reviewed');
@@ -205,14 +233,43 @@ export function CardReviewDetailPage() {
     setLoading(true);
     try {
       const result = await ReviewService.getResult(id);
+      const cardDetails = result.comparisonResult?.cardDetails ?? [];
+      const credits = result.comparisonResult?.credits ?? [];
+      const perks = result.comparisonResult?.perks ?? [];
+      const multipliers = result.comparisonResult?.multipliers ?? [];
+      const urls = result.urlResults ?? [];
+
       setReview(result);
       setReviewStatus(result.reviewStatus || 'not_reviewed');
       setReviewedItems({
-        cardDetails: result.reviewedItems?.cardDetails || [],
-        credits: result.reviewedItems?.credits || [],
-        perks: result.reviewedItems?.perks || [],
-        multipliers: result.reviewedItems?.multipliers || [],
-        urls: result.reviewedItems?.urls || [],
+        cardDetails: sanitizeReviewedIndexes(
+          result.reviewedItems?.cardDetails,
+          cardDetails.length,
+          (index) => cardDetails[index]?.status !== 'match' && cardDetails[index]?.status !== 'missing_from_website'
+        ),
+        credits: sanitizeReviewedIndexes(
+          result.reviewedItems?.credits,
+          credits.length,
+          (index) => credits[index]?.status !== 'match'
+        ),
+        perks: sanitizeReviewedIndexes(
+          result.reviewedItems?.perks,
+          perks.length,
+          (index) => perks[index]?.status !== 'match'
+        ),
+        multipliers: sanitizeReviewedIndexes(
+          result.reviewedItems?.multipliers,
+          multipliers.length,
+          (index) => multipliers[index]?.status !== 'match'
+        ),
+        urls: sanitizeReviewedIndexes(
+          result.reviewedItems?.urls,
+          urls.length,
+          (index) => {
+            const urlResult = urls[index];
+            return !!urlResult && isUrlNeedsReview(urlResult);
+          }
+        ),
       });
     } catch (err) {
       console.error('Failed to load review:', err);
@@ -225,8 +282,13 @@ export function CardReviewDetailPage() {
   const handleRerun = async () => {
     if (!review) return;
     try {
-      await ReviewService.queueReviews([review.referenceCardId]);
-      toast.success('Review queued');
+      const result = await ReviewService.queueReviews([review.referenceCardId]);
+      if (result.reviewIds.length > 0) {
+        toast.success('Review queued');
+      } else {
+        const reason = result.skipped[0]?.reason ?? 'Card was skipped';
+        toast.info(`Review not queued: ${reason}`);
+      }
     } catch {
       toast.error('Failed to queue review');
     }
@@ -436,7 +498,7 @@ export function CardReviewDetailPage() {
 
   const urlCounts = {
     broken: urlResults?.filter(r => r.status === 'broken' || r.status === 'stale').length ?? 0,
-    truncated: urlResults?.filter(r => r.status === 'ok' && r.truncated).length ?? 0,
+    truncated: urlResults?.filter(r => r.truncated).length ?? 0,
   };
 
   type TabCounts = { mismatch?: number; outdated?: number; new?: number; missing?: number; questionable?: number; broken?: number; truncated?: number };
@@ -463,6 +525,25 @@ export function CardReviewDetailPage() {
         {(counts.truncated ?? 0) > 0 && <span className="tab-icon questionable"><AlertTriangle size={10} />{counts.truncated}</span>}
       </span>
     );
+  };
+
+  const isTabFullyReviewed = (tabId: ComparisonTab): boolean => {
+    if (!comparisonResult) return false;
+    switch (tabId) {
+      case 'cardDetails':
+        return comparisonResult.cardDetails.every((f, i) =>
+          f.status === 'match' || f.status === 'missing_from_website' || reviewedItems.cardDetails.includes(i));
+      case 'credits':
+        return comparisonResult.credits.every((c, i) => c.status === 'match' || reviewedItems.credits.includes(i));
+      case 'perks':
+        return comparisonResult.perks.every((p, i) => p.status === 'match' || reviewedItems.perks.includes(i));
+      case 'multipliers':
+        return comparisonResult.multipliers.every((m, i) => m.status === 'match' || reviewedItems.multipliers.includes(i));
+      case 'urls':
+        return !urlResults || urlResults.every((u, i) => isUrlHealthy(u) || reviewedItems.urls.includes(i));
+      default:
+        return false;
+    }
   };
 
   const editingCredit: CardCredit | null =
@@ -684,11 +765,11 @@ export function CardReviewDetailPage() {
                 <div className="overview-row url-status-overview">
                   <span className="overview-label">URLs</span>
                   <div className="overview-counts">
-                    {urlResults.filter(r => r.status === 'ok' && !r.truncated).length > 0 && (
-                      <span className="count-item match"><CheckCircle size={14} /> {urlResults.filter(r => r.status === 'ok' && !r.truncated).length}</span>
+                    {urlResults.filter(r => isUrlHealthy(r)).length > 0 && (
+                      <span className="count-item match"><CheckCircle size={14} /> {urlResults.filter(r => isUrlHealthy(r)).length}</span>
                     )}
-                    {urlResults.filter(r => r.status === 'ok' && r.truncated).length > 0 && (
-                      <span className="count-item questionable"><AlertTriangle size={14} /> {urlResults.filter(r => r.status === 'ok' && r.truncated).length}</span>
+                    {urlResults.filter(r => r.truncated).length > 0 && (
+                      <span className="count-item questionable"><AlertTriangle size={14} /> {urlResults.filter(r => r.truncated).length}</span>
                     )}
                     {urlResults.filter(r => r.status === 'broken' || r.status === 'stale').length > 0 && (
                       <span className="count-item mismatch"><XCircle size={14} /> {urlResults.filter(r => r.status === 'broken' || r.status === 'stale').length}</span>
@@ -708,6 +789,7 @@ export function CardReviewDetailPage() {
                   className={`comparison-tab-trigger ${activeComparisonTab === tab.id ? 'active' : ''}`}
                   onClick={() => setActiveComparisonTab(tab.id)}
                 >
+                  {isTabFullyReviewed(tab.id) && <Check size={13} className="tab-reviewed-check" />}
                   {tab.label}
                   {renderTabBadges(tab.counts)}
                 </button>
@@ -719,6 +801,7 @@ export function CardReviewDetailPage() {
                   className={`comparison-tab-trigger ${activeComparisonTab === 'urls' ? 'active' : ''}`}
                   onClick={() => setActiveComparisonTab('urls')}
                 >
+                  {isTabFullyReviewed('urls') && <Check size={13} className="tab-reviewed-check" />}
                   {urlTab.label}
                   {renderTabBadges(urlTab.counts)}
                 </button>
@@ -856,13 +939,13 @@ export function CardReviewDetailPage() {
 
             {activeComparisonTab === 'urls' && urlResults && (
               <div className="url-list">
-                {urlResults.some(u => u.status !== 'ok' || u.truncated) && (
+                {urlResults.some(u => isUrlNeedsReview(u)) && (
                   <div className="mark-all-bar">
-                    <span className={`review-count ${reviewedItems.urls.length >= urlResults.filter(u => u.status !== 'ok' || u.truncated).length ? 'all-done' : ''}`}>
-                      {reviewedItems.urls.length}/{urlResults.filter(u => u.status !== 'ok' || u.truncated).length} reviewed
+                    <span className={`review-count ${reviewedItems.urls.length >= urlResults.filter(u => isUrlNeedsReview(u)).length ? 'all-done' : ''}`}>
+                      {reviewedItems.urls.length}/{urlResults.filter(u => isUrlNeedsReview(u)).length} reviewed
                     </span>
                     <Button size="sm" variant="outline" onClick={() => markAllInSection('urls')}
-                      disabled={urlResults.every((u, i) => (u.status === 'ok' && !u.truncated) || reviewedItems.urls.includes(i))}
+                      disabled={urlResults.every((u, i) => isUrlHealthy(u) || reviewedItems.urls.includes(i))}
                     ><Check size={14} /> Mark all reviewed</Button>
                     {reviewedItems.urls.length > 0 && (
                       <Button size="sm" variant="ghost" onClick={() => clearAllInSection('urls')}
@@ -871,15 +954,18 @@ export function CardReviewDetailPage() {
                   </div>
                 )}
                 {urlResults.map((urlResult, index) => {
-                  const needsReview = urlResult.status !== 'ok' || urlResult.truncated;
+                  const needsReview = isUrlNeedsReview(urlResult);
                   return (
                   <div key={index} className="url-row">
                     <span className="url-status-icon">
                       {urlResult.status === 'ok' && !urlResult.truncated && (
                         <CheckCircle size={16} style={{ color: '#16a34a' }} />
                       )}
-                      {urlResult.status === 'ok' && urlResult.truncated && (
+                      {(urlResult.status === 'ok' || urlResult.status === 'redirected') && urlResult.truncated && (
                         <AlertTriangle size={16} style={{ color: '#ca8a04' }} />
+                      )}
+                      {urlResult.status === 'redirected' && !urlResult.truncated && (
+                        <ExternalLink size={16} style={{ color: '#2563eb' }} />
                       )}
                       {(urlResult.status === 'broken' || urlResult.status === 'stale') && (
                         <XCircle size={16} style={{ color: '#dc2626' }} />

@@ -404,7 +404,7 @@ export async function executeCardReview(
 
     // Step 7: Build usage tracking
     const scrapeUsageBreakdown: ScrapeUsageEntry[] = scrapeResult.urlResults
-      .filter(r => r.status === 'ok')
+      .filter(r => r.status === 'ok' || r.status === 'redirected')
       .map(r => ({
         url: r.url,
         source: r.source,
