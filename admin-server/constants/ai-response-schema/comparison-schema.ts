@@ -43,6 +43,7 @@ export interface FieldComparisonResult {
   websiteValue: string | number | null;
   status: FieldComparisonStatus;
   notes: string;
+  proposedFix?: string | number | null;  // Corrected value for mismatched card detail fields
 }
 
 // ============================================
@@ -70,6 +71,7 @@ export interface ComponentComparisonResult {
   websiteData: Record<string, unknown> | null; // null if MISSING
   fieldDiffs: FieldDiff[]; // Per-field differences
   notes: string;
+  proposedFix?: Record<string, unknown>; // Full corrected/new component JSON, matching schema rules
 }
 
 // ============================================
@@ -79,6 +81,7 @@ export interface ComponentComparisonResult {
 export interface TokenUsage {
   inputTokens: number;
   outputTokens: number;
+  thinkingTokens?: number;
 }
 
 // ============================================
@@ -135,6 +138,12 @@ function isValidFieldComparison(obj: unknown): obj is FieldComparisonResult {
   if (typeof obj !== 'object' || obj === null) return false;
   const o = obj as Record<string, unknown>;
 
+  // proposedFix is optional -- accept if absent, null, string, or number
+  if (o.proposedFix !== undefined && o.proposedFix !== null &&
+      typeof o.proposedFix !== 'string' && typeof o.proposedFix !== 'number') {
+    return false;
+  }
+
   return (
     typeof o.fieldName === 'string' &&
     typeof o.fieldLabel === 'string' &&
@@ -158,6 +167,12 @@ function isValidComponentComparison(
 ): obj is ComponentComparisonResult {
   if (typeof obj !== 'object' || obj === null) return false;
   const o = obj as Record<string, unknown>;
+
+  // proposedFix is optional -- accept if absent, null, or object
+  if (o.proposedFix !== undefined && o.proposedFix !== null &&
+      typeof o.proposedFix !== 'object') {
+    return false;
+  }
 
   return (
     (o.id === null || typeof o.id === 'string') &&
@@ -219,6 +234,7 @@ export const AI_COMPARISON_SCHEMA = {
       websiteValue: 'string | number | null (value found on website)',
       status: '"match" | "mismatch" | "questionable" | "missing_from_website"',
       notes: 'string (explanation of finding)',
+      proposedFix: 'string | number | null (OPTIONAL - corrected value, only for mismatch status)',
     },
   ],
   perks: [
@@ -237,6 +253,7 @@ export const AI_COMPARISON_SCHEMA = {
         },
       ],
       notes: 'string (explanation)',
+      proposedFix: 'object | null (OPTIONAL - full corrected component JSON matching schema, only for mismatch/outdated/new status)',
     },
   ],
   credits: '(same structure as perks)',

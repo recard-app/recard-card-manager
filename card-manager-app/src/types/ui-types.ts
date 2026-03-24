@@ -36,6 +36,7 @@ export interface CreditCardName {
   CardName: string;
   CardIssuer: string;
   CardCharacteristics?: CardCharacteristics;
+  websiteUrls?: string[];  // Official card page URLs for automated reviews
 }
 
 /**
@@ -73,6 +74,8 @@ export interface CardWithStatus {
   effectiveTo?: string;
   lastUpdated?: string;
   componentsLastUpdated?: string;
+  websiteUrls?: string[];       // From credit_cards_names
+  lastReviewedAt?: string;      // Queried from card_review_results at load time
 }
 
 /**

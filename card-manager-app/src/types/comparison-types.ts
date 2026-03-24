@@ -42,6 +42,7 @@ export interface FieldComparisonResult {
   websiteValue: string | number | null;
   status: FieldComparisonStatus;
   notes: string;
+  proposedFix?: string | number | null;  // Corrected value for mismatched card detail fields
 }
 
 // ============================================
@@ -69,6 +70,7 @@ export interface ComponentComparisonResult {
   websiteData: Record<string, unknown> | null; // null if MISSING
   fieldDiffs: FieldDiff[]; // Per-field differences
   notes: string;
+  proposedFix?: Record<string, unknown>; // Full corrected/new component JSON, matching schema rules
 }
 
 // ============================================
@@ -78,6 +80,7 @@ export interface ComponentComparisonResult {
 export interface TokenUsage {
   inputTokens: number;
   outputTokens: number;
+  thinkingTokens?: number;
 }
 
 // ============================================

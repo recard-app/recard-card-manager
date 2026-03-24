@@ -1,0 +1,147 @@
+.url-management-page {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 5rem; /* Space for sticky save bar */
+
+  .progress-counter {
+    font-size: 0.875rem;
+    color: #666;
+    margin-bottom: 1rem;
+  }
+
+  .filters {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+
+    .search-box {
+      position: relative;
+      flex: 1;
+      max-width: 300px;
+
+      .search-icon {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9ca3af;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 0.875rem;
+
+        &:focus {
+          outline: none;
+          border-color: #6366f1;
+          box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+        }
+      }
+    }
+  }
+
+  .card-section {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+
+      .card-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .card-name-link {
+          font-weight: 500;
+          color: #4f46e5;
+          text-decoration: none;
+          font-size: 0.9375rem;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+
+        .card-issuer {
+          color: #6b7280;
+          font-size: 0.875rem;
+        }
+      }
+
+      .url-count {
+        font-size: 0.75rem;
+        font-weight: 500;
+
+        &.has-urls {
+          color: #16a34a;
+        }
+
+        &.no-urls {
+          color: #9ca3af;
+        }
+      }
+    }
+
+    .url-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-start;
+      margin-bottom: 0.5rem;
+
+      .url-input {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 0.8125rem;
+
+        &.error {
+          border-color: #dc2626;
+        }
+
+        &:focus {
+          outline: none;
+          border-color: #6366f1;
+        }
+      }
+
+      .url-error {
+        font-size: 0.75rem;
+        color: #dc2626;
+        margin-top: 0.125rem;
+      }
+    }
+  }
+
+  .sticky-save-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
+    z-index: 100;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+
+    .unsaved-indicator {
+      font-size: 0.875rem;
+      color: #ca8a04;
+    }
+  }
+}

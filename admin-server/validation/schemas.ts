@@ -1,11 +1,19 @@
 import { z } from 'zod';
 
 const isoDateYYYYMMDD = /^\d{4}-\d{2}-\d{2}$/;
+const httpsUrlSchema = z.string().url().refine((value) => {
+  try {
+    return new URL(value).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}, 'URL must start with https://');
 
 export const CardNameSchema = z.object({
   CardName: z.string().min(1, 'CardName is required'),
   CardIssuer: z.string().min(1, 'CardIssuer is required'),
   CardCharacteristics: z.enum(['standard', 'rotating', 'selectable']).optional(),
+  websiteUrls: z.array(httpsUrlSchema).optional(),
 });
 export type CardName = z.infer<typeof CardNameSchema>;
 
@@ -106,5 +114,4 @@ export function parseOr400<T>(parser: z.ZodType<T>, data: unknown) {
   }
   return { ok: true as const, data: result.data };
 }
-
 

@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, type ThinkingLevel } from '@google/genai';
 import { db } from '../firebase-admin';
 import { CreditCardDetails, CardCredit, CardPerk, CardMultiplier } from '../types';
 import { getCondensedRules } from './schema-rules.service';
@@ -35,11 +35,22 @@ export interface ComparisonRequest {
 }
 
 // Aggregated card data with all components
-interface AggregatedCardData {
+export interface AggregatedCardData {
   cardDetails: CreditCardDetails;
   credits: CardCredit[];
   perks: CardPerk[];
   multipliers: CardMultiplier[];
+}
+
+/**
+ * Configuration for automated review comparisons.
+ * When provided, overrides default comparison settings.
+ * When omitted, comparison behavior is unchanged (manual flow).
+ */
+export interface ComparisonConfig {
+  thinkingLevel?: ThinkingLevel;
+  maxOutputTokens?: number;
+  includeProposedFixes?: boolean;
 }
 
 /**
@@ -58,7 +69,7 @@ function isRateLimitError(error: Error): boolean {
 /**
  * Fetches card version details and all associated components
  */
-async function aggregateCardData(
+export async function aggregateCardData(
   referenceCardId: string,
   versionId: string
 ): Promise<AggregatedCardData> {
@@ -126,7 +137,8 @@ async function aggregateCardData(
  */
 function buildComparisonPrompt(
   aggregatedData: AggregatedCardData,
-  websiteText: string
+  websiteText: string,
+  includeProposedFixes: boolean = false
 ): string {
   const { cardDetails, credits, perks, multipliers } = aggregatedData;
 
@@ -305,7 +317,27 @@ MATCHING STRATEGY:
 - If a database component Title/Name is not found on website, mark it as "missing"
 
 === OUTPUT SCHEMA ===
-${JSON.stringify(AI_COMPARISON_SCHEMA, null, 2)}`;
+${JSON.stringify(AI_COMPARISON_SCHEMA, null, 2)}${includeProposedFixes ? `
+
+=== PROPOSED FIX REQUIREMENTS ===
+For each field or component with status "mismatch", "outdated", "new", "questionable", or "missing", include a "proposedFix" field:
+
+- For card detail field mismatches: proposedFix is the corrected value (string, number, or null)
+- For component mismatches/outdated: proposedFix is the full corrected component JSON object matching the schema, with ALL fields filled in (not just the changed ones)
+- For new components: proposedFix is the complete component JSON object ready to be created, following the schema rules above
+- For questionable components: proposedFix is the corrected component JSON reflecting what the website shows, so the user can compare and decide
+- For missing components (in database but not on website): proposedFix should be null to indicate the component should be considered for removal
+- For components with status "match": do NOT include proposedFix
+
+CRITICAL: The proposedFix JSON MUST follow all the schema rules defined above. Specifically:
+- Credits vs Perks: Credits have a cadence <= 1 year. Multi-year benefits (e.g., TSA/Global Entry every 4 years) are PERKS, not credits.
+- Bonus points/miles/PQF are PERKS, not credits.
+- Portal multipliers: use Category "travel" with SubCategory "portal", NOT Category "portal".
+- Subcategories: use "hotels" (with s), not "hotel".
+- Title casing: use Title Case for component titles.
+- Requirements: use UPPERCASE for critical requirements (e.g., "BOOK THROUGH AMEXTRAVEL.COM").
+- Credit Titles: include $ amount only for Annual/Semi/Quarterly credits.
+- The proposedFix must be valid against the same schema rules that the comparison uses for validation.` : ''}`;
 
   return `${systemPrompt}\n\n${userPrompt}`;
 }
@@ -458,7 +490,9 @@ function parseAndValidateResponse(text: string): AIComparisonResponse {
  * Main function to analyze card comparison
  */
 export async function analyzeComparison(
-  request: ComparisonRequest
+  request: ComparisonRequest,
+  config?: ComparisonConfig,
+  preloadedData?: AggregatedCardData
 ): Promise<ComparisonResponse> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -481,13 +515,17 @@ export async function analyzeComparison(
   }
 
   // Aggregate card data from database
-  const aggregatedData = await aggregateCardData(
+  const aggregatedData = preloadedData ?? await aggregateCardData(
     request.referenceCardId,
     request.versionId
   );
 
   // Build the comparison prompt
-  const prompt = buildComparisonPrompt(aggregatedData, request.websiteText);
+  const prompt = buildComparisonPrompt(
+    aggregatedData,
+    request.websiteText,
+    config?.includeProposedFixes ?? false
+  );
 
   let lastError: Error | null = null;
 
@@ -506,7 +544,12 @@ export async function analyzeComparison(
           config: {
             temperature: 0.1, // Low temperature for more deterministic JSON output
             topP: 0.8,
-            maxOutputTokens: 16384, // Larger for comprehensive comparison results
+            maxOutputTokens: config?.maxOutputTokens ?? 16384,
+            ...(config?.thinkingLevel ? {
+              thinkingConfig: {
+                thinkingLevel: config.thinkingLevel,
+              },
+            } : {}),
           },
         });
 
@@ -547,9 +590,11 @@ export async function analyzeComparison(
         if (response.usageMetadata) {
           console.log('Comparison token usage:', JSON.stringify(response.usageMetadata, null, 2));
         }
+        const thinkingTokens = response.usageMetadata?.thoughtsTokenCount || 0;
         const tokenUsage: TokenUsage | undefined = response.usageMetadata ? {
           inputTokens: response.usageMetadata.promptTokenCount || 0,
-          outputTokens: (response.usageMetadata.candidatesTokenCount || 0) + (response.usageMetadata.thoughtsTokenCount || 0),
+          outputTokens: (response.usageMetadata.candidatesTokenCount || 0) + thinkingTokens,
+          ...(thinkingTokens > 0 ? { thinkingTokens } : {}),
         } : undefined;
 
         return {

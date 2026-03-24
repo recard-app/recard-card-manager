@@ -26,6 +26,29 @@ export {
 
 export { ONGOING_SENTINEL_DATE } from '../constants/dates';
 
+export type {
+  ReviewStatus,
+  BatchStatus,
+  ReviewTrigger,
+  UrlStatus,
+  ScrapeSource,
+  UrlResult,
+  ReviewHealth,
+  ScrapeUsageEntry,
+  ReviewUsage,
+  ReviewResult,
+  ReviewBatch,
+  QueueReviewsRequest,
+  QueueReviewsResponse,
+  ReviewResultsQuery,
+  ReviewResultsResponse,
+} from './review-types';
+
+export {
+  GEMINI_PRICING,
+  calculateReviewCost,
+} from './review-types';
+
 /**
  * Card characteristics - indicates if card has rotating or selectable multipliers
  */
@@ -39,5 +62,6 @@ export interface CreditCardName {
   CardName: string;
   CardIssuer: string;
   CardCharacteristics?: CardCharacteristics;  // defaults to 'standard'
+  websiteUrls?: string[];  // Official card page URLs for automated reviews
   // Note: ReferenceCardId is the document ID, not stored as a field
 }

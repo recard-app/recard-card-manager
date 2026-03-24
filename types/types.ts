@@ -38,6 +38,7 @@
 export interface CreditCardName {
   CardName: string;
   CardIssuer: string;
+  websiteUrls?: string[];  // Official card page URLs for automated reviews
   // Note: ReferenceCardId is the document ID in Firestore, not stored as a field
 }
 

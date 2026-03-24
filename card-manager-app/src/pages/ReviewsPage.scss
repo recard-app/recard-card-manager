@@ -1,0 +1,38 @@
+.reviews-page {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .tabs-container {
+    margin-top: 1rem;
+
+    .tab-list {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab-trigger {
+      padding: 0.625rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #6b7280;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+
+      &:hover {
+        color: #374151;
+      }
+
+      &.active {
+        color: #4f46e5;
+        border-bottom-color: #4f46e5;
+      }
+    }
+  }
+}

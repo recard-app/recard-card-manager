@@ -5,8 +5,10 @@ import cardsRoutes from './routes/cards';
 import componentsRoutes from './routes/components';
 import aiRoutes from './routes/ai';
 import comparisonRoutes from './routes/comparison';
+import reviewsRoutes from './routes/reviews';
 import usersRoutes from './routes/users';
 import { getUserPermissions } from './services/permission.service';
+import { startQueueProcessor } from './services/review-queue.service';
 
 dotenv.config();
 
@@ -41,6 +43,7 @@ app.use('/admin/users', usersRoutes);
 app.use('/admin', componentsRoutes);
 app.use('/admin/ai', aiRoutes);
 app.use('/admin/comparison', comparisonRoutes);
+app.use('/admin/reviews', reviewsRoutes);
 
 // Health check
 app.get('/', (req: Request, res: Response) => {
@@ -55,4 +58,7 @@ app.get('/ping', (_req: Request, res: Response) => {
 app.listen(PORT, () => {
   console.log(`Admin server started successfully on port ${PORT}`);
   console.log(`CORS enabled for: ${CORS_ORIGIN}`);
+
+  // Start the review queue processor (recovers incomplete jobs on startup)
+  startQueueProcessor();
 });

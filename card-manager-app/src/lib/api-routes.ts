@@ -86,6 +86,26 @@ export const API_ROUTES = {
     ANALYZE: '/admin/comparison/analyze',
   },
 
+  // Review routes (automated card reviews)
+  REVIEWS: {
+    QUEUE: '/admin/reviews/queue',
+    RESULTS: '/admin/reviews/results',
+    RESULT_DETAIL: (id: string) => `/admin/reviews/results/${id}`,
+    ACTIVE: '/admin/reviews/active',
+    LATEST: (cardId: string) => `/admin/reviews/latest/${cardId}`,
+    LAST_REVIEWED_DATES: '/admin/reviews/last-reviewed-dates',
+    DISMISS_URL: (id: string) => `/admin/reviews/results/${id}/dismiss-url`,
+    REVIEW_STATUS: (id: string) => `/admin/reviews/results/${id}/review-status`,
+    CANCEL: (id: string) => `/admin/reviews/results/${id}/cancel`,
+    CANCEL_ALL: '/admin/reviews/cancel-all',
+    DELETE: (id: string) => `/admin/reviews/results/${id}`,
+  },
+
+  // Card URLs bulk update
+  CARD_URLS: {
+    BULK_UPDATE: '/admin/cards/bulk-urls',
+  },
+
   // User management routes
   USERS: {
     LIST: '/admin/users',

@@ -1,0 +1,293 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
+.queue-reviews-tab {
+  // Action bar with buttons and stats
+  .queue-actions-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: $neutral-white;
+    border: 1px solid $neutral-gray-200;
+    border-radius: $border-radius-sm;
+    margin-bottom: 1.25rem;
+
+    .queue-stats {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+
+      .stat-item {
+        display: flex;
+        align-items: baseline;
+        gap: 0.25rem;
+
+        .stat-number {
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: $neutral-gray-800;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .stat-label {
+          font-size: $font-size-xs;
+          color: $neutral-gray-600;
+          font-weight: 500;
+        }
+
+        &.active .stat-number {
+          color: $raw-primary-blue;
+        }
+      }
+    }
+  }
+
+  // Empty state
+  .empty-state {
+    @include flex-column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    background: $neutral-white;
+    border: 1px dashed $neutral-gray-200;
+    border-radius: $border-radius-sm;
+    text-align: center;
+
+    .empty-state-icon {
+      @include flex-center;
+      width: 72px;
+      height: 72px;
+      background: $neutral-gray-100;
+      border-radius: $border-radius-lg;
+      margin-bottom: 1.25rem;
+      color: $neutral-gray-600;
+    }
+
+    h3 {
+      font-size: $font-size-base;
+      font-weight: 600;
+      color: $neutral-gray-800;
+      margin: 0 0 0.375rem;
+    }
+
+    p {
+      font-size: $font-size-xs;
+      color: $neutral-gray-600;
+      margin: 0 0 1.25rem;
+      max-width: 360px;
+    }
+  }
+
+  // Queue sections
+  .queue-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .queue-section {
+    background: $neutral-white;
+    border: 1px solid $neutral-gray-200;
+    border-radius: $border-radius-sm;
+    overflow: hidden;
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.625rem 1rem;
+      background: $neutral-gray-100;
+      border-bottom: 1px solid $neutral-gray-200;
+      margin-bottom: 0;
+
+      .section-title-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .section-icon {
+          &.running {
+            color: $raw-primary-blue;
+          }
+
+          &.queued {
+            color: $raw-neutral-gray-600;
+          }
+        }
+
+        h3 {
+          font-size: $font-size-xs;
+          font-weight: 600;
+          color: $neutral-gray-800;
+          margin: 0;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+
+        .section-count {
+          font-size: 0.6875rem;
+          font-weight: 600;
+          color: $neutral-gray-600;
+          background: $neutral-gray-200;
+          padding: 0.0625rem 0.4375rem;
+          border-radius: 10px;
+          font-variant-numeric: tabular-nums;
+        }
+      }
+
+      .cancel-all-btn {
+        font-size: 0.6875rem;
+        font-weight: 500;
+        font-family: $font-family-base;
+        color: $neutral-gray-600;
+        background: none;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        padding: 0.125rem 0.5rem;
+        cursor: pointer;
+        transition: color 0.1s, background-color 0.1s, border-color 0.1s;
+
+        &:hover {
+          color: $raw-error-red;
+          background: rgba($raw-error-red, 0.06);
+          border-color: rgba($raw-error-red, 0.15);
+        }
+
+        &:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .section-items {
+      @include flex-column;
+    }
+  }
+
+  // Individual review items
+  .review-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625rem 1rem;
+    border-bottom: 1px solid $neutral-gray-100;
+    transition: background-color 0.1s ease;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: rgba($raw-primary-blue, 0.02);
+    }
+
+    &.running {
+      .review-card-name {
+        color: $neutral-gray-800;
+      }
+    }
+
+    &.queued {
+      .review-card-name {
+        color: $neutral-gray-600;
+      }
+    }
+
+    .review-item-left {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .review-item-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+      margin-left: 1rem;
+    }
+
+    .queue-position {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      color: $neutral-gray-600;
+      background: $neutral-gray-100;
+      border-radius: 50%;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .card-color-dot {
+      flex-shrink: 0;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .review-card-name {
+      font-size: $font-size-xs;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .review-step {
+      font-size: 0.6875rem;
+      color: $raw-primary-blue;
+      background: rgba($raw-primary-blue, 0.08);
+      padding: 0.125rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .cancel-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      background: none;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: $neutral-gray-300;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: color 0.1s, border-color 0.1s, background-color 0.1s;
+
+      &:hover {
+        color: $raw-error-red;
+        background: rgba($raw-error-red, 0.06);
+        border-color: rgba($raw-error-red, 0.15);
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// Spinner animation
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  color: $raw-primary-blue;
+  flex-shrink: 0;
+}

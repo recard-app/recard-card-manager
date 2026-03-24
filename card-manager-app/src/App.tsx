@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { LoginPage } from '@/pages/LoginPage';
@@ -6,7 +6,9 @@ import { HomePage } from '@/pages/HomePage';
 import { CardsListPage } from '@/pages/CardsListPage';
 import { CardDetailPage } from '@/pages/CardDetailPage';
 import { AIAssistantPage } from '@/pages/AIAssistantPage';
-import { CardComparisonPage } from '@/pages/CardComparisonPage';
+import { UrlManagementPage } from '@/pages/UrlManagementPage';
+import { ReviewsPage } from '@/pages/ReviewsPage';
+import { CardReviewDetailPage } from '@/pages/CardReviewDetailPage';
 import { UserManagerPage } from '@/pages/UserManagerPage';
 import { Toaster } from '@/components/shadcn/sonner';
 
@@ -57,12 +59,33 @@ function App() {
             }
           />
           <Route
-            path="/card-comparison"
+            path="/url-management"
             element={
               <ProtectedRoute requiredFeature="card-manager">
-                <CardComparisonPage />
+                <UrlManagementPage />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/reviews"
+            element={
+              <ProtectedRoute requiredFeature="card-manager">
+                <ReviewsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reviews/:resultId"
+            element={
+              <ProtectedRoute requiredFeature="card-manager">
+                <CardReviewDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Redirect old card-comparison route to reviews manual compare tab */}
+          <Route
+            path="/card-comparison"
+            element={<Navigate to="/reviews?tab=manual" replace />}
           />
           <Route
             path="/users"

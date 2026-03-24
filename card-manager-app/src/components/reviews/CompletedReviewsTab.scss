@@ -1,0 +1,409 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+@use 'sass:color';
+
+.completed-reviews-tab {
+  // Loading state
+  .loading-state {
+    @include flex-center;
+    gap: 0.75rem;
+    padding: 4rem 2rem;
+    color: $neutral-gray-600;
+    font-size: $font-size-sm;
+  }
+
+  // Toolbar
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: $neutral-white;
+    border: 1px solid $neutral-gray-200;
+    border-radius: $border-radius-sm;
+    margin-bottom: 1.25rem;
+
+    .search-box {
+      position: relative;
+
+      .search-icon {
+        position: absolute;
+        left: 0.625rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: $neutral-gray-600;
+        pointer-events: none;
+      }
+
+      .search-input {
+        width: 220px;
+        height: 34px;
+        padding: 0 $spacing-xs 0 1.75rem;
+        border: 1px solid $neutral-gray-200;
+        border-radius: $border-radius-sm;
+        font-size: $font-size-xs;
+        font-family: $font-family-base;
+        color: $neutral-gray-800;
+        background: $neutral-white;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+        &:focus {
+          outline: none;
+          border-color: $primary-blue;
+          box-shadow: 0 0 0 2px rgba($raw-primary-blue, 0.1);
+        }
+
+        &::placeholder {
+          color: $neutral-gray-600;
+        }
+      }
+    }
+  }
+
+  // Empty state
+  .empty-state {
+    @include flex-column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    background: $neutral-white;
+    border: 1px dashed $neutral-gray-200;
+    border-radius: $border-radius-sm;
+    text-align: center;
+
+    .empty-state-icon {
+      @include flex-center;
+      width: 72px;
+      height: 72px;
+      background: $neutral-gray-100;
+      border-radius: $border-radius-lg;
+      margin-bottom: 1.25rem;
+      color: $neutral-gray-600;
+    }
+
+    h3 {
+      font-size: $font-size-base;
+      font-weight: 600;
+      color: $neutral-gray-800;
+      margin: 0 0 0.375rem;
+    }
+
+    p {
+      font-size: $font-size-xs;
+      color: $neutral-gray-600;
+      margin: 0;
+      max-width: 320px;
+    }
+  }
+
+  // Day groups container
+  .day-groups {
+    @include flex-column;
+    gap: 1rem;
+  }
+
+  // Individual day group
+  .day-group {
+    background: $neutral-white;
+    border: 1px solid $neutral-gray-200;
+    border-radius: $border-radius-sm;
+    overflow: hidden;
+
+    &.collapsed {
+      .day-header {
+        border-bottom: none;
+      }
+    }
+
+    .day-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 1rem;
+      background: $neutral-gray-100;
+      border-bottom: 1px solid $neutral-gray-200;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.1s ease;
+
+      &:hover {
+        background: color.adjust(#f5f5f5, $lightness: -2%);
+      }
+
+      .day-header-left {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+      }
+
+      .chevron {
+        color: $neutral-gray-600;
+        flex-shrink: 0;
+      }
+
+      .day-label {
+        font-size: $font-size-xs;
+        font-weight: 600;
+        color: $neutral-gray-800;
+      }
+
+      .day-header-right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .day-cost {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: #6366f1;
+        background: #eef2ff;
+        padding: 0.0625rem 0.4375rem;
+        border-radius: 10px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .day-count {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: $neutral-gray-600;
+        background: $neutral-gray-200;
+        padding: 0.0625rem 0.4375rem;
+        border-radius: 10px;
+        font-variant-numeric: tabular-nums;
+      }
+    }
+
+    // Table structure inside each day group
+    .day-table {
+      .table-header {
+        display: grid;
+        grid-template-columns: 72px 1fr 80px 64px minmax(0, 180px) 28px;
+        gap: 0.75rem;
+        padding: 0.375rem 1rem;
+        background: rgba(#f5f5f5, 0.5);
+        border-bottom: 1px solid $neutral-gray-100;
+
+        > span {
+          font-size: 0.6875rem;
+          font-weight: 600;
+          color: $neutral-gray-600;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+      }
+
+      .table-body {
+        @include flex-column;
+      }
+    }
+
+    .review-row {
+      display: grid;
+      grid-template-columns: 72px 1fr 80px 64px minmax(0, 180px) 28px;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid $neutral-gray-100;
+      cursor: pointer;
+      transition: background-color 0.1s ease;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background: rgba($raw-primary-blue, 0.02);
+      }
+
+      .col-time {
+        font-size: 0.75rem;
+        color: $neutral-gray-600;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .col-card {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+
+        .card-color-dot {
+          flex-shrink: 0;
+          width: 12px;
+          height: 12px;
+          border-radius: 3px;
+        }
+
+        .card-name-text {
+          font-size: $font-size-xs;
+          font-weight: 500;
+          color: $neutral-gray-800;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .card-issuer-text {
+          font-size: 0.6875rem;
+          color: $neutral-gray-600;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+      }
+
+      .col-review-status {
+        display: flex;
+        align-items: center;
+      }
+
+      .review-status-badge {
+        font-size: 0.625rem;
+        font-weight: 600;
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        white-space: nowrap;
+
+        &.reviewed {
+          background: #dcfce7;
+          color: #16a34a;
+        }
+
+        &.not-reviewed {
+          background: #f3f4f6;
+          color: #9ca3af;
+        }
+      }
+
+      .col-health {
+        display: flex;
+        justify-content: center;
+      }
+
+      .health-badge {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        padding: 0.125rem 0.5rem;
+        border-radius: 4px;
+        text-align: center;
+        min-width: 42px;
+        font-variant-numeric: tabular-nums;
+
+        &.healthy {
+          background: #dcfce7;
+          color: #16a34a;
+        }
+
+        &.attention {
+          background: #fef3c7;
+          color: #ca8a04;
+        }
+
+        &.poor {
+          background: #fee2e2;
+          color: #dc2626;
+        }
+
+        &.failed {
+          background: #fee2e2;
+          color: #dc2626;
+        }
+      }
+
+      .col-issues {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+
+        // Constrain buttons within rows to prevent height shifting
+        button, .btn {
+          max-height: 24px;
+          padding-top: 0;
+          padding-bottom: 0;
+          font-size: 0.6875rem;
+        }
+
+        .issue-item {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.1875rem;
+          font-size: 0.6875rem;
+          font-weight: 500;
+
+          &.match {
+            color: #16a34a;
+          }
+
+          &.mismatch {
+            color: #dc2626;
+          }
+
+          &.new {
+            color: #2563eb;
+          }
+
+          &.missing {
+            color: #dc2626;
+          }
+
+          &.questionable {
+            color: #ca8a04;
+          }
+        }
+      }
+
+      .col-actions {
+        display: flex;
+        justify-content: center;
+      }
+
+      .delete-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        background: none;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        color: $neutral-gray-300;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: color 0.1s, border-color 0.1s, background-color 0.1s;
+
+        &:hover {
+          color: $raw-error-red;
+          background: rgba($raw-error-red, 0.06);
+          border-color: rgba($raw-error-red, 0.15);
+        }
+      }
+    }
+  }
+
+  // Load more
+  .load-more {
+    text-align: center;
+    padding: 1.25rem;
+  }
+
+  // Date range footer
+  .date-range-footer {
+    text-align: left;
+    padding: 0.75rem 0;
+    font-size: 0.6875rem;
+    color: $neutral-gray-600;
+  }
+}
+
+// Spinner animation (shared)
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}

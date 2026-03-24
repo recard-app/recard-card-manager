@@ -1,10 +1,13 @@
 import { CheckCircle, XCircle, AlertTriangle, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { FieldComparisonResult, FieldComparisonStatus } from '@/types/comparison-types';
+import { ProposedFix } from './ProposedFix';
 import './FieldComparisonCard.scss';
 
 interface FieldComparisonCardProps {
   field: FieldComparisonResult;
+  reviewed?: boolean;
+  onToggleReview?: () => void;
 }
 
 const STATUS_CONFIG: Record<
@@ -40,7 +43,7 @@ function formatValue(value: string | number | null): string {
   return value;
 }
 
-export function FieldComparisonCard({ field }: FieldComparisonCardProps) {
+export function FieldComparisonCard({ field, reviewed, onToggleReview }: FieldComparisonCardProps) {
   const config = STATUS_CONFIG[field.status];
   const StatusIcon = config.icon;
 
@@ -66,6 +69,17 @@ export function FieldComparisonCard({ field }: FieldComparisonCardProps) {
       </div>
 
       {field.notes && <div className="field-notes">{field.notes}</div>}
+
+      {field.proposedFix !== undefined && field.status !== 'match' && field.status !== 'missing_from_website' && (
+        <ProposedFix fix={field.proposedFix} />
+      )}
+
+      {onToggleReview && (
+        <label className="review-toggle" onClick={(e) => e.stopPropagation()}>
+          <input type="checkbox" checked={!!reviewed} onChange={onToggleReview} />
+          <span>Reviewed</span>
+        </label>
+      )}
     </div>
   );
 }

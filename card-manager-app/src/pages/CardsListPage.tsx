@@ -12,9 +12,10 @@ import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckC
 import { CreateCardModal } from '@/components/Modals/CreateCardModal';
 import { PageHeader } from '@/components/PageHeader';
 import { ProfilePopover } from '@/components/ProfilePopover';
+import { ReviewService } from '@/services/review.service';
 import './CardsListPage.scss';
 
-type SortColumn = 'CardName' | 'CardIssuer' | 'status' | 'lastUpdated';
+type SortColumn = 'CardName' | 'CardIssuer' | 'status' | 'lastUpdated' | 'lastReviewed' | 'links';
 type SortDirection = 'asc' | 'desc';
 type LastUpdatedTier = 'all' | 'lt30' | 'gt30' | 'gt60' | 'gt90';
 
@@ -259,9 +260,14 @@ function SingleSelectFilter<T extends string>({
 type DisplayMode = 'name' | 'id' | 'version';
 const VALID_DISPLAY_MODES: DisplayMode[] = ['name', 'id', 'version'];
 
-const VALID_SORT_COLUMNS: SortColumn[] = ['CardName', 'CardIssuer', 'status', 'lastUpdated'];
+const VALID_SORT_COLUMNS: SortColumn[] = ['CardName', 'CardIssuer', 'status', 'lastUpdated', 'lastReviewed', 'links'];
 const VALID_LAST_UPDATED: Exclude<LastUpdatedTier, 'all'>[] = ['lt30', 'gt30', 'gt60', 'gt90'];
 const VALID_CHARACTERISTICS: CardCharacteristics[] = ['standard', 'rotating', 'selectable'];
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  return 'Unknown error';
+}
 
 export function CardsListPage() {
   const navigate = useNavigate();
@@ -274,13 +280,28 @@ export function CardsListPage() {
 
   // Derive filter/sort state from URL params
   const searchQuery = searchParams.get('q') || '';
-  const statusFilter = (searchParams.get('status')?.split(',').filter(Boolean)) || [];
-  const lastUpdatedFilter = (searchParams.get('updated')?.split(',').filter((v): v is Exclude<LastUpdatedTier, 'all'> =>
-    VALID_LAST_UPDATED.includes(v as Exclude<LastUpdatedTier, 'all'>)
-  )) || [];
-  const characteristicsFilter = (searchParams.get('chars')?.split(',').filter((v): v is CardCharacteristics =>
-    VALID_CHARACTERISTICS.includes(v as CardCharacteristics)
-  )) || [];
+  const statusFilter = useMemo(
+    () => (searchParams.get('status')?.split(',').filter(Boolean)) || [],
+    [searchParams]
+  );
+  const lastUpdatedFilter = useMemo(
+    () => (searchParams.get('updated')?.split(',').filter((v): v is Exclude<LastUpdatedTier, 'all'> =>
+      VALID_LAST_UPDATED.includes(v as Exclude<LastUpdatedTier, 'all'>)
+    )) || [],
+    [searchParams]
+  );
+  const lastReviewedFilter = useMemo(
+    () => (searchParams.get('reviewed')?.split(',').filter((v): v is Exclude<LastUpdatedTier, 'all'> =>
+      VALID_LAST_UPDATED.includes(v as Exclude<LastUpdatedTier, 'all'>)
+    )) || [],
+    [searchParams]
+  );
+  const characteristicsFilter = useMemo(
+    () => (searchParams.get('chars')?.split(',').filter((v): v is CardCharacteristics =>
+      VALID_CHARACTERISTICS.includes(v as CardCharacteristics)
+    )) || [],
+    [searchParams]
+  );
   const sortColumnRaw = searchParams.get('sort');
   const sortColumn: SortColumn | null = sortColumnRaw === 'none'
     ? null
@@ -340,17 +361,26 @@ export function CardsListPage() {
     updateParams({ updated: vals.length > 0 ? vals.join(',') : null });
   }, [updateParams]);
 
+  const setLastReviewedFilter = useCallback((vals: Exclude<LastUpdatedTier, 'all'>[]) => {
+    updateParams({ reviewed: vals.length > 0 ? vals.join(',') : null });
+  }, [updateParams]);
+
   const setCharacteristicsFilter = useCallback((vals: CardCharacteristics[]) => {
     updateParams({ chars: vals.length > 0 ? vals.join(',') : null });
   }, [updateParams]);
 
-  const hasActiveFilters = searchQuery !== '' || statusFilter.length > 0 || lastUpdatedFilter.length > 0 || characteristicsFilter.length > 0;
+  const hasActiveFilters =
+    searchQuery !== '' ||
+    statusFilter.length > 0 ||
+    lastUpdatedFilter.length > 0 ||
+    lastReviewedFilter.length > 0 ||
+    characteristicsFilter.length > 0;
   const hasNonDefaultSort = sortColumn !== 'CardName' || sortDirection !== 'asc';
 
   const clearFilters = useCallback(() => {
     setSearchInput('');
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    updateParams({ q: null, status: null, updated: null, chars: null, display: null });
+    updateParams({ q: null, status: null, updated: null, reviewed: null, chars: null, display: null });
   }, [updateParams]);
 
   const clearSort = useCallback(() => {
@@ -371,9 +401,9 @@ export function CardsListPage() {
       } else {
         toast.info('All cards are already in sync');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error syncing cards:', err);
-      toast.error('Failed to sync cards: ' + (err.message || 'Unknown error'));
+      toast.error('Failed to sync cards: ' + getErrorMessage(err));
     } finally {
       setSyncing(false);
     }
@@ -382,12 +412,23 @@ export function CardsListPage() {
   const loadCards = async () => {
     try {
       setLoading(true);
-      const data = await CardService.getAllCardsWithStatus();
-      setCards(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load cards');
+      const [data, reviewDates] = await Promise.all([
+        CardService.getAllCardsWithStatus(),
+        ReviewService.getLastReviewedDates().catch(() => ({} as Record<string, string>)),
+      ]);
+
+      // Merge lastReviewedAt into card data
+      const cardsWithReviewDates = data.map(card => ({
+        ...card,
+        lastReviewedAt: reviewDates[card.ReferenceCardId] || undefined,
+      }));
+
+      setCards(cardsWithReviewDates);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'Failed to load cards');
       console.error('Error loading cards:', err);
-      toast.error('Failed to load cards' + (err?.message ? `: ${err.message}` : ''));
+      const message = getErrorMessage(err);
+      toast.error('Failed to load cards' + (message ? `: ${message}` : ''));
     } finally {
       setLoading(false);
     }
@@ -524,12 +565,21 @@ export function CardsListPage() {
         return lastUpdatedFilter.includes(tier);
       })();
 
+      // Last reviewed filter
+      const matchesLastReviewed = (() => {
+        if (lastReviewedFilter.length === 0) return true; // no filter applied
+        if (!card.lastReviewedAt) return false;
+        const tier = getLastUpdatedTier(card.lastReviewedAt);
+        if (!tier) return false;
+        return lastReviewedFilter.includes(tier);
+      })();
+
       // Characteristics filter
       const cardChars = card.CardCharacteristics || ['standard'];
       const matchesCharacteristics = characteristicsFilter.length === 0 ||
         characteristicsFilter.some(f => cardChars.includes(f));
 
-      return matchesSearch && matchesStatus && matchesLastUpdated && matchesCharacteristics;
+      return matchesSearch && matchesStatus && matchesLastUpdated && matchesLastReviewed && matchesCharacteristics;
     });
 
     // If no sort is applied, keep the existing natural order
@@ -562,7 +612,7 @@ export function CardsListPage() {
         case 'status':
           comparison = getStatusSortValue(a.status) - getStatusSortValue(b.status);
           break;
-        case 'lastUpdated':
+        case 'lastUpdated': {
           // Cards without effective lastUpdated go to the end
           const aEffective = getEffectiveLastUpdated(a);
           const bEffective = getEffectiveLastUpdated(b);
@@ -573,11 +623,27 @@ export function CardsListPage() {
           else if (!bEffective) comparison = -1;
           else comparison = aDate - bDate;
           break;
+        }
+        case 'lastReviewed': {
+          const aDate = a.lastReviewedAt ? new Date(a.lastReviewedAt).getTime() : 0;
+          const bDate = b.lastReviewedAt ? new Date(b.lastReviewedAt).getTime() : 0;
+          if (!a.lastReviewedAt && !b.lastReviewedAt) comparison = 0;
+          else if (!a.lastReviewedAt) comparison = 1;
+          else if (!b.lastReviewedAt) comparison = -1;
+          else comparison = aDate - bDate;
+          break;
+        }
+        case 'links': {
+          const aLinks = a.websiteUrls?.length ?? 0;
+          const bLinks = b.websiteUrls?.length ?? 0;
+          comparison = aLinks - bLinks;
+          break;
+        }
       }
 
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [cards, searchQuery, statusFilter, lastUpdatedFilter, characteristicsFilter, sortColumn, sortDirection, displayMode]);
+  }, [cards, searchQuery, statusFilter, lastUpdatedFilter, lastReviewedFilter, characteristicsFilter, sortColumn, sortDirection, displayMode]);
 
   const getStatusBadgeVariant = (status: CardStatus | string) => {
     switch (status) {
@@ -743,6 +809,18 @@ export function CardsListPage() {
         />
 
         <MultiSelectFilter
+          label="Last Reviewed"
+          selected={lastReviewedFilter}
+          onChange={setLastReviewedFilter}
+          options={[
+            { value: 'lt30', label: <span className="flex items-center gap-2"><CheckCircle2 size={14} className="text-green-600" /> &lt; 30 days</span> },
+            { value: 'gt30', label: <span className="flex items-center gap-2"><Clock size={14} className="text-gray-500" /> 31-60 days</span> },
+            { value: 'gt60', label: <span className="flex items-center gap-2"><AlertTriangle size={14} className="text-yellow-600" /> 61-90 days</span> },
+            { value: 'gt90', label: <span className="flex items-center gap-2"><AlertOctagon size={14} className="text-red-600" /> &gt; 90 days</span> },
+          ]}
+        />
+
+        <MultiSelectFilter
           label="Characteristics"
           selected={characteristicsFilter}
           onChange={setCharacteristicsFilter}
@@ -776,6 +854,12 @@ export function CardsListPage() {
               <div className="col-characteristics">Characteristics</div>
               <div className="col-last-updated">
                 <SortableHeader column="lastUpdated" label="Last Updated" />
+              </div>
+              <div className="col-last-reviewed">
+                <SortableHeader column="lastReviewed" label="Last Reviewed" />
+              </div>
+              <div className="col-links">
+                <SortableHeader column="links" label="Links" />
               </div>
             </div>
             <div className="table-body">
@@ -846,6 +930,36 @@ export function CardsListPage() {
                       }
                       return <span className="text-gray-400"></span>;
                     })()}
+                  </div>
+                  <div className="col-last-reviewed">
+                    {(() => {
+                      if (card.lastReviewedAt) {
+                        const stalenessInfo = getStalenessInfo(card.lastReviewedAt);
+                        return (
+                          <>
+                            {stalenessInfo && (
+                              <span className="staleness-icon" style={{ color: stalenessInfo.color }}>
+                                {stalenessInfo.icon}
+                              </span>
+                            )}
+                            <span>{formatLastUpdated(card.lastReviewedAt)}</span>
+                          </>
+                        );
+                      }
+                      return <span className="text-gray-400"></span>;
+                    })()}
+                  </div>
+                  <div className="col-links">
+                    {(card.websiteUrls?.length ?? 0) > 0 ? (
+                      <span
+                        style={{ color: '#16a34a', fontSize: '0.875rem' }}
+                        title={(card.websiteUrls ?? []).join('\n')}
+                      >
+                        {card.websiteUrls!.length}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>0</span>
+                    )}
                   </div>
                 </Link>
               ))}

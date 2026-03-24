@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   CheckCircle,
   XCircle,
@@ -7,17 +7,23 @@ import {
   Minus,
   ChevronDown,
   ChevronRight,
+  Pencil,
 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import type {
   ComponentComparisonResult,
   ComponentComparisonStatus,
 } from '@/types/comparison-types';
+import { ProposedFix } from './ProposedFix';
 import './ComponentComparisonTabs.scss';
 
 interface ComponentComparisonTabsProps {
   perks: ComponentComparisonResult[];
   credits: ComponentComparisonResult[];
+  defaultTab?: TabType;
+  /** Optional callback when an edit/create button is clicked on a component */
+  onEditComponent?: (componentType: 'credits' | 'perks' | 'multipliers', component: ComponentComparisonResult) => void;
   multipliers: ComponentComparisonResult[];
 }
 
@@ -79,11 +85,29 @@ function countByStatus(
   return counts;
 }
 
-interface ComponentCardProps {
-  component: ComponentComparisonResult;
+function resolveDefaultTab(
+  defaultTab: TabType | undefined,
+  creditsCount: number,
+  perksCount: number,
+  multipliersCount: number
+): TabType {
+  if (defaultTab) {
+    return defaultTab;
+  }
+  if (creditsCount > 0) return 'credits';
+  if (perksCount > 0) return 'perks';
+  if (multipliersCount > 0) return 'multipliers';
+  return 'credits';
 }
 
-function ComponentCard({ component }: ComponentCardProps) {
+interface ComponentCardProps {
+  component: ComponentComparisonResult;
+  onEdit?: (component: ComponentComparisonResult) => void;
+  reviewed?: boolean;
+  onToggleReview?: () => void;
+}
+
+export function ComponentCard({ component, onEdit, reviewed, onToggleReview }: ComponentCardProps) {
   const [expanded, setExpanded] = useState(true);
   const config = STATUS_CONFIG[component.status];
   const StatusIcon = config.icon;
@@ -91,16 +115,32 @@ function ComponentCard({ component }: ComponentCardProps) {
   return (
     <div className={cn('component-card', config.className)}>
       <div className="component-header" onClick={() => setExpanded(!expanded)}>
-        <div className="header-left">
-          {expanded ? (
-            <ChevronDown size={16} className="chevron" />
-          ) : (
-            <ChevronRight size={16} className="chevron" />
-          )}
-          <StatusIcon className="status-icon" size={18} />
-          <span className="component-title">{component.title}</span>
+        <div className="header-top-row">
+          <div className="header-left">
+            {expanded ? (
+              <ChevronDown size={14} className="chevron" />
+            ) : (
+              <ChevronRight size={14} className="chevron" />
+            )}
+            <StatusIcon className="status-icon" size={16} />
+            <span className="component-title">{component.title}</span>
+          </div>
+          <div className="header-right">
+            {onEdit && (component.status === 'outdated' || component.status === 'questionable') && (
+              <Button variant="outline" size="sm"
+                onClick={(e) => { e.stopPropagation(); onEdit(component); }} title="Edit component"
+              ><Pencil size={12} /> Edit</Button>
+            )}
+            {onEdit && component.status === 'new' && (
+              <Button variant="outline" size="sm"
+                onClick={(e) => { e.stopPropagation(); onEdit(component); }} title="Create component from proposed fix"
+              ><Plus size={12} /> Create</Button>
+            )}
+          </div>
         </div>
-        <span className="status-badge">{config.label}</span>
+        <div className="header-meta">
+          <span className="status-badge">{config.label}</span>
+        </div>
       </div>
 
       {expanded && (
@@ -157,7 +197,18 @@ function ComponentCard({ component }: ComponentCardProps) {
               </pre>
             </div>
           )}
+
+          {component.proposedFix && (
+            <ProposedFix fix={component.proposedFix} />
+          )}
         </div>
+      )}
+
+      {onToggleReview && (
+        <label className="review-toggle" onClick={(e) => e.stopPropagation()}>
+          <input type="checkbox" checked={!!reviewed} onChange={onToggleReview} />
+          <span>Reviewed</span>
+        </label>
       )}
     </div>
   );
@@ -167,8 +218,25 @@ export function ComponentComparisonTabs({
   perks,
   credits,
   multipliers,
+  defaultTab,
+  onEditComponent,
 }: ComponentComparisonTabsProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('credits');
+  const [activeTab, setActiveTab] = useState<TabType>(
+    resolveDefaultTab(defaultTab, credits.length, perks.length, multipliers.length)
+  );
+
+  // Keep active tab aligned with parent intent and available data.
+  useEffect(() => {
+    const nextDefault = resolveDefaultTab(
+      defaultTab,
+      credits.length,
+      perks.length,
+      multipliers.length
+    );
+    if (nextDefault !== activeTab) {
+      setActiveTab(nextDefault);
+    }
+  }, [defaultTab, credits.length, perks.length, multipliers.length, activeTab]);
 
   const tabs: { key: TabType; items: ComponentComparisonResult[] }[] = [
     { key: 'credits', items: credits },
@@ -227,7 +295,11 @@ export function ComponentComparisonTabs({
         ) : (
           <div className="components-list">
             {activeItems.map((component, index) => (
-              <ComponentCard key={component.id || index} component={component} />
+              <ComponentCard
+                key={component.id || index}
+                component={component}
+                onEdit={onEditComponent ? (c) => onEditComponent(activeTab as 'credits' | 'perks' | 'multipliers', c) : undefined}
+              />
             ))}
           </div>
         )}

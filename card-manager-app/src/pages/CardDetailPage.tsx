@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
-import { Trash2, Plus, Pencil } from 'lucide-react';
+import { Trash2, Plus, Pencil, Link } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader';
 import { VersionsSidebar } from '@/components/CardDetail/VersionsSidebar';
 import { CardDetailsForm } from '@/components/CardDetail/CardDetailsForm';
@@ -20,7 +20,13 @@ import { PerkModal } from '@/components/Modals/PerkModal';
 import { MultiplierModal } from '@/components/Modals/MultiplierModal';
 import { CreateVersionModal } from '@/components/Modals/CreateVersionModal';
 import { EditCardNameModal } from '@/components/Modals/EditCardNameModal';
+import { UrlManagementModal } from '@/components/Modals/UrlManagementModal';
 import './CardDetailPage.scss';
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  return 'Unknown error';
+}
 
 export function CardDetailPage() {
   // URL params: referenceCardId is required, versionId is optional
@@ -70,6 +76,8 @@ export function CardDetailPage() {
   const [showDeleteCardConfirm, setShowDeleteCardConfirm] = useState(false);
   const [deletingCard, setDeletingCard] = useState(false);
   const [editCardNameModalOpen, setEditCardNameModalOpen] = useState(false);
+  const [urlModalOpen, setUrlModalOpen] = useState(false);
+  const [urlModalKey, setUrlModalKey] = useState(0);
 
   // Track if we're on initial load
   const isInitialLoad = useRef(true);
@@ -85,6 +93,8 @@ export function CardDetailPage() {
     if (referenceCardId) {
       loadVersions(referenceCardId);
     }
+    // loadVersions intentionally runs only when referenceCardId changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [referenceCardId]);
 
   useEffect(() => {
@@ -97,6 +107,8 @@ export function CardDetailPage() {
       setPerks([]);
       setMultipliers([]);
     }
+    // loadComponents intentionally runs only when referenceCardId changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [referenceCardId]);
 
   /**
@@ -133,10 +145,11 @@ export function CardDetailPage() {
         setCard(null);
         setSelectedVersionId(null);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load card');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      setError(message || 'Failed to load card');
       console.error('Error loading card:', err);
-      toast.error('Failed to load card' + (err?.message ? `: ${err.message}` : ''));
+      toast.error('Failed to load card' + (message ? `: ${message}` : ''));
     } finally {
       setLoading(false);
     }
@@ -152,7 +165,7 @@ export function CardDetailPage() {
         const activeVersion = versionsData.find(v => v.IsActive);
         await handleVersionSelect((activeVersion || versionsData[0]).id);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading versions:', err);
       toast.error('Failed to load versions');
     }
@@ -187,7 +200,7 @@ export function CardDetailPage() {
       setCredits(sortComponents(creditsData));
       setPerks(sortComponents(perksData));
       setMultipliers(sortComponents(multipliersData));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading components:', err);
       toast.error('Failed to load components');
     }
@@ -210,10 +223,11 @@ export function CardDetailPage() {
 
       // Update URL to reflect the selected version
       navigate(`/cards/${referenceCardId}/${versionId}`, { replace: true });
-    } catch (err: any) {
-      setError(err.message || 'Failed to load version');
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      setError(message || 'Failed to load version');
       console.error('Error loading version:', err);
-      toast.error('Failed to load version' + (err?.message ? `: ${err.message}` : ''));
+      toast.error('Failed to load version' + (message ? `: ${message}` : ''));
     } finally {
       setContentLoading(false);
     }
@@ -245,9 +259,9 @@ export function CardDetailPage() {
         if (data) setCard(data);
       }
       toast.success('Version activated');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error activating version:', err);
-      toast.error('Failed to activate version: ' + err.message);
+      toast.error('Failed to activate version: ' + getErrorMessage(err));
     }
   };
 
@@ -262,9 +276,9 @@ export function CardDetailPage() {
         if (data) setCard(data);
       }
       toast.success('Version deactivated');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deactivating version:', err);
-      toast.error('Failed to deactivate version: ' + err.message);
+      toast.error('Failed to deactivate version: ' + getErrorMessage(err));
     }
   };
 
@@ -315,7 +329,7 @@ export function CardDetailPage() {
 
   const handleEditComponent = (type: 'credits' | 'perks' | 'multipliers', id: string) => {
     switch (type) {
-      case 'credits':
+      case 'credits': {
         const credit = credits.find(c => c.id === id);
         if (credit) {
           setEditingCredit(credit);
@@ -323,7 +337,8 @@ export function CardDetailPage() {
           setCreditModalOpen(true);
         }
         break;
-      case 'perks':
+      }
+      case 'perks': {
         const perk = perks.find(p => p.id === id);
         if (perk) {
           setEditingPerk(perk);
@@ -331,7 +346,8 @@ export function CardDetailPage() {
           setPerkModalOpen(true);
         }
         break;
-      case 'multipliers':
+      }
+      case 'multipliers': {
         const multiplier = multipliers.find(m => m.id === id);
         if (multiplier) {
           setEditingMultiplier(multiplier);
@@ -339,6 +355,7 @@ export function CardDetailPage() {
           setMultiplierModalOpen(true);
         }
         break;
+      }
     }
   };
 
@@ -368,9 +385,9 @@ export function CardDetailPage() {
       if (referenceCardId) {
         await loadComponents(referenceCardId);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting component:', err);
-      toast.error('Failed to delete component: ' + err.message);
+      toast.error('Failed to delete component: ' + getErrorMessage(err));
     }
   };
 
@@ -383,9 +400,9 @@ export function CardDetailPage() {
       toast.success('Card deleted successfully');
       setShowDeleteCardConfirm(false);
       navigate('/cards');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting card:', err);
-      toast.error('Failed to delete card: ' + (err?.message || 'Unknown error'));
+      toast.error('Failed to delete card: ' + getErrorMessage(err));
     } finally {
       setDeletingCard(false);
     }
@@ -437,6 +454,20 @@ export function CardDetailPage() {
         }
         actions={
           <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setUrlModalKey(k => k + 1);
+                setUrlModalOpen(true);
+              }}
+              style={{ opacity: (cardName?.websiteUrls?.length ?? 0) > 0 ? 1 : 0.5 }}
+            >
+              <Link size={14} />
+              {(cardName?.websiteUrls?.length ?? 0) > 0
+                ? `${cardName!.websiteUrls!.length} URL${cardName!.websiteUrls!.length !== 1 ? 's' : ''}`
+                : 'URLs'}
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -610,6 +641,17 @@ export function CardDetailPage() {
           key={`edit-card-name-modal-${editCardNameModalKey}`}
           open={editCardNameModalOpen}
           onOpenChange={setEditCardNameModalOpen}
+          cardName={cardName}
+          onSuccess={(updatedCardName) => setCardName(updatedCardName)}
+        />
+      )}
+
+      {/* URL Management Modal */}
+      {cardName && (
+        <UrlManagementModal
+          key={`url-modal-${urlModalKey}`}
+          open={urlModalOpen}
+          onOpenChange={setUrlModalOpen}
           cardName={cardName}
           onSuccess={(updatedCardName) => setCardName(updatedCardName)}
         />

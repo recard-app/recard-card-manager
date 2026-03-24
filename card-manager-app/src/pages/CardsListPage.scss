@@ -135,7 +135,7 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: 24px minmax(300px, 2fr) minmax(120px, 1fr) 90px 100px 100px minmax(110px, 1fr);
+  grid-template-columns: 24px minmax(200px, 1.5fr) minmax(100px, 0.7fr) 112px 125px 125px 120px 120px 40px;
   min-width: 900px;
   gap: $spacing-sm;
   padding: $spacing-xs $spacing-sm;
@@ -188,7 +188,7 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: 24px minmax(300px, 2fr) minmax(120px, 1fr) 90px 100px 100px minmax(110px, 1fr);
+  grid-template-columns: 24px minmax(200px, 1.5fr) minmax(100px, 0.7fr) 112px 125px 125px 120px 120px 40px;
   min-width: 900px;
   gap: $spacing-sm;
   padding: $spacing-xs $spacing-sm;
@@ -261,6 +261,23 @@
       align-items: center;
       flex-shrink: 0;
     }
+  }
+
+  .col-last-reviewed {
+    color: $neutral-gray-600;
+    font-variant-numeric: tabular-nums;
+    gap: 6px;
+
+    .staleness-icon {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+  }
+
+  .col-links {
+    text-align: center;
+    justify-content: center;
   }
 
 }

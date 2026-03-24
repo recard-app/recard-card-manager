@@ -10,6 +10,7 @@ const ComparisonRequestSchema = z.object({
   referenceCardId: z.string().min(1, 'Reference Card ID is required'),
   versionId: z.string().min(1, 'Version ID is required'),
   websiteText: z.string().min(1, 'Website text is required'),
+  model: z.string().optional(),
 });
 
 /**
@@ -27,12 +28,13 @@ router.post('/analyze', verifyAuth, async (req: Request, res: Response) => {
       });
     }
 
-    const { referenceCardId, versionId, websiteText } = parsed.data;
+    const { referenceCardId, versionId, websiteText, model } = parsed.data;
 
     const result = await analyzeComparison({
       referenceCardId,
       versionId,
       websiteText,
+      model,
     });
 
     res.json(result);

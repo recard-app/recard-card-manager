@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CreditCard, Sparkles, GitCompare, Users, Coffee, Database, BrainCircuit, Flame, Trophy, Skull, Pickaxe, Anchor, Construction, ShieldAlert } from 'lucide-react';
+import { CreditCard, Sparkles, Users, Coffee, Database, BrainCircuit, Flame, Trophy, Skull, Pickaxe, Anchor, Construction, ShieldAlert, Link as LinkIcon, ClipboardCheck } from 'lucide-react';
 
 import { PageHeader } from '@/components/PageHeader';
 import { ProfilePopover } from '@/components/ProfilePopover';
@@ -61,13 +61,23 @@ export function HomePage() {
               </div>
             </Link>
 
-            <Link to="/card-comparison" className="nav-card">
+            <Link to="/url-management" className="nav-card">
               <div className="nav-card-icon">
-                <GitCompare size={32} />
+                <LinkIcon size={32} />
               </div>
               <div className="nav-card-content">
-                <h2>Card Comparison</h2>
-                <p>Compare database card data against website text to identify discrepancies</p>
+                <h2>URL Management</h2>
+                <p>Manage website URLs for automated card reviews</p>
+              </div>
+            </Link>
+
+            <Link to="/reviews" className="nav-card">
+              <div className="nav-card-icon">
+                <ClipboardCheck size={32} />
+              </div>
+              <div className="nav-card-content">
+                <h2>Card Reviews</h2>
+                <p>Automated card review reports and job history</p>
               </div>
             </Link>
           </>

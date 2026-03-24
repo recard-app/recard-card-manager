@@ -7,6 +7,7 @@ import {
   removeFromCreditCards,
   syncAllCards,
 } from '../services/credit-cards-sync';
+import { z } from 'zod';
 import { CardNameSchema, CreditCardCreateSchema, CreditCardUpdateSchema, parseOr400 } from '../validation/schemas';
 
 const router = express.Router();
@@ -79,7 +80,10 @@ router.post('/card-names/:referenceCardId', async (req: Request, res: Response) 
     if (!parsed.ok) {
       return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
     }
-    const { CardName, CardIssuer, CardCharacteristics } = parsed.data;
+    const { CardName, CardIssuer, CardCharacteristics, websiteUrls } = parsed.data;
+    const normalizedWebsiteUrls = websiteUrls
+      ? Array.from(new Set(websiteUrls.map((url) => new URL(url).toString())))
+      : undefined;
 
     // Validate required fields
     // (Already validated above)
@@ -94,6 +98,7 @@ router.post('/card-names/:referenceCardId', async (req: Request, res: Response) 
       CardName,
       CardIssuer,
       CardCharacteristics: CardCharacteristics || 'standard',
+      ...(normalizedWebsiteUrls ? { websiteUrls: normalizedWebsiteUrls } : {}),
     };
 
     await db.collection('credit_cards_names').doc(referenceCardId).set(newCardName);
@@ -116,7 +121,10 @@ router.put('/card-names/:referenceCardId', async (req: Request, res: Response) =
     if (!parsed.ok) {
       return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
     }
-    const { CardName, CardIssuer, CardCharacteristics } = parsed.data;
+    const { CardName, CardIssuer, CardCharacteristics, websiteUrls } = parsed.data;
+    const normalizedWebsiteUrls = websiteUrls
+      ? Array.from(new Set(websiteUrls.map((url) => new URL(url).toString())))
+      : undefined;
 
     const doc = await db.collection('credit_cards_names').doc(referenceCardId).get();
     if (!doc.exists) {
@@ -127,6 +135,7 @@ router.put('/card-names/:referenceCardId', async (req: Request, res: Response) =
     if (CardName !== undefined) updateData.CardName = CardName;
     if (CardIssuer !== undefined) updateData.CardIssuer = CardIssuer;
     if (CardCharacteristics !== undefined) updateData.CardCharacteristics = CardCharacteristics;
+    if (normalizedWebsiteUrls !== undefined) updateData.websiteUrls = normalizedWebsiteUrls;
 
     await db.collection('credit_cards_names').doc(referenceCardId).update(updateData);
 
@@ -222,6 +231,87 @@ router.post('/sync-all', async (req: Request, res: Response) => {
   }
 });
 
+// ===== BULK URL MANAGEMENT =====
+
+/**
+ * PUT /admin/cards/bulk-urls
+ * Batch update websiteUrls for multiple cards.
+ * CRITICAL: This route must be registered BEFORE /:cardId param routes.
+ */
+router.put('/bulk-urls', async (req: Request, res: Response) => {
+  try {
+    const HttpsUrlSchema = z.string().url().refine((value) => {
+      try {
+        return new URL(value).protocol === 'https:';
+      } catch {
+        return false;
+      }
+    }, 'URL must start with https://');
+
+    const BulkUrlsSchema = z.array(z.object({
+      referenceCardId: z.string().min(1),
+      websiteUrls: z.array(HttpsUrlSchema),
+    }));
+
+    const parsed = BulkUrlsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request body', details: parsed.error.issues });
+    }
+
+    const updates = parsed.data;
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'At least one update is required' });
+    }
+
+    if (updates.length > 500) {
+      return res.status(400).json({ error: 'Cannot update more than 500 cards at once' });
+    }
+
+    // Deduplicate by card ID (last entry wins) to avoid conflicting writes.
+    const dedupedUpdates = Array.from(
+      new Map(
+        updates.map(update => [
+          update.referenceCardId,
+          {
+            ...update,
+            websiteUrls: Array.from(
+              new Set(update.websiteUrls.map(url => new URL(url).toString()))
+            ),
+          },
+        ])
+      ).values()
+    );
+
+    // Verify all target documents exist before writing.
+    const docs = await db.getAll(
+      ...dedupedUpdates.map(update => db.collection('credit_cards_names').doc(update.referenceCardId))
+    );
+    const missingCardIds = docs.filter(doc => !doc.exists).map(doc => doc.id);
+    if (missingCardIds.length > 0) {
+      return res.status(404).json({
+        error: 'Some cards were not found',
+        missingCardIds,
+      });
+    }
+
+    // Firestore batch write (max 500 operations per batch)
+    const batch = db.batch();
+
+    for (const update of dedupedUpdates) {
+      const docRef = db.collection('credit_cards_names').doc(update.referenceCardId);
+      batch.update(docRef, { websiteUrls: update.websiteUrls });
+    }
+
+    await batch.commit();
+
+    res.json({ success: true, updated: dedupedUpdates.length });
+  } catch (error) {
+    console.error('Error bulk updating URLs:', error);
+    res.status(500).json({ error: 'Failed to bulk update URLs' });
+  }
+});
+
 // ===== CARD MANAGEMENT =====
 
 /**
@@ -290,6 +380,7 @@ router.get('/', async (req: Request, res: Response) => {
           CardName: cardNameData.CardName,
           CardIssuer: cardNameData.CardIssuer,
           CardCharacteristics: deriveCharacteristics(multiplierTypesMap.get(referenceCardId)),
+          websiteUrls: cardNameData.websiteUrls || [],
           status: 'no_versions',
           ActiveVersionName: null,
           ActiveVersionCardName: null,
@@ -322,6 +413,7 @@ router.get('/', async (req: Request, res: Response) => {
           CardName: cardNameData.CardName,
           CardIssuer: cardNameData.CardIssuer,
           CardCharacteristics: deriveCharacteristics(multiplierTypesMap.get(referenceCardId)),
+          websiteUrls: cardNameData.websiteUrls || [],
           // Status info
           status: hasActiveVersion ? 'active' : 'no_active_version',
           ActiveVersionName: activeVersion ? activeVersion.VersionName : null,

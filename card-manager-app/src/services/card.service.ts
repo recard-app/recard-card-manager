@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api-client';
 import { API_ROUTES } from '@/lib/api-routes';
+import type { AxiosError } from 'axios';
 import type { CreditCardDetails } from '@/types';
 import type { CardWithStatus, CreditCardName, VersionSummary, CardCharacteristics } from '@/types/ui-types';
 
@@ -44,8 +45,9 @@ export class CardService {
         API_ROUTES.CARD_NAMES.DETAILS(referenceCardId)
       );
       return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      const status = (error as AxiosError)?.response?.status;
+      if (status === 404) {
         return null;
       }
       throw error;
@@ -57,9 +59,18 @@ export class CardService {
    */
   static async updateCardName(
     referenceCardId: string,
-    data: { CardName?: string; CardIssuer?: string; CardCharacteristics?: CardCharacteristics }
+    data: { CardName?: string; CardIssuer?: string; CardCharacteristics?: CardCharacteristics; websiteUrls?: string[] }
   ): Promise<void> {
     await apiClient.put(API_ROUTES.CARD_NAMES.UPDATE(referenceCardId), data);
+  }
+
+  /**
+   * Bulk update websiteUrls for multiple cards
+   */
+  static async bulkUpdateUrls(
+    updates: { referenceCardId: string; websiteUrls: string[] }[]
+  ): Promise<void> {
+    await apiClient.put(API_ROUTES.CARD_URLS.BULK_UPDATE, updates);
   }
 
   /**
@@ -89,8 +100,9 @@ export class CardService {
     try {
       const response = await apiClient.get<CreditCardDetails>(API_ROUTES.CARDS.DETAILS(cardId));
       return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      const status = (error as AxiosError)?.response?.status;
+      if (status === 404) {
         return null;
       }
       throw error;
