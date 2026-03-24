@@ -777,7 +777,6 @@ export function CardsListPage() {
               <div className="col-last-updated">
                 <SortableHeader column="lastUpdated" label="Last Updated" />
               </div>
-              <div className="col-versions">Versions</div>
             </div>
             <div className="table-body">
               {filteredAndSortedCards.map(card => (
@@ -847,9 +846,6 @@ export function CardsListPage() {
                       }
                       return <span className="text-gray-400"></span>;
                     })()}
-                  </div>
-                  <div className="col-versions">
-                    {card.versionCount ?? 0}
                   </div>
                 </Link>
               ))}

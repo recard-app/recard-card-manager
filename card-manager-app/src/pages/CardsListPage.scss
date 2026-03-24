@@ -121,22 +121,22 @@
 .cards-table {
   @include flex-column;
   flex: 1;
-  min-height: 0; // Allows flex child to shrink below content size
+  min-height: 0;
   border: 1px solid $neutral-gray-200;
   border-radius: $border-radius-sm;
-  overflow: hidden;
+  overflow: auto;
   background-color: $neutral-white;
 }
 
 .table-body {
   flex: 1;
-  overflow-y: auto;
   min-height: 0;
 }
 
 .table-header {
   display: grid;
-  grid-template-columns: 24px 2fr 1fr 1fr 2fr 0.8fr 1fr 0.5fr;
+  grid-template-columns: 24px minmax(300px, 2fr) minmax(120px, 1fr) 90px 100px 100px minmax(110px, 1fr);
+  min-width: 900px;
   gap: $spacing-sm;
   padding: $spacing-xs $spacing-sm;
   background-color: $neutral-gray-100;
@@ -188,7 +188,8 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: 24px 2fr 1fr 1fr 2fr 0.8fr 1fr 0.5fr;
+  grid-template-columns: 24px minmax(300px, 2fr) minmax(120px, 1fr) 90px 100px 100px minmax(110px, 1fr);
+  min-width: 900px;
   gap: $spacing-sm;
   padding: $spacing-xs $spacing-sm;
   text-decoration: none;
@@ -262,10 +263,6 @@
     }
   }
 
-  .col-versions {
-    color: $neutral-gray-600;
-    justify-content: center;
-  }
 }
 
 .card-image {

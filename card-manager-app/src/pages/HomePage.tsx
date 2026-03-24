@@ -1,17 +1,42 @@
 import { Link } from 'react-router-dom';
-import { CreditCard, Sparkles, GitCompare, Users } from 'lucide-react';
+import { CreditCard, Sparkles, GitCompare, Users, Coffee, Database, BrainCircuit, Flame, Trophy, Skull, Pickaxe, Anchor, Construction, ShieldAlert } from 'lucide-react';
 
 import { PageHeader } from '@/components/PageHeader';
 import { ProfilePopover } from '@/components/ProfilePopover';
 import { useAuth } from '@/contexts/AuthContext';
 import './HomePage.scss';
 
+const WELCOME_MESSAGES = [
+  { message: "Your cards aren't going to manage themselves.", icon: Coffee },
+  { message: "Another day, another card version.", icon: Database },
+  { message: "Let's pretend we're excited about card metadata.", icon: BrainCircuit },
+  { message: "Remember: you chose this.", icon: Flame },
+  { message: "No one has ever described this tool as 'fun'.", icon: Trophy },
+  { message: "The cards have been waiting. Passive-aggressively.", icon: Skull },
+  { message: "Your single pane of glass for putting cards in a database.", icon: Pickaxe },
+  { message: "Let's circle back on those card discrepancies.", icon: Anchor },
+  { message: "The dashboard is ready. Whether you are is another question.", icon: Construction },
+  { message: "If you're reading this, it's too late. You're a card manager now.", icon: ShieldAlert },
+];
+
+const welcomeEntry = WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)];
+
 export function HomePage() {
-  const { permissions } = useAuth();
+  const { user, permissions } = useAuth();
+  const firstName = user?.displayName?.split(' ')[0] || 'there';
+  const WelcomeIcon = welcomeEntry.icon;
 
   return (
     <div className="home-page">
       <PageHeader title="Dashboard" actions={<ProfilePopover />} />
+
+      <div className="welcome-banner">
+        <WelcomeIcon size={56} className="welcome-icon" />
+        <div className="welcome-content">
+          <div className="welcome-text">Welcome back, {firstName}.</div>
+          <div className="welcome-subtext">{welcomeEntry.message}</div>
+        </div>
+      </div>
 
       <div className="nav-cards">
         {permissions['card-manager'] && (

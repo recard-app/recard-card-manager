@@ -10,6 +10,41 @@
   gap: $spacing-sm;
 }
 
+.welcome-banner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: $spacing-lg;
+  width: 100%;
+  padding: 20px $spacing-lg;
+  background: linear-gradient(135deg, rgba($raw-primary-blue, 0.06) 0%, rgba($raw-primary-blue, 0.02) 100%);
+  border: 1px solid $neutral-gray-200;
+  border-radius: $border-radius-lg;
+
+  .welcome-icon {
+    flex-shrink: 0;
+    color: $primary-blue;
+  }
+
+  .welcome-content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  .welcome-text {
+    font-size: 28px;
+    font-weight: 700;
+    color: $neutral-gray-800;
+  }
+
+  .welcome-subtext {
+    font-size: 18px;
+    color: $neutral-gray-600;
+    font-style: italic;
+  }
+}
+
 .nav-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
