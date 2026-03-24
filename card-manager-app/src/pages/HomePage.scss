@@ -11,17 +11,21 @@
 }
 
 .nav-cards {
-  @include flex-column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: $spacing-md;
   padding-top: $spacing-md;
   width: 100%;
 }
 
 .nav-card {
-  @include flex-row;
+  @include flex-column;
   @include card;
-  gap: $spacing-lg;
+  height: 220px;
   align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: $spacing-md;
   text-decoration: none;
   color: inherit;
   transition: all 0.2s ease;
@@ -49,8 +53,6 @@
 }
 
 .nav-card-content {
-  flex: 1;
-
   h2 {
     font-size: $font-size-lg;
     font-weight: 600;
