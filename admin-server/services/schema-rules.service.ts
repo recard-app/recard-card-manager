@@ -26,10 +26,13 @@ function extractQualificationRules(content: string): string {
   const classificationRules = content.match(/### (?:Redeemable vs Auto-Applied|Auto-Applied vs Redeemable)[\s\S]*?(?=###|---)/);
   // Extract the Multi-Card Pages section
   const multiCardRules = content.match(/### Multi-Card Pages[\s\S]*?(?=###|---)/);
+  // Extract the Top N Categories section (multipliers only)
+  const topNCategoriesRules = content.match(/### "Top N Categories" Multipliers[\s\S]*?(?=###|---)/);
 
   let result = '';
   if (qualifies) result += qualifies[0].trim() + '\n\n';
   if (classificationRules) result += classificationRules[0].trim() + '\n\n';
+  if (topNCategoriesRules) result += topNCategoriesRules[0].trim() + '\n\n';
   if (notQualifies) result += notQualifies[0].trim() + '\n\n';
   if (multiCardRules) result += multiCardRules[0].trim();
 
@@ -99,6 +102,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
     rules.push('- Description: Explain what purchases qualify, not just repeat the category name');
     rules.push('- SubCategory: Leave as empty string "" if no subcategory applies. IMPORTANT: Use "hotels" (with s), NOT "hotel"');
     rules.push('- Requirements: Use UPPERCASE for portal requirements');
+    rules.push('- TOP N CATEGORIES: When a card offers a bonus on the cardholder\'s "top N spending categories" (e.g., "3X on top 2 categories"), create N SEPARATE selectable multipliers labeled "Top Category #1", "Top Category #2", etc. Each with multiplierType: "selectable" and the same allowedCategories list');
   }
   
   if (type === 'perk') {

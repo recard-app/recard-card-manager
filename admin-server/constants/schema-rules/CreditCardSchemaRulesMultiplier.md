@@ -23,6 +23,60 @@ A Multiplier represents a rewards earning rate for specific spending categories.
   - They apply to very **narrow/specific purchases** (e.g., beverages on a specific airline's flights, not a broad spending category)
   - A multiplier earns rewards in the card's primary currency (e.g., "3X Membership Rewards points on dining"). If the benefit pays back as a statement credit or percentage discount instead, it is a Perk.
 
+### "Top N Categories" Multipliers (CRITICAL)
+When a card offers a bonus multiplier on the cardholder's **top N spending categories** (e.g., "3X on your top 2 categories", "2X on your top 3 spending categories"), create **separate selectable multiplier entries** for each slot. The cardholder should be able to choose the category they anticipate spending the most in for each slot.
+
+**Rules:**
+- Create N separate multipliers, one for each slot (e.g., "top 2" = 2 multipliers)
+- Name them with a numbered label to distinguish slots: e.g., "Top Category #1", "Top Category #2"
+- Each should be `multiplierType: "selectable"` with the same `allowedCategories` list
+- Category and SubCategory should be empty string `""` (user selects)
+- Include the same set of common spending categories in `allowedCategories` for each
+
+**Example: "3X on your top 2 spending categories"**
+
+Create two multipliers:
+```json
+{
+  "Name": "Top Category #1",
+  "Category": "",
+  "SubCategory": "",
+  "Description": "Earn 3X on your top spending category. Choose the category you anticipate spending the most in.",
+  "Multiplier": 3,
+  "multiplierType": "selectable",
+  "allowedCategories": [
+    { "category": "dining", "subCategory": "", "displayName": "Dining" },
+    { "category": "travel", "subCategory": "", "displayName": "Travel" },
+    { "category": "gas", "subCategory": "gas stations", "displayName": "Gas Stations" },
+    { "category": "shopping", "subCategory": "supermarkets", "displayName": "Grocery Stores" },
+    { "category": "entertainment", "subCategory": "streaming", "displayName": "Streaming" },
+    { "category": "transportation", "subCategory": "rideshare", "displayName": "Rideshare" },
+    { "category": "transit", "subCategory": "", "displayName": "Transit" },
+    { "category": "shopping", "subCategory": "online shopping", "displayName": "Online Shopping" }
+  ]
+}
+```
+```json
+{
+  "Name": "Top Category #2",
+  "Category": "",
+  "SubCategory": "",
+  "Description": "Earn 3X on your second top spending category. Choose the category you anticipate spending the second most in.",
+  "Multiplier": 3,
+  "multiplierType": "selectable",
+  "allowedCategories": [
+    { "category": "dining", "subCategory": "", "displayName": "Dining" },
+    { "category": "travel", "subCategory": "", "displayName": "Travel" },
+    { "category": "gas", "subCategory": "gas stations", "displayName": "Gas Stations" },
+    { "category": "shopping", "subCategory": "supermarkets", "displayName": "Grocery Stores" },
+    { "category": "entertainment", "subCategory": "streaming", "displayName": "Streaming" },
+    { "category": "transportation", "subCategory": "rideshare", "displayName": "Rideshare" },
+    { "category": "transit", "subCategory": "", "displayName": "Transit" },
+    { "category": "shopping", "subCategory": "online shopping", "displayName": "Online Shopping" }
+  ]
+}
+```
+
 ### Multi-Card Pages (CRITICAL)
 Source text may list benefits for **multiple cards** on the same page. Only extract multipliers that apply to the **specific card being entered**. If a multiplier says something like "Platinum Card only", "exclusive to Gold Card", "available on Reserve card", or similar language restricting it to a different card, **skip it entirely**. When in doubt about which card a multiplier belongs to, skip it rather than assign it to the wrong card.
 
