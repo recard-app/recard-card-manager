@@ -98,7 +98,7 @@ function extractCriticalFieldRules(content: string, type: SchemaRuleType): strin
     rules.push('- DO NOT include id, ReferenceCardId, LastUpdated, EffectiveFrom, or EffectiveTo fields (auto-generated)');
     rules.push('- Name: Title Case category name (e.g., "Dining", "Travel", "Flights"). Do NOT include multiplier value in Name. No trademark/copyright symbols -- basic keyboard characters only');
     rules.push('- Multiplier: number type (not string), e.g., 3 for 3X, 1.5 for 1.5%');
-    rules.push('- Category: Use "portal" for issuer travel portal purchases (not "travel")');
+    rules.push('- Category: Use "travel" for issuer travel portal purchases, with SubCategory "portal"');
     rules.push('- Description: Explain what purchases qualify, not just repeat the category name');
     rules.push('- SubCategory: Leave as empty string "" if no subcategory applies. IMPORTANT: Use "hotels" (with s), NOT "hotel"');
     rules.push('- Requirements: Use UPPERCASE for portal requirements');
@@ -187,4 +187,3 @@ export function getCondensedRules(type: SchemaRuleType): string {
 export function clearRulesCache(): void {
   Object.keys(rulesCache).forEach(key => delete rulesCache[key]);
 }
-

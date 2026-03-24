@@ -130,6 +130,7 @@ CRITICAL JSON REQUIREMENTS:
 5. Ensure ALL objects and arrays are properly closed with braces/brackets
 6. The response must be parseable by JSON.parse() without any modifications
 7. Do NOT include trademark (TM), registered (R), service mark (SM), copyright (C), or any other special Unicode symbols in ANY text fields. Strip them from source text. Use only basic keyboard characters.
+8. Extract ONLY benefits and facts explicitly present in the provided source text. Never invent cards, benefits, values, dates, requirements, or terms not stated in the input.
 
 Your response should start with { and end with } (or [ and ] for arrays). Nothing else.`;
 
