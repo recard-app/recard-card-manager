@@ -232,9 +232,32 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     // Fetch all card names (top-level identities)
     const cardNamesSnapshot = await db.collection('credit_cards_names').get();
-    
+
     // Fetch all versions
     const versionsSnapshot = await db.collection('credit_cards_history').get();
+
+    // Fetch all multipliers to derive characteristics
+    const multipliersSnapshot = await db.collection('credit_cards_multipliers').get();
+    const multiplierTypesMap = new Map<string, Set<string>>();
+    multipliersSnapshot.forEach((doc) => {
+      const data = doc.data();
+      const refId = data.ReferenceCardId;
+      if (!multiplierTypesMap.has(refId)) {
+        multiplierTypesMap.set(refId, new Set());
+      }
+      if (data.multiplierType && data.multiplierType !== 'standard') {
+        multiplierTypesMap.get(refId)!.add(data.multiplierType);
+      }
+    });
+
+    // Derive characteristics from multiplier types
+    const deriveCharacteristics = (types?: Set<string>): string[] => {
+      if (!types || types.size === 0) return ['standard'];
+      const result: string[] = [];
+      if (types.has('rotating')) result.push('rotating');
+      if (types.has('selectable')) result.push('selectable');
+      return result.length > 0 ? result : ['standard'];
+    };
 
     // Build a map of ReferenceCardId -> versions
     const versionsMap = new Map<string, any[]>();
@@ -266,9 +289,10 @@ router.get('/', async (req: Request, res: Response) => {
           ReferenceCardId: referenceCardId,
           CardName: cardNameData.CardName,
           CardIssuer: cardNameData.CardIssuer,
-          CardCharacteristics: cardNameData.CardCharacteristics || 'standard',
+          CardCharacteristics: deriveCharacteristics(multiplierTypesMap.get(referenceCardId)),
           status: 'no_versions',
           ActiveVersionName: null,
+          ActiveVersionCardName: null,
           versionCount: 0,
         });
       } else {
@@ -297,10 +321,11 @@ router.get('/', async (req: Request, res: Response) => {
           ReferenceCardId: referenceCardId,
           CardName: cardNameData.CardName,
           CardIssuer: cardNameData.CardIssuer,
-          CardCharacteristics: cardNameData.CardCharacteristics || 'standard',
+          CardCharacteristics: deriveCharacteristics(multiplierTypesMap.get(referenceCardId)),
           // Status info
           status: hasActiveVersion ? 'active' : 'no_active_version',
           ActiveVersionName: activeVersion ? activeVersion.VersionName : null,
+          ActiveVersionCardName: activeVersion ? activeVersion.CardName : null,
           versionCount: versions.length,
         });
       }
@@ -332,9 +357,10 @@ router.get('/', async (req: Request, res: Response) => {
         CardName: mostRecent.CardName,
         CardIssuer: mostRecent.CardIssuer,
         ...mostRecent,
-        CardCharacteristics: 'standard', // Orphaned versions default to standard
+        CardCharacteristics: deriveCharacteristics(multiplierTypesMap.get(referenceCardId)),
         status: hasActiveVersion ? 'active' : 'no_active_version',
         ActiveVersionName: activeVersion ? activeVersion.VersionName : null,
+        ActiveVersionCardName: activeVersion ? activeVersion.CardName : null,
         versionCount: versions.length,
       });
     });

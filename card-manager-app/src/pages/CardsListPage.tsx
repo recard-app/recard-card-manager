@@ -150,6 +150,115 @@ function MultiSelectFilter<T extends string>({
   );
 }
 
+function SingleSelectFilter<T extends string>({
+  label,
+  options,
+  value,
+  onChange
+}: {
+  label: string;
+  options: { value: T, label: React.ReactNode }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const isOutsideContent = contentRef.current && !contentRef.current.contains(target);
+      const isOutsideTrigger = triggerRef.current && !triggerRef.current.contains(target);
+
+      if (isOutsideContent && isOutsideTrigger) {
+        setOpen(false);
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open]);
+
+  const selectedOption = options.find(o => o.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={() => {}}>
+      <PopoverTrigger asChild>
+        <Button
+          ref={triggerRef}
+          variant="outline"
+          className="h-9 gap-1.5 border-dashed"
+          onClick={(e) => {
+            e.preventDefault();
+            setOpen(!open);
+          }}
+        >
+          <Filter size={14} className="text-slate-500" />
+          <span className="text-xs text-slate-600">{label}</span>
+          <ChevronDown size={14} className="text-slate-400" />
+          {selectedOption && (
+            <>
+              <span className="mx-1 h-4 w-[1px] bg-slate-200" />
+              <Badge variant="secondary" className="rounded-sm px-1.5 font-normal text-xs">
+                {selectedOption.label}
+              </Badge>
+            </>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        ref={contentRef}
+        className="w-[220px] p-0"
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
+        <div className="p-1">
+          {options.map((option) => {
+            const isSelected = option.value === value;
+
+            return (
+              <div
+                key={option.value}
+                className={cn(
+                  "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 hover:text-slate-900",
+                  isSelected && "bg-slate-100"
+                )}
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+              >
+                <div className={cn(
+                  "mr-2 flex h-4 w-4 items-center justify-center rounded-full border border-slate-400",
+                  isSelected ? "border-slate-900" : ""
+                )}>
+                  {isSelected && (
+                    <div className="h-2 w-2 rounded-full bg-slate-900" />
+                  )}
+                </div>
+                {option.label}
+              </div>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+type DisplayMode = 'name' | 'id' | 'version';
+const VALID_DISPLAY_MODES: DisplayMode[] = ['name', 'id', 'version'];
+
 const VALID_SORT_COLUMNS: SortColumn[] = ['CardName', 'CardIssuer', 'status', 'lastUpdated'];
 const VALID_LAST_UPDATED: Exclude<LastUpdatedTier, 'all'>[] = ['lt30', 'gt30', 'gt60', 'gt90'];
 const VALID_CHARACTERISTICS: CardCharacteristics[] = ['standard', 'rotating', 'selectable'];
@@ -180,7 +289,10 @@ export function CardsListPage() {
       : sortColumnRaw === null ? 'CardName' : null;
   const sortDirRaw = searchParams.get('dir');
   const sortDirection: SortDirection = sortDirRaw === 'desc' ? 'desc' : 'asc';
-  const showCardId = searchParams.get('showId') === '1';
+  const displayModeRaw = searchParams.get('display');
+  const displayMode: DisplayMode = displayModeRaw && VALID_DISPLAY_MODES.includes(displayModeRaw as DisplayMode)
+    ? displayModeRaw as DisplayMode
+    : 'version';
 
   // Local search input state with debounced URL sync
   const [searchInput, setSearchInput] = useState(searchQuery);
@@ -204,6 +316,7 @@ export function CardsListPage() {
       // Remove default values to keep URL clean
       if (next.get('sort') === 'CardName') next.delete('sort');
       if (next.get('dir') === 'asc') next.delete('dir');
+      if (next.get('display') === 'version') next.delete('display');
       return next;
     }, { replace: true });
   }, [setSearchParams]);
@@ -237,7 +350,7 @@ export function CardsListPage() {
   const clearFilters = useCallback(() => {
     setSearchInput('');
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    updateParams({ q: null, status: null, updated: null, chars: null, showId: null });
+    updateParams({ q: null, status: null, updated: null, chars: null, display: null });
   }, [updateParams]);
 
   const clearSort = useCallback(() => {
@@ -412,8 +525,9 @@ export function CardsListPage() {
       })();
 
       // Characteristics filter
+      const cardChars = card.CardCharacteristics || ['standard'];
       const matchesCharacteristics = characteristicsFilter.length === 0 ||
-        characteristicsFilter.includes(card.CardCharacteristics || 'standard');
+        characteristicsFilter.some(f => cardChars.includes(f));
 
       return matchesSearch && matchesStatus && matchesLastUpdated && matchesCharacteristics;
     });
@@ -428,9 +542,20 @@ export function CardsListPage() {
       let comparison = 0;
 
       switch (sortColumn) {
-        case 'CardName':
-          comparison = a.CardName.localeCompare(b.CardName);
+        case 'CardName': {
+          const aVal = displayMode === 'id'
+            ? a.ReferenceCardId
+            : displayMode === 'version'
+              ? (a.ActiveVersionCardName || a.CardName)
+              : a.CardName;
+          const bVal = displayMode === 'id'
+            ? b.ReferenceCardId
+            : displayMode === 'version'
+              ? (b.ActiveVersionCardName || b.CardName)
+              : b.CardName;
+          comparison = aVal.localeCompare(bVal);
           break;
+        }
         case 'CardIssuer':
           comparison = a.CardIssuer.localeCompare(b.CardIssuer);
           break;
@@ -452,7 +577,7 @@ export function CardsListPage() {
 
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [cards, searchQuery, statusFilter, lastUpdatedFilter, characteristicsFilter, sortColumn, sortDirection]);
+  }, [cards, searchQuery, statusFilter, lastUpdatedFilter, characteristicsFilter, sortColumn, sortDirection, displayMode]);
 
   const getStatusBadgeVariant = (status: CardStatus | string) => {
     switch (status) {
@@ -474,15 +599,18 @@ export function CardsListPage() {
     }
   };
 
-  const getCharacteristicsBadge = (characteristics?: CardCharacteristics) => {
-    switch (characteristics) {
-      case 'rotating':
-        return <Badge variant="info">Rotating</Badge>;
-      case 'selectable':
-        return <Badge variant="warning">Selectable</Badge>;
-      default:
-        return <Badge variant="secondary">Standard</Badge>;
-    }
+  const getCharacteristicsBadges = (characteristics?: CardCharacteristics[]) => {
+    const chars = characteristics || ['standard'];
+    return chars.map(c => {
+      switch (c) {
+        case 'rotating':
+          return <Badge key={c} variant="info">Rotating</Badge>;
+        case 'selectable':
+          return <Badge key={c} variant="warning">Selectable</Badge>;
+        default:
+          return <Badge key={c} variant="secondary">Standard</Badge>;
+      }
+    });
   };
 
   // Get the appropriate link for a card
@@ -581,12 +709,16 @@ export function CardsListPage() {
           />
         </div>
 
-        <button
-          className={cn('display-toggle', showCardId && 'active')}
-          onClick={() => updateParams({ showId: showCardId ? null : '1' })}
-        >
-          {showCardId ? 'Card ID' : 'Card Name'}
-        </button>
+        <SingleSelectFilter
+          label="Display"
+          value={displayMode}
+          onChange={(value) => updateParams({ display: value })}
+          options={[
+            { value: 'name' as DisplayMode, label: 'Card Name' },
+            { value: 'id' as DisplayMode, label: 'Card ID' },
+            { value: 'version' as DisplayMode, label: 'Version Card Name' },
+          ]}
+        />
 
         <MultiSelectFilter
           label="Status"
@@ -632,7 +764,7 @@ export function CardsListPage() {
             <div className="table-header">
               <div className="col-image"></div>
               <div className="col-name">
-                <SortableHeader column="CardName" label={showCardId ? 'Card ID' : 'Card Name'} />
+                <SortableHeader column="CardName" label={displayMode === 'id' ? 'Card ID' : displayMode === 'version' ? 'Version Card Name' : 'Card Name'} />
               </div>
               <div className="col-issuer">
                 <SortableHeader column="CardIssuer" label="Issuer" />
@@ -673,7 +805,14 @@ export function CardsListPage() {
                       }}
                     />
                     <span className="card-name-text">
-                      {showCardId ? card.ReferenceCardId : card.CardName}
+                      {displayMode === 'id'
+                        ? card.ReferenceCardId
+                        : displayMode === 'version'
+                          ? (card.ActiveVersionCardName || card.CardName)
+                          : card.CardName}
+                      {displayMode === 'version' && !card.ActiveVersionCardName && (
+                        <AlertTriangle size={12} className="ml-1 inline text-yellow-500" title="No active version card name, showing card name instead" />
+                      )}
                     </span>
                   </div>
                   <div className="col-issuer">{card.CardIssuer}</div>
@@ -688,7 +827,7 @@ export function CardsListPage() {
                     )}
                   </div>
                   <div className="col-characteristics">
-                    {getCharacteristicsBadge(card.CardCharacteristics)}
+                    {getCharacteristicsBadges(card.CardCharacteristics)}
                   </div>
                   <div className="col-last-updated">
                     {(() => {

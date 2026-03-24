@@ -311,7 +311,7 @@ export function isValidMultiplierResponse(obj: unknown): obj is AIMultiplierResp
 // ============================================
 
 export const AI_CARD_SCHEMA = {
-  CardName: 'string (official name, Title Case)',
+  CardName: 'string (Title Case, format: "[Issuer] [Product Name]" - e.g., "Chase Sapphire Reserve", "American Express Gold Card", "Apple Card")',
   CardIssuer: 'string (e.g., "Chase", "American Express", "Capital One")',
   CardNetwork: 'string (e.g., "Visa", "Mastercard", "American Express")',
   CardDetails: 'string (1-2 sentence description)',

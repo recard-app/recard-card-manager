@@ -47,11 +47,12 @@ export interface CardWithStatus {
   ReferenceCardId: string;
   CardName: string;
   CardIssuer: string;
-  CardCharacteristics?: CardCharacteristics;
+  CardCharacteristics?: CardCharacteristics[];
 
   // Status info
   status: CardStatus;
   ActiveVersionName: string | null;
+  ActiveVersionCardName: string | null;
   versionCount: number;
   
   // Version data (optional - may not exist if no versions)

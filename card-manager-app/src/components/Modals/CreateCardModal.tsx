@@ -3,8 +3,6 @@ import { toast } from 'sonner';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
-import type { CardCharacteristics } from '@/types/ui-types';
 import { CardService } from '@/services/card.service';
 import './CreateCardModal.scss';
 import { CardNameFormSchema, zodErrorsToFieldMap } from '@/validation/schemas';
@@ -15,18 +13,11 @@ interface CreateCardModalProps {
   onSuccess: (referenceCardId: string) => void;
 }
 
-const CARD_CHARACTERISTICS_OPTIONS = [
-  { value: 'standard', label: 'Standard' },
-  { value: 'rotating', label: 'Rotating Categories' },
-  { value: 'selectable', label: 'Selectable Categories' },
-];
-
 export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardModalProps) {
   const [formData, setFormData] = useState({
     ReferenceCardId: '',
     CardName: '',
     CardIssuer: '',
-    CardCharacteristics: 'standard' as CardCharacteristics,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -38,7 +29,6 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
         ReferenceCardId: '',
         CardName: '',
         CardIssuer: '',
-        CardCharacteristics: 'standard',
       });
       setErrors({});
     }
@@ -49,14 +39,12 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
       ReferenceCardId: formData.ReferenceCardId.trim(),
       CardName: formData.CardName.trim(),
       CardIssuer: formData.CardIssuer.trim(),
-      CardCharacteristics: formData.CardCharacteristics,
     });
     if (!parsed.success) {
       const fieldLabels: Record<string, string> = {
         ReferenceCardId: 'Reference Card ID',
         CardName: 'Card Name',
         CardIssuer: 'Card Issuer',
-        CardCharacteristics: 'Card Characteristics',
       };
       const fieldErrors = zodErrorsToFieldMap(parsed.error);
       setErrors(fieldErrors);
@@ -82,7 +70,6 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
         formData.ReferenceCardId.trim(),
         formData.CardName.trim(),
         formData.CardIssuer.trim(),
-        formData.CardCharacteristics
       );
 
       toast.success('Card created successfully');
@@ -146,18 +133,6 @@ export function CreateCardModal({ open, onOpenChange, onSuccess }: CreateCardMod
           error={errors.CardIssuer}
           placeholder="e.g., Chase"
         />
-
-        <Select
-          label="Card Characteristics"
-          required
-          value={formData.CardCharacteristics}
-          onChange={(value) => setFormData({ ...formData, CardCharacteristics: value as CardCharacteristics })}
-          options={CARD_CHARACTERISTICS_OPTIONS}
-          error={errors.CardCharacteristics}
-        />
-        <p className="field-help">
-          Standard: Fixed multiplier categories. Rotating: Categories change on a schedule. Selectable: User chooses category.
-        </p>
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>

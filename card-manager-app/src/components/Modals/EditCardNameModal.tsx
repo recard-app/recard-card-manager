@@ -3,15 +3,8 @@ import { toast } from 'sonner';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { FormField } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
 import { CardService } from '@/services/card.service';
-import type { CreditCardName, CardCharacteristics } from '@/types/ui-types';
-
-const CARD_CHARACTERISTICS_OPTIONS = [
-  { value: 'standard', label: 'Standard' },
-  { value: 'rotating', label: 'Rotating Categories' },
-  { value: 'selectable', label: 'Selectable Categories' },
-];
+import type { CreditCardName } from '@/types/ui-types';
 
 interface EditCardNameModalProps {
   open: boolean;
@@ -26,7 +19,6 @@ export function EditCardNameModal({ open, onOpenChange, cardName, onSuccess }: E
   const [formData, setFormData] = useState({
     CardName: '',
     CardIssuer: '',
-    CardCharacteristics: 'standard' as CardCharacteristics,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -39,7 +31,6 @@ export function EditCardNameModal({ open, onOpenChange, cardName, onSuccess }: E
       setFormData({
         CardName: cardName.CardName,
         CardIssuer: cardName.CardIssuer,
-        CardCharacteristics: cardName.CardCharacteristics || 'standard',
       });
     }
     setErrors({});
@@ -74,14 +65,12 @@ export function EditCardNameModal({ open, onOpenChange, cardName, onSuccess }: E
       await CardService.updateCardName(cardName.ReferenceCardId, {
         CardName: formData.CardName.trim(),
         CardIssuer: formData.CardIssuer.trim(),
-        CardCharacteristics: formData.CardCharacteristics,
       });
 
       const updatedCardName: CreditCardName = {
         ReferenceCardId: cardName.ReferenceCardId,
         CardName: formData.CardName.trim(),
         CardIssuer: formData.CardIssuer.trim(),
-        CardCharacteristics: formData.CardCharacteristics,
       };
 
       toast.success('Card updated successfully');
@@ -124,17 +113,6 @@ export function EditCardNameModal({ open, onOpenChange, cardName, onSuccess }: E
           placeholder="e.g., Chase"
         />
 
-        <Select
-          label="Card Characteristics"
-          required
-          value={formData.CardCharacteristics}
-          onChange={(value) => setFormData({ ...formData, CardCharacteristics: value as CardCharacteristics })}
-          options={CARD_CHARACTERISTICS_OPTIONS}
-        />
-        <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', marginBottom: '1rem' }}>
-          Standard: Fixed multiplier categories. Rotating: Categories change on a schedule. Selectable: User chooses category.
-        </p>
-
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
@@ -147,4 +125,3 @@ export function EditCardNameModal({ open, onOpenChange, cardName, onSuccess }: E
     </Dialog>
   );
 }
-
