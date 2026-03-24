@@ -811,7 +811,7 @@ export function CardsListPage() {
                           ? (card.ActiveVersionCardName || card.CardName)
                           : card.CardName}
                       {displayMode === 'version' && !card.ActiveVersionCardName && (
-                        <AlertTriangle size={12} className="ml-1 inline text-yellow-500" title="No active version card name, showing card name instead" />
+                        <span title="No active version card name, showing card name instead"><AlertTriangle size={12} className="ml-1 inline text-yellow-500" /></span>
                       )}
                     </span>
                   </div>
