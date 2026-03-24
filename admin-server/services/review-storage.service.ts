@@ -65,6 +65,17 @@ function toFirestoreUpdatePayload<T extends Record<string, unknown>>(
   return payload;
 }
 
+function sanitizeReviewedIndexArray(value: unknown): number[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value.filter((item): item is number =>
+        Number.isInteger(item) && item >= 0
+      )
+    )
+  );
+}
+
 // ============================================
 // BATCH OPERATIONS
 // ============================================
@@ -432,13 +443,32 @@ export async function updateReviewStatus(
   if (!doc.exists) {
     throw new Error(`Review result ${resultId} not found`);
   }
+  const existing = doc.data() as ReviewResult;
 
   const update: Record<string, unknown> = {};
   if (payload.reviewStatus !== undefined) {
     update.reviewStatus = payload.reviewStatus;
   }
   if (payload.reviewedItems !== undefined) {
-    update.reviewedItems = payload.reviewedItems;
+    const sections: Array<keyof NonNullable<typeof payload.reviewedItems>> = [
+      'cardDetails',
+      'credits',
+      'perks',
+      'multipliers',
+      'urls',
+    ];
+    const sanitizedReviewedItems: Record<string, number[]> = {};
+    for (const section of sections) {
+      const existingValue = existing.reviewedItems?.[section];
+      sanitizedReviewedItems[section] = sanitizeReviewedIndexArray(existingValue);
+    }
+    for (const section of sections) {
+      const value = payload.reviewedItems[section];
+      if (value !== undefined) {
+        sanitizedReviewedItems[section] = sanitizeReviewedIndexArray(value);
+      }
+    }
+    update.reviewedItems = sanitizedReviewedItems;
   }
 
   if (Object.keys(update).length > 0) {
