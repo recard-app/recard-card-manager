@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Copy, Check, Loader2, ChevronDown, ChevronRight, CheckCircle, XCircle, ChevronsUpDown, Plus, RefreshCw, Lock } from 'lucide-react';
+import { Copy, Check, Loader2, ChevronDown, ChevronRight, CheckCircle, XCircle, ChevronsUpDown, Plus, ListPlus, RefreshCw, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { toast } from 'sonner';
@@ -1448,12 +1448,11 @@ export function AIAssistantPage() {
                           </span>
                           <div className="bulk-actions">
                             <Button
-                              variant="outline"
                               size="sm"
                               onClick={() => handleBulkCreate('all')}
                               disabled={!selectedCardId || bulkCreating || totalEligible === 0}
                             >
-                              {bulkCreating ? <Loader2 size={14} className="spinning" /> : null}
+                              {bulkCreating ? <Loader2 size={14} className="spinning" /> : <ListPlus size={14} />}
                               Create All ({totalEligible})
                             </Button>
                             {totalSelected > 0 && (
