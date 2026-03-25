@@ -61,6 +61,20 @@ Credits and perks must be kept **separate**. If a benefit clearly meets the crit
 - **Redeemable passes, vouchers, or certificates** with a trackable count that reset on a regular cadence → use Credit with `isNonMonetary: true`
 - **Dollar-value benefits** the cardholder must spend or claim → use Credit
 
+### Anti-Overlap: Do NOT Classify as a Perk
+
+A single benefit must appear in **exactly one** of Credits, Perks, or Multipliers.
+
+**These are NEVER Perks:**
+- **Earning rates** (e.g., "3X on dining", "2% cashback on groceries", "1 mile per dollar on flights") → Always MULTIPLIER. Any benefit describing points/miles/cash back earned per dollar spent is a multiplier, regardless of category.
+- **Redeemable statement credits** with a specific dollar value and cadence <= 1 year (e.g., "$300 annual travel credit", "$15/month Uber Cash") → Always CREDIT.
+- **Redeemable passes/vouchers** with a trackable count that resets regularly (e.g., "10 Priority Pass visits/year", "1 companion pass per card year") → Always CREDIT with isNonMonetary: true.
+
+**Quick decision tree:**
+1. Earning rate per dollar in primary rewards currency? → MULTIPLIER
+2. Redeemable benefit with dollar value or trackable count, cadence <= 1 year? → CREDIT
+3. Everything else (auto-applied, passive, access, insurance, status) → PERK
+
 ### Multi-Card Pages (CRITICAL)
 Source text may list benefits for **multiple cards** on the same page. Only extract perks that apply to the **specific card being entered**. If a perk says something like "Platinum Card only", "exclusive to Gold Card", "available on Reserve card", or similar language restricting it to a different card, **skip it entirely**. When in doubt about which card a perk belongs to, skip it rather than assign it to the wrong card.
 

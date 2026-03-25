@@ -206,6 +206,14 @@ The following perks should NOT be flagged as "new" even if found on website, as 
 
 If these perks exist in the database, mark them as "questionable" with a note that they should potentially be removed.
 
+=== DUPLICATE DETECTION (CRITICAL) ===
+A single benefit MUST appear in exactly ONE of credits, perks, or multipliers. If you find the same benefit classified in multiple categories in the database, flag the duplicate entry as "questionable" with a note explaining which category it correctly belongs in and that the other entry should be removed.
+
+Quick classification decision tree:
+1. Does it earn rewards per dollar in the card's primary currency? → MULTIPLIER
+2. Must the cardholder actively redeem/claim it, with cadence <= 1 year? → CREDIT
+3. Everything else (auto-applied, passive, insurance, status, access) → PERK
+
 === FIELD LABELS (for reference) ===
 ${JSON.stringify(CARD_FIELD_LABELS, null, 2)}
 

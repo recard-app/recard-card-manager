@@ -82,6 +82,26 @@ These are NOT "countable non-monetary benefits" even though they have numbers. T
 ### Separation Rule (CRITICAL)
 Credits and perks must be kept **separate**. If a benefit clearly meets the criteria for a credit (redeemable, has a dollar value or trackable count, recurring cadence of 1 year or less), it belongs in credits ONLY -- do not also place it in perks. If you are **unsure** whether something is a credit or a perk, include it in **both** credits and perks rather than risk missing it entirely.
 
+### Anti-Overlap: Do NOT Classify as a Credit
+
+A single benefit must appear in **exactly one** of Credits, Perks, or Multipliers. If you find a benefit that could fit multiple categories, use this decision tree:
+
+1. **Does it earn rewards in the card's primary currency (points/miles/cash back) at a rate per dollar?** → MULTIPLIER, not Credit
+   - "3X on dining" → Multiplier
+   - "2% back on groceries" → Multiplier
+   - "5X miles on flights booked through portal" → Multiplier
+
+2. **Is it auto-applied/passive (no action needed from cardholder)?** → PERK, not Credit
+   - Hilton Gold status → Perk (auto-applied)
+   - 10,000 bonus points on anniversary → Perk (auto-deposited)
+   - DoorDash DashPass access → Perk (auto-activated)
+   - $5/month discount on streaming → Perk (auto-applied discount)
+
+3. **Must the cardholder actively redeem/claim it, with cadence <= 1 year?** → CREDIT
+   - $300 annual travel credit → Credit
+   - 10 Priority Pass visits/year → Credit (isNonMonetary: true)
+   - $15/month Uber Cash → Credit
+
 ### Multi-Card Pages (CRITICAL)
 Source text may list benefits for **multiple cards** on the same page. Only extract benefits that apply to the **specific card being entered**. If a benefit says something like "Platinum Card only", "exclusive to Gold Card", "available on Reserve card", or similar language restricting it to a different card, **skip it entirely**. When in doubt about which card a benefit belongs to, skip it rather than assign it to the wrong card.
 

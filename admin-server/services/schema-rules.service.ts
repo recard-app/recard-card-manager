@@ -29,11 +29,15 @@ function extractQualificationRules(content: string): string {
   // Extract the Top N Categories section (multipliers only)
   const topNCategoriesRules = content.match(/### "Top N Categories" Multipliers[\s\S]*?(?=###|---)/);
 
+  // Extract the Anti-Overlap section
+  const antiOverlapRules = content.match(/### Anti-Overlap[\s\S]*?(?=###|---)/);
+
   let result = '';
   if (qualifies) result += qualifies[0].trim() + '\n\n';
   if (classificationRules) result += classificationRules[0].trim() + '\n\n';
   if (topNCategoriesRules) result += topNCategoriesRules[0].trim() + '\n\n';
   if (notQualifies) result += notQualifies[0].trim() + '\n\n';
+  if (antiOverlapRules) result += antiOverlapRules[0].trim() + '\n\n';
   if (multiCardRules) result += multiCardRules[0].trim();
 
   return result.trim();

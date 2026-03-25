@@ -23,6 +23,22 @@ A Multiplier represents a rewards earning rate for specific spending categories.
   - They apply to very **narrow/specific purchases** (e.g., beverages on a specific airline's flights, not a broad spending category)
   - A multiplier earns rewards in the card's primary currency (e.g., "3X Membership Rewards points on dining"). If the benefit pays back as a statement credit or percentage discount instead, it is a Perk.
 
+### Anti-Overlap: Do NOT Classify as a Multiplier
+
+A single benefit must appear in **exactly one** of Credits, Perks, or Multipliers.
+
+**These are NEVER Multipliers:**
+- **Statement credits** with specific dollar values (e.g., "$300 annual travel credit", "$15/month Uber Cash") → Always CREDIT
+- **Percentage-back savings on narrow purchases as statement credits** (e.g., "20% back on in-flight purchases", "15% back at select restaurants") → Always PERK. Key test: if it pays as a statement credit/percentage savings rather than in the card's primary rewards currency, it's a Perk.
+- **Status-qualifying metrics** (MQD, MQM, PQP, PQF, EQM, EQS) → Always PERK. These help earn airline/hotel status, not spendable rewards.
+- **Auto-deposited bonus points** (e.g., "10,000 bonus points on anniversary") → Always PERK. The cardholder doesn't earn these per dollar spent.
+- **Insurance, access, status benefits** → Always PERK
+
+**Quick decision tree:**
+1. Earns rewards in the card's primary currency at a rate **per dollar spent**? → MULTIPLIER
+2. Statement credit, redeemable pass, or dollar-value benefit? → CREDIT
+3. Everything else → PERK
+
 ### "Top N Categories" Multipliers (CRITICAL)
 When a card offers a bonus multiplier on the cardholder's **top N spending categories** (e.g., "3X on your top 2 categories", "2X on your top 3 spending categories"), create **separate selectable multiplier entries** for each slot. The cardholder should be able to choose the category they anticipate spending the most in for each slot.
 
