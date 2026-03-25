@@ -67,6 +67,7 @@ export interface UrlResult {
   suggestedUrl?: string;                 // Auto-discovered replacement URL (if status is "broken" or "stale")
   suggestedUrlDismissed?: boolean;       // True if user dismissed the suggestion
   error?: string;                        // Error message if scraping failed for this URL
+  attemptErrors?: string[];              // Ordered errors from each scraper attempt (Cloudflare markdown/content, Jina)
   scrapedContent?: string;               // The actual scraped markdown content from this URL
 }
 

@@ -19,6 +19,8 @@ const CARD_NETWORK_OPTIONS = [
 ];
 
 const CardDetailsApplySchema = CardDetailsFormSchema.pick({
+  CardName: true,
+  CardIssuer: true,
   CardNetwork: true,
   CardDetails: true,
   CardPrimaryColor: true,
@@ -50,6 +52,8 @@ export function CardDetailsModal({
   initialJson,
 }: CardDetailsModalProps) {
   const [formData, setFormData] = useState({
+    CardName: '',
+    CardIssuer: '',
     CardNetwork: '',
     CardDetails: '',
     CardPrimaryColor: '',
@@ -72,6 +76,8 @@ export function CardDetailsModal({
   useEffect(() => {
     if (initialJson && open) {
       setFormData({
+        CardName: String(initialJson.CardName || ''),
+        CardIssuer: String(initialJson.CardIssuer || ''),
         CardNetwork: String(initialJson.CardNetwork || ''),
         CardDetails: String(initialJson.CardDetails || ''),
         CardPrimaryColor: String(initialJson.CardPrimaryColor || ''),
@@ -101,6 +107,8 @@ export function CardDetailsModal({
 
   const validate = (): boolean => {
     const dataToValidate: Record<string, unknown> = {
+      CardName: formData.CardName,
+      CardIssuer: formData.CardIssuer,
       CardNetwork: formData.CardNetwork,
       CardDetails: formData.CardDetails,
       CardPrimaryColor: formData.CardPrimaryColor,
@@ -137,6 +145,8 @@ export function CardDetailsModal({
     setSubmitting(true);
     try {
       await CardService.updateCard(versionId, {
+        CardName: formData.CardName.trim(),
+        CardIssuer: formData.CardIssuer.trim(),
         CardNetwork: formData.CardNetwork.trim(),
         CardDetails: formData.CardDetails.trim(),
         CardPrimaryColor: formData.CardPrimaryColor.trim(),
@@ -168,7 +178,7 @@ export function CardDetailsModal({
       open={open}
       onOpenChange={onOpenChange}
       title={`Apply Card Details to ${versionName}`}
-      description={`Updating version of ${cardName}. CardName and CardIssuer are managed separately.`}
+      description={`Updating version of ${cardName}`}
     >
       <div className="card-details-modal-form">
         <div className="card-details-modal-preview">
@@ -177,6 +187,24 @@ export function CardDetailsModal({
         </div>
 
         <div className="card-details-modal-grid">
+          <FormField
+            label="Card Name"
+            required
+            value={formData.CardName}
+            onChange={(e) => updateField('CardName', e.target.value)}
+            error={errors.CardName}
+            placeholder="Chase Sapphire Reserve"
+          />
+
+          <FormField
+            label="Card Issuer"
+            required
+            value={formData.CardIssuer}
+            onChange={(e) => updateField('CardIssuer', e.target.value)}
+            error={errors.CardIssuer}
+            placeholder="Chase"
+          />
+
           <Select
             label="Card Network"
             required

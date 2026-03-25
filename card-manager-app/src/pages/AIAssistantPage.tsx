@@ -235,17 +235,30 @@ export function AIAssistantPage() {
     }
   };
 
-  const clearGenerateAllState = () => {
-    setLoading(false);
-    setCardDetailsResult(null);
+  /**
+   * Clears ALL generation state — both generate-all and standard.
+   * Called when switching generation types or unlocking.
+   */
+  const clearAllGenerationState = () => {
+    // Standard state
+    setResult(null);
+    setCreatedItems(new Set());
+    setShowRefinement(false);
+    setRefinementPrompt('');
+    setExpandedItems(new Set());
+    setAllExpanded(true);
     setCardDetailsApplied(false);
+    setTokenUsageExpanded(false);
+    setLoading(false);
+
+    // Generate-all state
+    setCardDetailsResult(null);
     setCombinedError('');
     setCardDetailsError('');
     setGenerateAllActiveTab('card');
     setCreatedComponentItems(createEmptyComponentIdSets());
     setSelectedItems(createEmptyComponentIdSets());
     setItemIdMap(new Map());
-    setTokenUsageExpanded(false);
     setGenerationTypeLocked(false);
   };
 
@@ -630,28 +643,14 @@ export function AIAssistantPage() {
       }
     }
 
-    setLoading(true);
-    setResult(null);
-    setCreatedItems(new Set());
-    setCardDetailsApplied(false);
-    setShowRefinement(false);
+    // Clear all previous state (both standard and generate-all)
+    clearAllGenerationState();
+    setLoading(true); // re-set after clearAllGenerationState sets it false
     setRefinementPrompt('');
 
     const currentGenerateId = ++generateIdRef.current;
 
     if (isGenerateAll) {
-      // Generate-all: fire two independent promise chains for partial rendering
-      // Clear previous generate-all state but preserve loading=true (already set above)
-      setCardDetailsResult(null);
-      setCardDetailsApplied(false);
-      setCombinedError('');
-      setCardDetailsError('');
-      setGenerateAllActiveTab('card');
-      setCreatedComponentItems(createEmptyComponentIdSets());
-      setSelectedItems(createEmptyComponentIdSets());
-      setItemIdMap(new Map());
-      setTokenUsageExpanded(false);
-      setGenerationTypeLocked(false);
       let hadSuccessfulResponse = false;
 
       const combinedPromise = AIService.generate({
@@ -709,17 +708,19 @@ export function AIAssistantPage() {
             ? { cardName: selectedCardName, checkerModel: selectedCheckerModel }
             : {}),
         });
+        if (generateIdRef.current !== currentGenerateId) return; // stale response guard
         const validatedData = validateGenerationResult(data, generationType);
         setResult(validatedData);
         setExpandedItems(new Set(validatedData.items.map((_, i) => i)));
         setAllExpanded(true);
         setShowRefinement(true);
       } catch (err: any) {
+        if (generateIdRef.current !== currentGenerateId) return; // stale error guard
         console.error('Generation error:', err);
         const errorMessage = err.response?.data?.error || err.message || 'Unknown error';
         toast.error('Failed to generate: ' + errorMessage);
       } finally {
-        setLoading(false);
+        if (generateIdRef.current === currentGenerateId) setLoading(false);
       }
     }
   };
@@ -730,6 +731,7 @@ export function AIAssistantPage() {
       return;
     }
 
+    const currentGenerateId = ++generateIdRef.current;
     setLoading(true);
 
     try {
@@ -739,7 +741,6 @@ export function AIAssistantPage() {
           // Refine card details only
           if (!cardDetailsResult?.items?.[0]) {
             toast.warning('No card details to refine');
-            setLoading(false);
             return;
           }
           const data = await AIService.generate({
@@ -748,7 +749,9 @@ export function AIAssistantPage() {
             refinementPrompt,
             previousOutput: cardDetailsResult.items[0].json as Record<string, unknown>,
             cardName: selectedCardName,
+            checkerModel: selectedCheckerModel,
           });
+          if (generateIdRef.current !== currentGenerateId) return;
           const validatedData = validateGenerationResult(data, 'card');
           setCardDetailsResult(validatedData);
         } else {
@@ -763,7 +766,6 @@ export function AIAssistantPage() {
 
           if (items.length === 0) {
             toast.warning(`No ${generateAllActiveTab} to refine`);
-            setLoading(false);
             return;
           }
 
@@ -774,6 +776,7 @@ export function AIAssistantPage() {
             refinementPrompt,
             previousOutput: items as Record<string, unknown>[],
           });
+          if (generateIdRef.current !== currentGenerateId) return;
 
           // Re-inject effective dates (per-type generation doesn't include them)
           if (data.items) {
@@ -831,7 +834,6 @@ export function AIAssistantPage() {
         // Standard refinement (non-generate-all)
         if (!result?.items || result.items.length === 0) {
           toast.warning('No previous output to refine');
-          setLoading(false);
           return;
         }
 
@@ -849,6 +851,7 @@ export function AIAssistantPage() {
             ? { cardName: selectedCardName, checkerModel: selectedCheckerModel }
             : {}),
         });
+        if (generateIdRef.current !== currentGenerateId) return;
         const validatedData = validateGenerationResult(data, generationType);
         setResult(validatedData);
         setCreatedItems(new Set());
@@ -856,17 +859,19 @@ export function AIAssistantPage() {
         setAllExpanded(true);
       }
 
+      if (generateIdRef.current !== currentGenerateId) return;
       setRefinementPrompt('');
       const textarea = document.querySelector('.refinement-input') as HTMLTextAreaElement;
       if (textarea) {
         textarea.style.height = 'auto';
       }
     } catch (err: any) {
+      if (generateIdRef.current !== currentGenerateId) return;
       console.error('Regeneration error:', err);
       const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown error';
       toast.error('Failed to regenerate: ' + errorMessage);
     } finally {
-      setLoading(false);
+      if (generateIdRef.current === currentGenerateId) setLoading(false);
     }
   };
 
@@ -1118,8 +1123,13 @@ export function AIAssistantPage() {
                   label="Generation Type"
                   value={generationType}
                   onChange={(value) => {
-                    setGenerationType(value as GenerationType);
-                    if (value === 'card') {
+                    const newType = value as GenerationType;
+                    if (newType !== generationType) {
+                      generateIdRef.current++;
+                      clearAllGenerationState();
+                    }
+                    setGenerationType(newType);
+                    if (newType === 'card') {
                       setBatchMode(false);
                     }
                   }}
@@ -1131,13 +1141,12 @@ export function AIAssistantPage() {
                     variant="outline"
                     size="sm"
                     className="lock-button"
+                    disabled={loading}
                     onClick={() => {
                       const confirmed = window.confirm('Switching generation type will clear current results. Continue?');
                       if (confirmed) {
                         generateIdRef.current++;
-                        clearGenerateAllState();
-                        setResult(null);
-                        setShowRefinement(false);
+                        clearAllGenerationState();
                       }
                     }}
                     title="Unlock generation type selector"
@@ -1770,23 +1779,6 @@ export function AIAssistantPage() {
                                   <span className="card-preview-hint">Preview with generated colors</span>
                                 </div>
                               </div>
-                              {selectedCardId && selectedVersionId && (
-                                <div className="apply-card-details">
-                                  {cardDetailsApplied ? (
-                                    <span className="applied-badge">
-                                      <CheckCircle size={14} /> Applied
-                                    </span>
-                                  ) : (
-                                    <Button
-                                      onClick={() => handleApplyCardDetails(!Array.isArray(item.json) ? item.json as Record<string, unknown> : undefined)}
-                                      variant="outline"
-                                      size="sm"
-                                    >
-                                      Apply to Version
-                                    </Button>
-                                  )}
-                                </div>
-                              )}
                             </>
                           )}
                         </div>
@@ -1819,6 +1811,24 @@ export function AIAssistantPage() {
                           <pre className="json-content">
                             {JSON.stringify(item.json, null, 2)}
                           </pre>
+                        </div>
+                      )}
+                      {/* Apply to Version — shown for card type in both fields and JSON views */}
+                      {generationType === 'card' && selectedCardId && selectedVersionId && (
+                        <div className="apply-card-details">
+                          {cardDetailsApplied ? (
+                            <span className="applied-badge">
+                              <CheckCircle size={14} /> Applied
+                            </span>
+                          ) : (
+                            <Button
+                              onClick={() => handleApplyCardDetails(!Array.isArray(item.json) ? item.json as Record<string, unknown> : undefined)}
+                              variant="outline"
+                              size="sm"
+                            >
+                              Apply to Version
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>

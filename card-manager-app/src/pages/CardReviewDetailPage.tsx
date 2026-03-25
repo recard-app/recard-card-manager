@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -40,6 +40,81 @@ import './CardReviewDetailPage.scss';
 
 type ComparisonTab = 'cardDetails' | 'credits' | 'perks' | 'multipliers' | 'urls';
 type ReviewUrlResult = NonNullable<ReviewResult['urlResults']>[number];
+type ScrapingAlert = { type: 'error' | 'warning'; service: 'Jina Reader' | 'Cloudflare'; message: string };
+
+function collectScrapingAlerts(urlResults: ReviewUrlResult[] | undefined): ScrapingAlert[] {
+  if (!urlResults || urlResults.length === 0) return [];
+
+  const alerts: ScrapingAlert[] = [];
+  const seen = new Set<string>();
+
+  const pushAlert = (alert: ScrapingAlert) => {
+    const key = `${alert.service}|${alert.message}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    alerts.push(alert);
+  };
+
+  for (const urlResult of urlResults) {
+    const attemptErrors = Array.isArray(urlResult.attemptErrors) ? urlResult.attemptErrors : [];
+    const rawErrors = [urlResult.error, ...attemptErrors]
+      .filter((error): error is string => typeof error === 'string' && error.trim().length > 0);
+    const uniqueErrors = Array.from(new Set(rawErrors));
+
+    for (const errorText of uniqueErrors) {
+      const err = errorText.toLowerCase();
+      const isJina = err.includes('jina');
+      const isCloudflare = err.includes('cloudflare');
+
+      if (isJina) {
+        const isAuthError =
+          err.includes('401') ||
+          err.includes('auth_missing_api_key') ||
+          err.includes('auth_invalid_api_key') ||
+          err.includes('auth_invalid_format') ||
+          err.includes('invalid api key') ||
+          err.includes('authentication required');
+        const isBalanceOrPlanError =
+          err.includes('403') ||
+          err.includes('authz_insufficient_balance') ||
+          err.includes('authz_resource_limit_exceeded') ||
+          err.includes('insufficient account balance') ||
+          err.includes('resource limit exceeded');
+        const isRateLimitError =
+          err.includes('429') ||
+          err.includes('rate limit exceeded') ||
+          err.includes('rate_request_limit_exceeded') ||
+          err.includes('rate_token_limit_exceeded') ||
+          err.includes('rate_concurrency_limit_exceeded') ||
+          err.includes('rate_ip_limit_exceeded');
+
+        if (isAuthError) {
+          pushAlert({ type: 'error', service: 'Jina Reader', message: 'API key invalid or missing. Check JINA_API_KEY.' });
+        }
+        if (isBalanceOrPlanError) {
+          pushAlert({ type: 'error', service: 'Jina Reader', message: 'Insufficient account balance or plan limit exceeded. Top up at jina.ai/reader.' });
+        }
+        if (isRateLimitError) {
+          pushAlert({ type: 'warning', service: 'Jina Reader', message: 'Rate limit exceeded. Consider reducing concurrency or upgrading plan.' });
+        }
+      }
+
+      if (isCloudflare) {
+        const isAuthError = err.includes('401') || err.includes('403') || err.includes('unauthorized') || err.includes('forbidden');
+        const isRateLimitError = err.includes('429') || err.includes('too many requests') || err.includes('browser time limit exceeded');
+
+        if (isAuthError) {
+          pushAlert({ type: 'error', service: 'Cloudflare', message: 'Authentication failed. Check Cloudflare API credentials.' });
+        }
+        if (isRateLimitError) {
+          pushAlert({ type: 'warning', service: 'Cloudflare', message: 'Rate limit or browser time limit exceeded. Check Cloudflare Browser Rendering limits.' });
+        }
+      }
+    }
+  }
+
+  return alerts;
+}
 
 function isUrlHealthy(urlResult: ReviewUrlResult): boolean {
   return (urlResult.status === 'ok' || urlResult.status === 'redirected') && !urlResult.truncated;
@@ -479,6 +554,12 @@ export function CardReviewDetailPage() {
     setEditModalKey(k => k + 1);
   };
 
+  // useMemo must be called before any early returns to satisfy Rules of Hooks
+  const scrapingAlerts = useMemo(
+    () => review?.urlResults ? collectScrapingAlerts(review.urlResults) : [],
+    [review?.urlResults]
+  );
+
   if (loading) {
     return (
       <div className="card-review-detail-page">
@@ -623,6 +704,18 @@ export function CardReviewDetailPage() {
           <div className="failed-reason">
             {review.status === 'failed' ? review.failureReason : review.skipReason}
           </div>
+        </div>
+      )}
+
+      {/* Scraping Service Alerts */}
+      {scrapingAlerts.length > 0 && (
+        <div className="scraping-alerts">
+          {scrapingAlerts.map((alert, i) => (
+            <div key={i} className={`scraping-alert alert-${alert.type}`}>
+              <AlertTriangle size={14} />
+              <span><strong>{alert.service}:</strong> {alert.message}</span>
+            </div>
+          ))}
         </div>
       )}
 

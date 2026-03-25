@@ -82,6 +82,7 @@ export interface ScrapeResult {
   source: ScrapeSource;
   browserTimeMs?: number;
   error?: string;
+  attemptErrors?: string[];
   success: boolean;
   redirectedTo?: string;  // Final URL if redirect was detected
   blocked?: boolean;      // True if blocked by SSRF/DNS validation (source field is not meaningful)
@@ -422,6 +423,15 @@ async function scrapeWithJina(url: string): Promise<ScrapeResult> {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
+
+      if (response.status === 401) {
+        console.error('[JINA] API key invalid or missing. Check JINA_API_KEY env var.');
+      } else if (response.status === 403) {
+        console.error('[JINA] Insufficient balance or resource limit exceeded. Top up at https://jina.ai/reader/');
+      } else if (response.status === 429) {
+        console.warn('[JINA] Rate limit exceeded. Consider reducing concurrency or upgrading plan.');
+      }
+
       return {
         content: '',
         source: 'jina',
@@ -514,6 +524,7 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
   // Tier 1: Cloudflare /markdown
   console.log(`[scrapeUrl] Trying Cloudflare /markdown for: ${url}`);
   const markdownResult = await scrapeWithCloudflareMarkdown(url);
+  let markdownFallbackReason: string | undefined;
 
   if (markdownResult.success) {
     const validation = validateContent(markdownResult.content, cardName);
@@ -521,7 +532,13 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
       console.log(`[scrapeUrl] Cloudflare /markdown succeeded: ${markdownResult.content.length} chars`);
       return { ...markdownResult, redirectedTo };
     }
-    console.log(`[scrapeUrl] Cloudflare /markdown content insufficient (${markdownResult.content.length} chars), trying /content fallback`);
+    if (!validation.isValid) {
+      markdownFallbackReason = `Cloudflare /markdown validation failed: ${validation.reason ?? 'Invalid content'}`;
+      console.log(`[scrapeUrl] ${markdownFallbackReason}`);
+    } else {
+      markdownFallbackReason = `Cloudflare /markdown content insufficient (${markdownResult.content.length} chars)`;
+      console.log(`[scrapeUrl] ${markdownFallbackReason}, trying /content fallback`);
+    }
   } else {
     console.log(`[scrapeUrl] Cloudflare /markdown failed: ${markdownResult.error}`);
   }
@@ -529,6 +546,7 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
   // Tier 2: Cloudflare /content (HTML -> turndown)
   console.log(`[scrapeUrl] Trying Cloudflare /content for: ${url}`);
   const contentResult = await scrapeWithCloudflareContent(url);
+  let contentFallbackReason: string | undefined;
 
   if (contentResult.success) {
     const validation = validateContent(contentResult.content, cardName);
@@ -536,7 +554,8 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
       console.log(`[scrapeUrl] Cloudflare /content succeeded: ${contentResult.content.length} chars`);
       return { ...contentResult, redirectedTo };
     }
-    console.log(`[scrapeUrl] Cloudflare /content content invalid: ${validation.reason}`);
+    contentFallbackReason = `Cloudflare /content validation failed: ${validation.reason ?? 'Invalid content'}`;
+    console.log(`[scrapeUrl] ${contentFallbackReason}`);
   } else {
     console.log(`[scrapeUrl] Cloudflare /content failed: ${contentResult.error}`);
   }
@@ -544,6 +563,7 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
   // Tier 3: Jina Reader
   console.log(`[scrapeUrl] Trying Jina Reader for: ${url}`);
   const jinaResult = await scrapeWithJina(url);
+  let jinaFallbackReason: string | undefined;
 
   if (jinaResult.success) {
     const validation = validateContent(jinaResult.content, cardName);
@@ -551,15 +571,37 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
       console.log(`[scrapeUrl] Jina Reader succeeded: ${jinaResult.content.length} chars`);
       return { ...jinaResult, redirectedTo };
     }
-    console.log(`[scrapeUrl] Jina Reader content invalid: ${validation.reason}`);
+    jinaFallbackReason = `Jina Reader validation failed: ${validation.reason ?? 'Invalid content'}`;
+    console.log(`[scrapeUrl] ${jinaFallbackReason}`);
   } else {
     console.log(`[scrapeUrl] Jina Reader failed: ${jinaResult.error}`);
   }
 
   // All tiers failed -- return the best error info we have
-  // Prefer the Cloudflare /markdown error since it's the primary
-  const bestError = markdownResult.error || contentResult.error || jinaResult.error || 'All scraping methods failed';
-  return { content: '', source: 'cloudflare-markdown', success: false, error: bestError };
+  // Prefer the Cloudflare /markdown error since it's the primary.
+  const primaryErrors = [
+    markdownResult.error,
+    contentResult.error,
+    jinaResult.error,
+  ].filter((error): error is string => Boolean(error));
+  const fallbackReasons = [
+    markdownFallbackReason,
+    contentFallbackReason,
+    jinaFallbackReason,
+  ].filter((error): error is string => Boolean(error));
+  const attemptErrors = [
+    ...primaryErrors,
+    ...fallbackReasons,
+  ];
+  const uniqueAttemptErrors = Array.from(new Set(attemptErrors));
+  const bestError = primaryErrors[0] || fallbackReasons[0] || 'All scraping methods failed';
+  return {
+    content: '',
+    source: 'cloudflare-markdown',
+    success: false,
+    error: bestError,
+    attemptErrors: uniqueAttemptErrors,
+  };
 }
 
 /**
@@ -614,6 +656,7 @@ export async function scrapeCardUrls(
         truncated: false,
         browserTimeMs: result.browserTimeMs,
         error: result.error,
+        attemptErrors: result.attemptErrors,
       });
     }
   }

@@ -40,6 +40,7 @@ export interface UrlResult {
   suggestedUrl?: string;
   suggestedUrlDismissed?: boolean;
   error?: string;
+  attemptErrors?: string[];
   scrapedContent?: string;               // The actual scraped markdown content from this URL
 }
 
