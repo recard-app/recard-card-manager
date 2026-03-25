@@ -22,7 +22,7 @@ export type ReviewTrigger = 'scheduled' | 'manual';
 
 export type UrlStatus = 'ok' | 'redirected' | 'broken' | 'stale';
 
-export type ScrapeSource = 'cloudflare-markdown' | 'cloudflare-content' | 'jina';
+export type ScrapeSource = 'firecrawl' | 'cloudflare-markdown' | 'cloudflare-content' | 'jina';
 
 // ============================================
 // URL SCRAPING RESULTS

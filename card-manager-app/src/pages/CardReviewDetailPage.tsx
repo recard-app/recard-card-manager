@@ -40,7 +40,7 @@ import './CardReviewDetailPage.scss';
 
 type ComparisonTab = 'cardDetails' | 'credits' | 'perks' | 'multipliers' | 'urls';
 type ReviewUrlResult = NonNullable<ReviewResult['urlResults']>[number];
-type ScrapingAlert = { type: 'error' | 'warning'; service: 'Jina Reader' | 'Cloudflare'; message: string };
+type ScrapingAlert = { type: 'error' | 'warning'; service: 'Firecrawl' | 'Jina Reader' | 'Cloudflare'; message: string };
 
 function collectScrapingAlerts(urlResults: ReviewUrlResult[] | undefined): ScrapingAlert[] {
   if (!urlResults || urlResults.length === 0) return [];
@@ -63,8 +63,35 @@ function collectScrapingAlerts(urlResults: ReviewUrlResult[] | undefined): Scrap
 
     for (const errorText of uniqueErrors) {
       const err = errorText.toLowerCase();
+      const isFirecrawl = err.includes('firecrawl');
       const isJina = err.includes('jina');
       const isCloudflare = err.includes('cloudflare');
+
+      if (isFirecrawl) {
+        const isAuthError =
+          err.includes('401') ||
+          err.includes('unauthorized') ||
+          err.includes('invalid api key') ||
+          err.includes('api key');
+        const isCreditsError =
+          err.includes('402') ||
+          err.includes('payment required') ||
+          err.includes('insufficient credits') ||
+          err.includes('credits exhausted');
+        const isRateLimitError =
+          err.includes('429') ||
+          err.includes('rate limit');
+
+        if (isAuthError) {
+          pushAlert({ type: 'error', service: 'Firecrawl', message: 'API key invalid or missing. Check FIRECRAWL_API_KEY.' });
+        }
+        if (isCreditsError) {
+          pushAlert({ type: 'error', service: 'Firecrawl', message: 'Credits exhausted. Top up or upgrade plan at firecrawl.dev.' });
+        }
+        if (isRateLimitError) {
+          pushAlert({ type: 'warning', service: 'Firecrawl', message: 'Rate limit exceeded. Consider reducing concurrency or upgrading plan.' });
+        }
+      }
 
       if (isJina) {
         const isAuthError =
@@ -173,6 +200,12 @@ function formatTokenCount(count: number): string {
     return `${(count / 1000).toFixed(1)}K`;
   }
   return String(count);
+}
+
+function formatScrapeSource(source: string): string {
+  if (source === 'firecrawl') return 'Firecrawl';
+  if (source.startsWith('cloudflare-')) return source.replace('cloudflare-', 'CF /');
+  return source;
 }
 
 function formatCost(cost: number): string {
@@ -754,7 +787,7 @@ export function CardReviewDetailPage() {
                     return (
                       <div key={i} className="sources-row">
                         <span className="col-url">{entry.url}</span>
-                        <span className="col-source">{entry.source.replace('cloudflare-', 'CF /')}</span>
+                        <span className="col-source">{formatScrapeSource(entry.source)}</span>
                         <span className="col-tokens">{formatTokenCount(entry.contentTokens)}</span>
                         <span className="col-time">{entry.browserTimeMs ? `${entry.browserTimeMs}ms` : '--'}</span>
                         <span className="col-action">
@@ -1100,7 +1133,7 @@ export function CardReviewDetailPage() {
                     <div className="url-details">
                       <div className="url-text">{urlResult.url}</div>
                       <div className="url-meta">
-                        {urlResult.source.replace('cloudflare-', 'CF /')} - {formatTokenCount(urlResult.contentTokens)} tokens
+                        {formatScrapeSource(urlResult.source)} - {formatTokenCount(urlResult.contentTokens)} tokens
                         {urlResult.status !== 'ok' && ` - ${urlResult.status.toUpperCase()}`}
                       </div>
                       {urlResult.truncated && urlResult.contentTokensOriginal && (

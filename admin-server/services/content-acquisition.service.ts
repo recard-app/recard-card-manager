@@ -3,9 +3,10 @@
  *
  * Scrapes credit card issuer websites to extract content for automated reviews.
  * Uses a multi-tier approach:
- *   1. Cloudflare Browser Rendering /markdown (primary)
- *   2. Cloudflare Browser Rendering /content + turndown (fallback for hidden content)
- *   3. Jina Reader (final fallback)
+ *   1. Firecrawl with accordion-expanding actions (primary)
+ *   2. Cloudflare Browser Rendering /markdown (fallback)
+ *   3. Cloudflare Browser Rendering /content + turndown (fallback)
+ *   4. Jina Reader (last resort)
  *
  * Handles content validation, token estimation, truncation, and URL status detection.
  */
@@ -15,6 +16,7 @@ import dns from 'node:dns';
 import net from 'node:net';
 import { GoogleGenAI } from '@google/genai';
 import type { UrlResult, ScrapeSource, UrlStatus } from '../types/review-types';
+import Firecrawl, { SdkError } from '@mendable/firecrawl-js';
 
 // ============================================
 // CONSTANTS
@@ -45,6 +47,7 @@ const MAX_TOTAL_CHARS = MAX_TOTAL_TOKENS * CHARS_PER_TOKEN;
 /** Cloudflare Browser Rendering base URL */
 const CF_BASE_URL = 'https://api.cloudflare.com/client/v4/accounts';
 const URL_SEARCH_MODEL = 'gemini-2.5-pro';
+const FIRECRAWL_MISSING_KEY_ERROR = 'FIRECRAWL_API_KEY not set';
 
 /**
  * Request body options shared across Cloudflare endpoints.
@@ -69,6 +72,52 @@ const ERROR_PAGE_PATTERNS = [
   'cloudflare ray id',
   'just a moment',
 ];
+
+/**
+ * Firecrawl client singleton (lazy-initialized).
+ *
+ * NOT initialized at module load because dotenv.config() runs after imports.
+ * The getter reads process.env at first call, by which time env vars are loaded.
+ */
+let _firecrawlClient: InstanceType<typeof Firecrawl> | null | undefined;
+let _firecrawlApiKey: string | null | undefined;
+
+function getFirecrawlClient(): InstanceType<typeof Firecrawl> | null {
+  const apiKey = process.env.FIRECRAWL_API_KEY ?? null;
+  if (_firecrawlClient === undefined || _firecrawlApiKey !== apiKey) {
+    _firecrawlApiKey = apiKey;
+    _firecrawlClient = apiKey ? new Firecrawl({ apiKey }) : null;
+    if (!_firecrawlClient) {
+      console.warn('[FIRECRAWL] FIRECRAWL_API_KEY not set. Firecrawl scraping disabled.');
+    }
+  }
+  return _firecrawlClient;
+}
+
+/**
+ * CSS selectors for accordion/expandable elements across major card issuer sites.
+ * Joined into a single selector string for Firecrawl's click action with all: true.
+ * Non-matching selectors are silently ignored by the browser.
+ */
+const ACCORDION_SELECTORS = [
+  // Standard HTML details/summary
+  'details:not([open]) summary',
+  // ARIA accordion patterns
+  '[aria-expanded="false"]',
+  // Common CSS class patterns
+  '.accordion-trigger',
+  '.accordion-header',
+  '.accordion-toggle',
+  // Bootstrap collapse (used by Amex and others)
+  '[data-toggle="collapse"]',
+  '[data-bs-toggle="collapse"]',
+  // Chase-specific
+  '.expandable-header',
+  // Generic expand/toggle buttons
+  'button[class*="expand"]',
+  'button[class*="toggle"]',
+  'a[class*="expand"]',
+].join(', ');
 
 // ============================================
 // TYPES
@@ -453,15 +502,93 @@ async function scrapeWithJina(url: string): Promise<ScrapeResult> {
   }
 }
 
+/**
+ * Scrapes a URL using Firecrawl's cloud browser.
+ * Executes accordion-expanding click actions before extracting markdown.
+ * Returns LLM-ready markdown directly (no Turndown conversion needed).
+ *
+ * Error handling:
+ * - Uses SdkError.status (structured HTTP status code) for reliable classification
+ * - console.error for auth/credential issues (immediately actionable)
+ * - console.warn for rate limits/credit exhaustion (transient/quota issues)
+ * - Error messages include "Firecrawl" so the frontend collectScrapingAlerts()
+ *   can detect and display service-specific alerts
+ */
+async function scrapeWithFirecrawl(url: string): Promise<ScrapeResult> {
+  const client = getFirecrawlClient();
+  if (!client) {
+    return {
+      content: '',
+      source: 'firecrawl',
+      success: false,
+      error: FIRECRAWL_MISSING_KEY_ERROR,
+    };
+  }
+
+  try {
+    const result = await client.scrape(url, {
+      formats: ['markdown'],
+      onlyMainContent: true,
+      maxAge: 0,                        // Always fresh for reviews
+      timeout: SCRAPE_FETCH_TIMEOUT,    // Reuse existing 30s constant
+      actions: [
+        { type: 'wait', milliseconds: 2000 },
+        { type: 'click', selector: ACCORDION_SELECTORS, all: true },
+        { type: 'wait', milliseconds: 1000 },
+      ],
+    });
+
+    if (!result.markdown) {
+      return {
+        content: '',
+        source: 'firecrawl',
+        success: false,
+        error: 'Firecrawl returned empty markdown',
+      };
+    }
+
+    return {
+      content: result.markdown,
+      source: 'firecrawl',
+      success: true,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const lowerMessage = message.toLowerCase();
+
+    // Use structured SdkError.status when available (reliable HTTP status code).
+    // Fall back to message text matching for non-SDK errors.
+    const status = error instanceof SdkError ? error.status : undefined;
+
+    if (status === 401 || (!status && lowerMessage.includes('unauthorized'))) {
+      console.error('[FIRECRAWL] API key invalid or missing. Check FIRECRAWL_API_KEY env var.');
+    } else if (status === 402 || (!status && lowerMessage.includes('payment required'))) {
+      console.error('[FIRECRAWL] Credits exhausted. Top up or upgrade plan at firecrawl.dev.');
+    } else if (status === 429 || (!status && lowerMessage.includes('rate limit'))) {
+      console.warn('[FIRECRAWL] Rate limit exceeded. Consider reducing concurrency or upgrading plan.');
+    }
+
+    // Include status code in error message for frontend alert detection
+    const statusPrefix = status ? `${status}: ` : '';
+    return {
+      content: '',
+      source: 'firecrawl',
+      success: false,
+      error: `Firecrawl error: ${statusPrefix}${message}`,
+    };
+  }
+}
+
 // ============================================
 // MAIN SCRAPING PIPELINE
 // ============================================
 
 /**
  * Scrapes a single URL using the multi-tier fallback pipeline:
- * 1. Cloudflare /markdown
- * 2. Cloudflare /content (if /markdown returns too little)
- * 3. Jina Reader (final fallback)
+ * 1. Firecrawl with accordion-expanding actions (primary)
+ * 2. Cloudflare /markdown
+ * 3. Cloudflare /content (if /markdown returns too little)
+ * 4. Jina Reader (last resort)
  *
  * Validates the URL for SSRF before scraping.
  * Validates the content quality after scraping.
@@ -470,7 +597,7 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
   // SSRF validation
   const urlValidation = validateUrlForScraping(url);
   if (!urlValidation.isValid) {
-    return { content: '', source: 'cloudflare-markdown', success: false, error: urlValidation.reason, blocked: true };
+    return { content: '', source: 'firecrawl', success: false, error: urlValidation.reason, blocked: true };
   }
 
   // Defense-in-depth DNS resolution check to block private targets behind public hostnames.
@@ -480,7 +607,7 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
     if (resolvesPrivate) {
       return {
         content: '',
-        source: 'cloudflare-markdown',
+        source: 'firecrawl',
         success: false,
         error: 'URL resolves to a private or reserved IP address',
         blocked: true,
@@ -490,7 +617,7 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
     const message = error instanceof Error ? error.message : String(error);
     return {
       content: '',
-      source: 'cloudflare-markdown',
+      source: 'firecrawl',
       success: false,
       error: `Failed DNS safety check: ${message}`,
       blocked: true,
@@ -507,8 +634,6 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
     });
     // If the final URL differs from the original, it was redirected
     if (headResponse.url && headResponse.url !== url) {
-      const originalHost = new URL(url).hostname;
-      const finalHost = new URL(headResponse.url).hostname;
       // Only count as redirect if the URL actually changed meaningfully
       // (ignore trailing slash differences)
       const normalize = (u: string) => u.replace(/\/+$/, '').toLowerCase();
@@ -521,7 +646,24 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
     // HEAD request failed -- proceed without redirect info
   }
 
-  // Tier 1: Cloudflare /markdown
+  // Tier 1: Firecrawl (primary -- handles accordions)
+  console.log(`[scrapeUrl] Trying Firecrawl for: ${url}`);
+  const firecrawlResult = await scrapeWithFirecrawl(url);
+  let firecrawlFallbackReason: string | undefined;
+
+  if (firecrawlResult.success) {
+    const validation = validateContent(firecrawlResult.content, cardName);
+    if (validation.isValid) {
+      console.log(`[scrapeUrl] Firecrawl succeeded: ${firecrawlResult.content.length} chars`);
+      return { ...firecrawlResult, redirectedTo };
+    }
+    firecrawlFallbackReason = `Firecrawl validation failed: ${validation.reason ?? 'Invalid content'}`;
+    console.log(`[scrapeUrl] ${firecrawlFallbackReason}`);
+  } else {
+    console.log(`[scrapeUrl] Firecrawl failed: ${firecrawlResult.error}`);
+  }
+
+  // Tier 2: Cloudflare /markdown
   console.log(`[scrapeUrl] Trying Cloudflare /markdown for: ${url}`);
   const markdownResult = await scrapeWithCloudflareMarkdown(url);
   let markdownFallbackReason: string | undefined;
@@ -543,7 +685,7 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
     console.log(`[scrapeUrl] Cloudflare /markdown failed: ${markdownResult.error}`);
   }
 
-  // Tier 2: Cloudflare /content (HTML -> turndown)
+  // Tier 3: Cloudflare /content (HTML -> turndown)
   console.log(`[scrapeUrl] Trying Cloudflare /content for: ${url}`);
   const contentResult = await scrapeWithCloudflareContent(url);
   let contentFallbackReason: string | undefined;
@@ -560,7 +702,7 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
     console.log(`[scrapeUrl] Cloudflare /content failed: ${contentResult.error}`);
   }
 
-  // Tier 3: Jina Reader
+  // Tier 4: Jina Reader (last resort)
   console.log(`[scrapeUrl] Trying Jina Reader for: ${url}`);
   const jinaResult = await scrapeWithJina(url);
   let jinaFallbackReason: string | undefined;
@@ -578,26 +720,28 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
   }
 
   // All tiers failed -- return the best error info we have
-  // Prefer the Cloudflare /markdown error since it's the primary.
   const primaryErrors = [
+    firecrawlResult.error,
     markdownResult.error,
     contentResult.error,
     jinaResult.error,
   ].filter((error): error is string => Boolean(error));
+  const filteredPrimaryErrors = primaryErrors.filter(error => error !== FIRECRAWL_MISSING_KEY_ERROR);
   const fallbackReasons = [
+    firecrawlFallbackReason,
     markdownFallbackReason,
     contentFallbackReason,
     jinaFallbackReason,
   ].filter((error): error is string => Boolean(error));
   const attemptErrors = [
-    ...primaryErrors,
+    ...filteredPrimaryErrors,
     ...fallbackReasons,
   ];
   const uniqueAttemptErrors = Array.from(new Set(attemptErrors));
-  const bestError = primaryErrors[0] || fallbackReasons[0] || 'All scraping methods failed';
+  const bestError = filteredPrimaryErrors[0] || fallbackReasons[0] || primaryErrors[0] || 'All scraping methods failed';
   return {
     content: '',
-    source: 'cloudflare-markdown',
+    source: 'firecrawl',
     success: false,
     error: bestError,
     attemptErrors: uniqueAttemptErrors,
