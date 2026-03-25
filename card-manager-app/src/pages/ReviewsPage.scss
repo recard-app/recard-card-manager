@@ -1,7 +1,8 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
 .reviews-page {
-  padding: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  @include page-wrapper;
 
   .tabs-container {
     margin-top: 1rem;

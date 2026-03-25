@@ -76,6 +76,11 @@ export const API_ROUTES = {
     },
   },
 
+  // Component bulk operations
+  COMPONENTS: {
+    BULK_CREATE: '/admin/components/bulk-create',
+  },
+
   // AI Assistant routes
   AI: {
     GENERATE: '/admin/ai/generate',

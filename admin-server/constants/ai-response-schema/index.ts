@@ -360,6 +360,16 @@ export const AI_MULTIPLIER_SCHEMA = {
 };
 
 // ============================================
+// GENERATE-ALL COMBINED SCHEMA
+// ============================================
+
+export const AI_GENERATE_ALL_SCHEMA = {
+  credits: `Array of credit objects. Each object: ${JSON.stringify(AI_CREDIT_SCHEMA)}`,
+  perks: `Array of perk objects. Each object: ${JSON.stringify(AI_PERK_SCHEMA)}`,
+  multipliers: `Array of multiplier objects. Each object: ${JSON.stringify(AI_MULTIPLIER_SCHEMA)}`,
+};
+
+// ============================================
 // ROTATING CATEGORIES SCHEMA
 // ============================================
 

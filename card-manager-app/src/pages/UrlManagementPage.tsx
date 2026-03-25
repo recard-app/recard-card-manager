@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { Search, Plus, X, ExternalLink } from 'lucide-react';
+import { Search, Plus, X, ExternalLink, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -26,6 +26,8 @@ export function UrlManagementPage() {
   const nextKeyRef = useRef(0);
   // Original URLs as loaded from the server (for dirty comparison)
   const [originalUrls, setOriginalUrls] = useState<Record<string, string[]>>({});
+  // Collapse state
+  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadCards();
@@ -68,7 +70,6 @@ export function UrlManagementPage() {
   }, []);
 
   // Compute dirty cards by comparing current edits to original snapshot.
-  // A card is dirty only if its non-empty URLs actually differ from the original.
   const dirtyCards = useMemo(() => {
     const dirty = new Set<string>();
     for (const cardId of Object.keys(urlEdits)) {
@@ -100,6 +101,13 @@ export function UrlManagementPage() {
       ...prev,
       [referenceCardId]: [...(prev[referenceCardId] ?? []), nextKeyRef.current++],
     }));
+    // Auto-expand the card when adding a URL
+    setCollapsedCards(prev => {
+      if (!prev.has(referenceCardId)) return prev;
+      const next = new Set(prev);
+      next.delete(referenceCardId);
+      return next;
+    });
   };
 
   const handleRemoveUrl = (referenceCardId: string, index: number) => {
@@ -192,7 +200,6 @@ export function UrlManagementPage() {
   // Filtered cards
   const filteredCards = useMemo(() => {
     return cards.filter(card => {
-      // Search filter
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         if (!card.CardName.toLowerCase().includes(q) &&
@@ -202,7 +209,6 @@ export function UrlManagementPage() {
         }
       }
 
-      // URL filter
       const urlCount = getUrlsForCard(card.ReferenceCardId).filter(u => u.trim()).length;
       if (filterMode === 'missing' && urlCount > 0) return false;
       if (filterMode === 'has' && urlCount === 0) return false;
@@ -219,11 +225,33 @@ export function UrlManagementPage() {
     }).length;
   }, [cards, getUrlsForCard]);
 
+  // Collapse handlers
+  const toggleCard = (referenceCardId: string) => {
+    setCollapsedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(referenceCardId)) {
+        next.delete(referenceCardId);
+      } else {
+        next.add(referenceCardId);
+      }
+      return next;
+    });
+  };
+
+  const expandAll = () => setCollapsedCards(new Set());
+
+  const collapseAll = () => {
+    setCollapsedCards(new Set(filteredCards.map(c => c.ReferenceCardId)));
+  };
+
   if (loading) {
     return (
       <div className="url-management-page">
-        <PageHeader title="URL Management" backTo="/" actions={<ProfilePopover />} />
-        <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>Loading cards...</div>
+        <PageHeader title="Card Data Sources" actions={<ProfilePopover />} />
+        <div className="loading-state">
+          <Loader2 size={20} className="spinner" />
+          Loading cards...
+        </div>
       </div>
     );
   }
@@ -231,127 +259,157 @@ export function UrlManagementPage() {
   return (
     <TooltipProvider>
     <div className="url-management-page">
-      <PageHeader title="URL Management" backTo="/" actions={<ProfilePopover />} />
+      <PageHeader title="Card Data Sources" actions={<ProfilePopover />} />
 
-      <div className="progress-counter">
-        {cardsWithUrls}/{cards.length} cards have URLs configured
-      </div>
-
-      <div className="filters">
-        <div className="search-box">
-          <Search size={16} className="search-icon" />
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search cards..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+      {/* Toolbar */}
+      <div className="toolbar">
+        <div className="toolbar-left">
+          <div className="search-box">
+            <Search size={14} className="search-icon" />
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search cards..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Select
+            value={filterMode}
+            onChange={(value) => setFilterMode(value as FilterMode)}
+            options={[
+              { value: 'all', label: 'All Cards' },
+              { value: 'missing', label: 'Missing URLs' },
+              { value: 'has', label: 'Has URLs' },
+            ]}
           />
         </div>
-
-        <Select
-          value={filterMode}
-          onChange={(value) => setFilterMode(value as FilterMode)}
-          options={[
-            { value: 'all', label: 'All Cards' },
-            { value: 'missing', label: 'Missing URLs' },
-            { value: 'has', label: 'Has URLs' },
-          ]}
-        />
+        <div className="toolbar-right">
+          <Button variant="outline" size="sm" onClick={expandAll}>
+            Expand All
+          </Button>
+          <Button variant="outline" size="sm" onClick={collapseAll}>
+            Collapse All
+          </Button>
+        </div>
       </div>
 
-      {filteredCards.map(card => {
-        const urls = getUrlsForCard(card.ReferenceCardId);
-        const urlCount = urls.filter(u => u.trim()).length;
-        const isDirty = dirtyCards.has(card.ReferenceCardId);
+      {/* Card list */}
+      <div className="card-list">
+        {filteredCards.map(card => {
+          const urls = getUrlsForCard(card.ReferenceCardId);
+          const urlCount = urls.filter(u => u.trim()).length;
+          const isDirty = dirtyCards.has(card.ReferenceCardId);
+          const isCollapsed = collapsedCards.has(card.ReferenceCardId);
 
-        return (
-          <div key={card.ReferenceCardId} className="card-section" style={isDirty ? { borderColor: '#ca8a04' } : undefined}>
-            <div className="card-header">
-              <div className="card-info">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <a
-                      href={`/cards/${card.ReferenceCardId}${card.id ? `/${card.id}` : ''}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="card-name-link"
-                    >
-                      {card.CardName}
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <span>{card.ReferenceCardId}</span>
-                  </TooltipContent>
-                </Tooltip>
-                <span className="card-issuer">({card.CardIssuer})</span>
-              </div>
-              <span className={`url-count ${urlCount > 0 ? 'has-urls' : 'no-urls'}`}>
-                {urlCount > 0 ? `${urlCount} URL${urlCount !== 1 ? 's' : ''}` : '0 URLs'}
-              </span>
-            </div>
-
-            {urls.map((url, index) => (
-              <div key={urlKeyMap[card.ReferenceCardId]?.[index] ?? index} className="url-row">
-                <input
-                  type="text"
-                  className="url-input"
-                  value={url}
-                  onChange={(e) => handleUrlChange(card.ReferenceCardId, index, e.target.value)}
-                  placeholder="https://..."
-                />
-                {url.trim() && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      try {
-                        const parsed = new URL(url.trim());
-                        if (parsed.protocol !== 'https:') {
-                          toast.error('Only https:// URLs can be opened');
-                          return;
-                        }
-                        window.open(parsed.toString(), '_blank', 'noopener,noreferrer');
-                      } catch {
-                        toast.error('Invalid URL');
-                      }
-                    }}
-                    title="Open URL"
-                  >
-                    <ExternalLink size={14} />
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveUrl(card.ReferenceCardId, index)}
-                  title="Remove URL"
-                >
-                  <X size={14} />
-                </Button>
-              </div>
-            ))}
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleAddUrl(card.ReferenceCardId)}
+          return (
+            <div
+              key={card.ReferenceCardId}
+              className={`card-section${isDirty ? ' dirty' : ''}${isCollapsed ? ' collapsed' : ''}`}
             >
-              <Plus size={14} />
-              Add URL
-            </Button>
-          </div>
-        );
-      })}
+              <div className="card-header" onClick={() => toggleCard(card.ReferenceCardId)}>
+                <div className="card-header-left">
+                  {isCollapsed
+                    ? <ChevronRight size={14} className="chevron" />
+                    : <ChevronDown size={14} className="chevron" />
+                  }
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <a
+                        href={`/cards/${card.ReferenceCardId}${card.id ? `/${card.id}` : ''}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="card-name-link"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {card.CardName}
+                        <ExternalLink size={11} className="external-link-icon" />
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <span>{card.ReferenceCardId}</span>
+                    </TooltipContent>
+                  </Tooltip>
+                  <span className="card-issuer">({card.CardIssuer})</span>
+                </div>
+                <span className={`url-count ${urlCount > 0 ? 'has-urls' : 'no-urls'}`}>
+                  {urlCount > 0 ? `${urlCount} URL${urlCount !== 1 ? 's' : ''}` : '0 URLs'}
+                </span>
+              </div>
+
+              {!isCollapsed && (
+                <div className="card-body">
+                  {urls.map((url, index) => (
+                    <div key={urlKeyMap[card.ReferenceCardId]?.[index] ?? index} className="url-row">
+                      <input
+                        type="text"
+                        className="url-input"
+                        value={url}
+                        onChange={(e) => handleUrlChange(card.ReferenceCardId, index, e.target.value)}
+                        placeholder="https://..."
+                      />
+                      {url.trim() && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            try {
+                              const parsed = new URL(url.trim());
+                              if (parsed.protocol !== 'https:') {
+                                toast.error('Only https:// URLs can be opened');
+                                return;
+                              }
+                              window.open(parsed.toString(), '_blank', 'noopener,noreferrer');
+                            } catch {
+                              toast.error('Invalid URL');
+                            }
+                          }}
+                          title="Open URL"
+                        >
+                          <ExternalLink size={14} />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveUrl(card.ReferenceCardId, index)}
+                        title="Remove URL"
+                      >
+                        <X size={14} />
+                      </Button>
+                    </div>
+                  ))}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="add-url-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddUrl(card.ReferenceCardId);
+                    }}
+                  >
+                    <Plus size={14} />
+                    Add URL
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {filteredCards.length === 0 && (
-        <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
+        <div className="empty-state">
           No cards match your filters
         </div>
       )}
 
       {/* Sticky save bar */}
       <div className="sticky-save-bar">
+        <span className="progress-text">
+          {cardsWithUrls}/{cards.length} cards have URLs
+        </span>
         {dirtyCards.size > 0 && (
           <span className="unsaved-indicator">
             {dirtyCards.size} card{dirtyCards.size !== 1 ? 's' : ''} with unsaved changes

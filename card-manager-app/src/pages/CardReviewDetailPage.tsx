@@ -482,7 +482,7 @@ export function CardReviewDetailPage() {
   if (loading) {
     return (
       <div className="card-review-detail-page">
-        <PageHeader title="Review Details" backTo="/reviews?tab=completed" actions={<ProfilePopover />} />
+        <PageHeader title="AI Card Review Details" backTo="/reviews?tab=completed" actions={<ProfilePopover />} />
         <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>Loading review...</div>
       </div>
     );

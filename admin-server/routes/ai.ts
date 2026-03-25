@@ -8,13 +8,16 @@ const router = Router();
 // Validation schema for generate request
 const GenerateRequestSchema = z.object({
   rawData: z.string().min(1, 'Raw data is required'),
-  generationType: z.enum(['card', 'credit', 'perk', 'multiplier', 'rotating-categories']),
+  generationType: z.enum(['card', 'credit', 'perk', 'multiplier', 'rotating-categories', 'generate-all']),
   batchMode: z.boolean().optional(),
   refinementPrompt: z.string().optional(),
   previousOutput: z.union([
     z.record(z.string(), z.unknown()),
     z.array(z.record(z.string(), z.unknown())),
   ]).optional(),
+  model: z.string().optional(),
+  checkerModel: z.string().optional(),
+  cardName: z.string().optional(),
 });
 
 // POST /admin/ai/generate - Generate structured data from raw text using AI
@@ -29,7 +32,14 @@ router.post('/generate', verifyAuth, async (req: Request, res: Response) => {
       });
     }
 
-    const { rawData, generationType, batchMode, refinementPrompt, previousOutput } = parsed.data;
+    const { rawData, generationType, batchMode, refinementPrompt, previousOutput, model, checkerModel, cardName } = parsed.data;
+
+    // cardName is required for generate-all
+    if (generationType === 'generate-all' && !cardName) {
+      return res.status(400).json({
+        error: 'cardName is required when generationType is generate-all',
+      });
+    }
 
     const result = await generateData({
       rawData,
@@ -37,6 +47,9 @@ router.post('/generate', verifyAuth, async (req: Request, res: Response) => {
       batchMode,
       refinementPrompt,
       previousOutput,
+      model,
+      checkerModel,
+      cardName,
     });
 
     res.json(result);

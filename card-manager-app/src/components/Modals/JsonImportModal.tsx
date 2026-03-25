@@ -18,7 +18,7 @@ export function JsonImportModal({ open, onOpenChange, type, onImport }: JsonImpo
   const [jsonText, setJsonText] = useState('');
   const [parseError, setParseError] = useState<string | null>(null);
 
-  const expectedFields = SCHEMA_FIELDS[type];
+  const expectedFields: string[] = type === 'generate-all' ? [] : (SCHEMA_FIELDS as Record<string, string[]>)[type] || [];
 
   const handleImport = () => {
     setParseError(null);

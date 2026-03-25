@@ -1,7 +1,8 @@
+@use '@/styling/variables' as *;
+@use '@/styling/mixins' as *;
+
 .card-review-detail-page {
-  padding: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  @include page-wrapper;
 
   .review-status-select {
     .review-select-reviewed {

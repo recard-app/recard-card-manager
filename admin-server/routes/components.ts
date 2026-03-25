@@ -3,6 +3,8 @@ import { db } from '../firebase-admin';
 import { CardCredit, CardPerk, CardMultiplier, ONGOING_SENTINEL_DATE } from '../types';
 import { verifyAuth } from '../middleware/auth';
 import { CreditSchema, CreditUpdateSchema, PerkSchema, MultiplierSchema, parseOr400 } from '../validation/schemas';
+import { isValidCategory, isValidSubCategory } from '../constants/categories';
+import { z } from 'zod';
 
 const router = express.Router();
 
@@ -94,24 +96,10 @@ router.post('/credits', async (req: Request, res: Response) => {
     if (!parsed.ok) {
       return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
     }
-    const creditData = parsed.data;
-    // Normalize EffectiveTo if blank/null/undefined
-    if (Object.prototype.hasOwnProperty.call(creditData, 'EffectiveTo')) {
-      creditData.EffectiveTo =
-        creditData.EffectiveTo === '' || creditData.EffectiveTo == null
-          ? ONGOING_SENTINEL_DATE
-          : creditData.EffectiveTo;
-    }
-    // Set LastUpdated timestamp
-    const now = new Date().toISOString();
-    (creditData as any).LastUpdated = now;
-
-    const docRef = await db.collection('credit_cards_credits').add(creditData);
-
-    // Update parent card's componentsLastUpdated
-    await updateCardComponentsTimestamp(creditData.ReferenceCardId);
-
-    res.status(201).json({ id: docRef.id });
+    const referenceCardId = parsed.data.ReferenceCardId;
+    const docId = await createCreditDoc(parsed.data as Record<string, unknown>, referenceCardId);
+    await updateCardComponentsTimestamp(referenceCardId);
+    res.status(201).json({ id: docId });
   } catch (error) {
     console.error('Error creating credit:', error);
     res.status(500).json({ error: 'Failed to create credit' });
@@ -240,23 +228,10 @@ router.post('/perks', async (req: Request, res: Response) => {
   try {
     const parsed = parseOr400(PerkSchema, req.body);
     if (!parsed.ok) return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
-    const perkData = parsed.data;
-    if (Object.prototype.hasOwnProperty.call(perkData, 'EffectiveTo')) {
-      perkData.EffectiveTo =
-        perkData.EffectiveTo === '' || perkData.EffectiveTo == null
-          ? ONGOING_SENTINEL_DATE
-          : perkData.EffectiveTo;
-    }
-    // Set LastUpdated timestamp
-    const now = new Date().toISOString();
-    (perkData as any).LastUpdated = now;
-
-    const docRef = await db.collection('credit_cards_perks').add(perkData);
-
-    // Update parent card's componentsLastUpdated
-    await updateCardComponentsTimestamp(perkData.ReferenceCardId);
-
-    res.status(201).json({ id: docRef.id });
+    const referenceCardId = parsed.data.ReferenceCardId;
+    const docId = await createPerkDoc(parsed.data as Record<string, unknown>, referenceCardId);
+    await updateCardComponentsTimestamp(referenceCardId);
+    res.status(201).json({ id: docId });
   } catch (error) {
     console.error('Error creating perk:', error);
     res.status(500).json({ error: 'Failed to create perk' });
@@ -377,23 +352,10 @@ router.post('/multipliers', async (req: Request, res: Response) => {
   try {
     const parsed = parseOr400(MultiplierSchema, req.body);
     if (!parsed.ok) return res.status(400).json({ error: 'Invalid request body', details: parsed.errors });
-    const multiplierData = parsed.data;
-    if (Object.prototype.hasOwnProperty.call(multiplierData, 'EffectiveTo')) {
-      multiplierData.EffectiveTo =
-        multiplierData.EffectiveTo === '' || multiplierData.EffectiveTo == null
-          ? ONGOING_SENTINEL_DATE
-          : multiplierData.EffectiveTo;
-    }
-    // Set LastUpdated timestamp
-    const now = new Date().toISOString();
-    (multiplierData as any).LastUpdated = now;
-
-    const docRef = await db.collection('credit_cards_multipliers').add(multiplierData);
-
-    // Update parent card's componentsLastUpdated
-    await updateCardComponentsTimestamp(multiplierData.ReferenceCardId);
-
-    res.status(201).json({ id: docRef.id });
+    const referenceCardId = parsed.data.ReferenceCardId;
+    const docId = await createMultiplierDoc(parsed.data as Record<string, unknown>, referenceCardId);
+    await updateCardComponentsTimestamp(referenceCardId);
+    res.status(201).json({ id: docId });
   } catch (error) {
     console.error('Error creating multiplier:', error);
     res.status(500).json({ error: 'Failed to create multiplier' });
@@ -460,6 +422,199 @@ router.delete('/multipliers/:multiplierId', async (req: Request, res: Response) 
   } catch (error) {
     console.error('Error deleting multiplier:', error);
     res.status(500).json({ error: 'Failed to delete multiplier' });
+  }
+});
+
+// ===== SHARED CREATION HELPERS =====
+
+/**
+ * Normalizes EffectiveTo and sets LastUpdated on a component data object.
+ * Returns a new object (does not mutate input).
+ */
+function prepareComponentData(data: Record<string, unknown>, referenceCardId: string): Record<string, unknown> {
+  const prepared: Record<string, unknown> = { ...data, ReferenceCardId: referenceCardId };
+  if (Object.prototype.hasOwnProperty.call(prepared, 'EffectiveTo')) {
+    prepared.EffectiveTo =
+      prepared.EffectiveTo === '' || prepared.EffectiveTo == null
+        ? ONGOING_SENTINEL_DATE
+        : prepared.EffectiveTo;
+  }
+  prepared.LastUpdated = new Date().toISOString();
+  return prepared;
+}
+
+/**
+ * Creates a credit document in Firestore.
+ */
+async function createCreditDoc(data: Record<string, unknown>, referenceCardId: string): Promise<string> {
+  const creditData = prepareComponentData(data, referenceCardId);
+  const docRef = await db.collection('credit_cards_credits').add(creditData);
+  return docRef.id;
+}
+
+/**
+ * Creates a perk document in Firestore.
+ */
+async function createPerkDoc(data: Record<string, unknown>, referenceCardId: string): Promise<string> {
+  const perkData = prepareComponentData(data, referenceCardId);
+  const docRef = await db.collection('credit_cards_perks').add(perkData);
+  return docRef.id;
+}
+
+/**
+ * Creates a standard multiplier document in Firestore.
+ * Does NOT handle schedule or allowed_categories subcollections.
+ */
+async function createMultiplierDoc(data: Record<string, unknown>, referenceCardId: string): Promise<string> {
+  const multiplierData = prepareComponentData(data, referenceCardId);
+  const docRef = await db.collection('credit_cards_multipliers').add(multiplierData);
+  return docRef.id;
+}
+
+// ===== BULK CREATE =====
+
+const BulkCreateItemSchema = z.object({
+  type: z.enum(['credit', 'perk', 'multiplier']),
+  data: z.record(z.string(), z.unknown()),
+});
+
+const BulkCreateSchema = z.object({
+  referenceCardId: z.string().min(1),
+  items: z.array(BulkCreateItemSchema).min(1),
+});
+
+interface BulkCreateResult {
+  index: number;
+  type: string;
+  success: boolean;
+  id?: string;
+  error?: string;
+}
+
+/**
+ * POST /admin/components/bulk-create
+ * Create multiple components in one request.
+ * Supports partial success - items that pass validation are created even if others fail.
+ */
+router.post('/components/bulk-create', async (req: Request, res: Response) => {
+  try {
+    const parsed = BulkCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Invalid request body', details: parsed.error?.issues });
+    }
+
+    const { referenceCardId, items } = parsed.data;
+
+    // Verify the card exists
+    const cardDoc = await db.collection('credit_cards_names').doc(referenceCardId).get();
+    if (!cardDoc.exists) {
+      return res.status(404).json({ error: `Card not found: ${referenceCardId}` });
+    }
+
+    const results: BulkCreateResult[] = [];
+    let createdCount = 0;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      try {
+        // Reject rotating/selectable multipliers
+        if (item.type === 'multiplier') {
+          const multiplierType = item.data.multiplierType as string | undefined;
+          if (multiplierType === 'rotating' || multiplierType === 'selectable') {
+            results.push({
+              index: i,
+              type: item.type,
+              success: false,
+              error: 'Rotating/selectable multipliers must be created individually (requires subcollection setup)',
+            });
+            continue;
+          }
+        }
+
+        // Inject ReferenceCardId into data before Zod validation
+        const dataWithRef = { ...item.data, ReferenceCardId: referenceCardId };
+
+        // Validate against appropriate Zod schema
+        let validationResult;
+        if (item.type === 'credit') {
+          validationResult = CreditSchema.safeParse(dataWithRef);
+        } else if (item.type === 'perk') {
+          validationResult = PerkSchema.safeParse(dataWithRef);
+        } else {
+          validationResult = MultiplierSchema.safeParse(dataWithRef);
+        }
+
+        if (!validationResult.success) {
+          const flat = validationResult.error.flatten();
+          results.push({
+            index: i,
+            type: item.type,
+            success: false,
+            error: `Validation failed: ${JSON.stringify(flat.fieldErrors)}`,
+          });
+          continue;
+        }
+
+        // Hard-gate category validation against AI-facing categories
+        const category = (item.data.Category || item.data.category) as string | undefined;
+        const subCategory = (item.data.SubCategory || item.data.subCategory) as string | undefined;
+
+        if (category && !isValidCategory(category)) {
+          results.push({
+            index: i,
+            type: item.type,
+            success: false,
+            error: `Invalid category: "${category}"`,
+          });
+          continue;
+        }
+
+        if (category && subCategory && subCategory !== '' && !isValidSubCategory(category, subCategory)) {
+          results.push({
+            index: i,
+            type: item.type,
+            success: false,
+            error: `Invalid subcategory "${subCategory}" for category "${category}"`,
+          });
+          continue;
+        }
+
+        // Create the component
+        let docId: string;
+        if (item.type === 'credit') {
+          docId = await createCreditDoc(item.data, referenceCardId);
+        } else if (item.type === 'perk') {
+          docId = await createPerkDoc(item.data, referenceCardId);
+        } else {
+          docId = await createMultiplierDoc(item.data, referenceCardId);
+        }
+
+        results.push({ index: i, type: item.type, success: true, id: docId });
+        createdCount++;
+      } catch (error) {
+        results.push({
+          index: i,
+          type: item.type,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    // Update componentsLastUpdated only if at least one item was created
+    if (createdCount > 0) {
+      await updateCardComponentsTimestamp(referenceCardId);
+    }
+
+    const failedCount = items.length - createdCount;
+    res.status(createdCount > 0 ? 201 : 400).json({
+      results,
+      summary: { created: createdCount, failed: failedCount },
+    });
+  } catch (error) {
+    console.error('Error in bulk create:', error);
+    res.status(500).json({ error: 'Failed to process bulk create' });
   }
 });
 

@@ -109,6 +109,27 @@ export class ComponentService {
     await apiClient.delete(API_ROUTES.MULTIPLIERS.DELETE(multiplierId));
   }
 
+  // ===== BULK CREATE =====
+
+  /**
+   * Bulk create multiple components in one request.
+   * Supports mixed types (credits, perks, multipliers).
+   * Returns per-item results for partial success handling.
+   */
+  static async bulkCreate(
+    referenceCardId: string,
+    items: Array<{ type: 'credit' | 'perk' | 'multiplier'; data: Record<string, unknown> }>
+  ): Promise<{
+    results: Array<{ index: number; type: string; success: boolean; id?: string; error?: string }>;
+    summary: { created: number; failed: number };
+  }> {
+    const response = await apiClient.post<{
+      results: Array<{ index: number; type: string; success: boolean; id?: string; error?: string }>;
+      summary: { created: number; failed: number };
+    }>(API_ROUTES.COMPONENTS.BULK_CREATE, { referenceCardId, items });
+    return response.data;
+  }
+
   // ===== ROTATING SCHEDULE =====
 
   /**

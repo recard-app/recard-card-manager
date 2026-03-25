@@ -51,23 +51,13 @@ export function HomePage() {
               </div>
             </Link>
 
-            <Link to="/ai-assistant" className="nav-card">
+            <Link to="/generator" className="nav-card">
               <div className="nav-card-icon">
                 <Sparkles size={32} />
               </div>
               <div className="nav-card-content">
-                <h2>AI Data Entry Assistant</h2>
+                <h2>AI Card Generator</h2>
                 <p>Use AI to extract and format credit card data from raw text</p>
-              </div>
-            </Link>
-
-            <Link to="/url-management" className="nav-card">
-              <div className="nav-card-icon">
-                <LinkIcon size={32} />
-              </div>
-              <div className="nav-card-content">
-                <h2>URL Management</h2>
-                <p>Manage website URLs for automated card reviews</p>
               </div>
             </Link>
 
@@ -76,8 +66,18 @@ export function HomePage() {
                 <ClipboardCheck size={32} />
               </div>
               <div className="nav-card-content">
-                <h2>Card Reviews</h2>
-                <p>Automated card review reports and job history</p>
+                <h2>AI Card Review</h2>
+                <p>AI-powered card review reports and job history</p>
+              </div>
+            </Link>
+
+            <Link to="/sources" className="nav-card">
+              <div className="nav-card-icon">
+                <LinkIcon size={32} />
+              </div>
+              <div className="nav-card-content">
+                <h2>Card Data Sources</h2>
+                <p>Manage website URLs used by AI Card Review</p>
               </div>
             </Link>
           </>

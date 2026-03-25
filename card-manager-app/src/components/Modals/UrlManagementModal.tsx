@@ -132,12 +132,12 @@ export function UrlManagementModal({ open, onOpenChange, cardName, onSuccess }: 
       open={open}
       onOpenChange={onOpenChange}
       title="Website URLs"
-      description="Pages used for automated card reviews"
+      description="Pages used for AI Card Review"
     >
       <div>
         {websiteUrls.length === 0 && (
           <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.75rem' }}>
-            No URLs configured. Add URLs to enable automated reviews for this card.
+            No URLs configured. Add URLs to enable AI Card Review for this card.
           </p>
         )}
 

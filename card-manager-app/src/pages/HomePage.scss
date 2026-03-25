@@ -2,11 +2,9 @@
 @use '@/styling/mixins' as *;
 
 .home-page {
+  @include page-wrapper;
   @include flex-column;
   min-height: 100vh;
-  padding: $spacing-sm;
-  max-width: 1200px;
-  margin: 0 auto;
   gap: $spacing-sm;
 }
 

@@ -192,7 +192,7 @@ export function EditCardNameModal({ open, onOpenChange, cardName, onSuccess }: E
             Website URLs
           </label>
           <p style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.5rem' }}>
-            Pages with card benefits, perks, and rewards (for automated reviews)
+            Pages with card benefits, perks, and rewards (for AI Card Review)
           </p>
 
           {websiteUrls.map((url, index) => (

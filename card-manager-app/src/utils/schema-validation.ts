@@ -25,8 +25,11 @@ export type MultiplierType = 'standard' | 'rotating' | 'selectable';
 
 export const VALID_MULTIPLIER_TYPES: MultiplierType[] = ['standard', 'rotating', 'selectable'];
 
+// Type for schema field validation (excludes generate-all which has different structure)
+export type ValidatableGenerationType = Exclude<GenerationType, 'generate-all'>;
+
 // Expected fields per schema type
-export const SCHEMA_FIELDS: Record<GenerationType, string[]> = {
+export const SCHEMA_FIELDS: Record<ValidatableGenerationType, string[]> = {
   card: [
     'CardName',
     'CardIssuer',
@@ -103,9 +106,14 @@ export function validateField(
   key: string,
   value: unknown
 ): FieldValidationResult {
+  // generate-all uses a different structure (tabs with per-type items), skip field validation
+  if (type === 'generate-all') {
+    return { valid: true };
+  }
+
   // Check if field is expected for this type
-  const expectedFields = SCHEMA_FIELDS[type];
-  if (!expectedFields.includes(key)) {
+  const expectedFields = SCHEMA_FIELDS[type as ValidatableGenerationType];
+  if (!expectedFields || !expectedFields.includes(key)) {
     return { valid: false, reason: `Unexpected field for ${type}` };
   }
 
@@ -473,12 +481,17 @@ export function validateResponse(
   type: GenerationType,
   obj: Record<string, unknown> | unknown[]
 ): ObjectValidationResult {
+  // generate-all uses a different structure (tabs with per-type items), skip validation
+  if (type === 'generate-all') {
+    return { valid: true, invalidFields: [], fieldResults: {} };
+  }
+
   // Special handling for rotating-categories which returns an array
   if (type === 'rotating-categories' && Array.isArray(obj)) {
     return validateRotatingCategoriesArray(obj);
   }
 
-  const expectedFields = SCHEMA_FIELDS[type];
+  const expectedFields = SCHEMA_FIELDS[type as ValidatableGenerationType];
   const fieldResults: Record<string, FieldValidationResult> = {};
   const invalidFields: string[] = [];
 
@@ -601,7 +614,17 @@ export function extractValidFieldsFromJson(
   type: GenerationType,
   obj: Record<string, unknown>
 ): ExtractedFieldsResult {
-  const expectedFields = SCHEMA_FIELDS[type];
+  // generate-all uses a different structure; pass through all fields
+  if (type === 'generate-all') {
+    return {
+      validFields: { ...obj },
+      skippedFields: [],
+      validCount: Object.keys(obj).length,
+      skippedCount: 0,
+    };
+  }
+
+  const expectedFields = SCHEMA_FIELDS[type as ValidatableGenerationType];
   const validFields: Record<string, unknown> = {};
   const skippedFields: Array<{ field: string; reason: string }> = [];
 

@@ -51,7 +51,7 @@ function App() {
             }
           />
           <Route
-            path="/ai-assistant"
+            path="/generator"
             element={
               <ProtectedRoute requiredFeature="card-manager">
                 <AIAssistantPage />
@@ -59,7 +59,7 @@ function App() {
             }
           />
           <Route
-            path="/url-management"
+            path="/sources"
             element={
               <ProtectedRoute requiredFeature="card-manager">
                 <UrlManagementPage />

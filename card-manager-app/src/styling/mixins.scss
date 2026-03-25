@@ -33,6 +33,13 @@
   }
 }
 
+// Page wrapper - consistent layout for all standard pages
+@mixin page-wrapper {
+  padding: $spacing-sm;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 // Card styles
 @mixin card {
   background: $neutral-white;

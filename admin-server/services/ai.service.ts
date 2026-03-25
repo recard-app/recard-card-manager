@@ -6,10 +6,13 @@ import {
   AI_PERK_SCHEMA,
   AI_MULTIPLIER_SCHEMA,
   AI_ROTATING_CATEGORIES_SCHEMA,
+  AI_GENERATE_ALL_SCHEMA,
 } from '../constants/ai-response-schema';
+import { EARLIEST_EFFECTIVE_DATE, ONGOING_SENTINEL_DATE } from '../constants/dates';
+import { CATEGORIES } from '../constants/categories';
 
 // Types
-export type GenerationType = 'card' | 'credit' | 'perk' | 'multiplier' | 'rotating-categories';
+export type GenerationType = 'card' | 'credit' | 'perk' | 'multiplier' | 'rotating-categories' | 'generate-all';
 
 export interface GeneratedField {
   key: string;
@@ -27,10 +30,47 @@ export interface TokenUsage {
   outputTokens: number;
 }
 
+// Token breakdown interfaces for detailed per-call reporting
+export interface TokenBreakdownEntry {
+  inputTokens: number;
+  outputTokens: number;
+  thinkingTokens?: number;
+  model: string;
+}
+
+export interface TokenBreakdown {
+  generation: TokenBreakdownEntry;
+  validation?: TokenBreakdownEntry;
+}
+
+// Warning interfaces for programmatic post-generation checks
+export type ComponentType = 'credit' | 'perk' | 'multiplier';
+
+export interface CategoryWarning {
+  componentType: ComponentType;
+  itemIndex: number;
+  field: 'Category' | 'SubCategory';
+  value: string;
+  message: string;
+}
+
+export interface DuplicateWarning {
+  itemA: { type: ComponentType; index: number; title: string };
+  itemB: { type: ComponentType; index: number; title: string };
+  confidence: 'high' | 'medium';
+}
+
+export interface GenerationWarnings {
+  categoryWarnings: CategoryWarning[];
+  duplicateWarnings: DuplicateWarning[];
+}
+
 export interface GenerationResult {
   items: GeneratedItem[];
   modelUsed: string;
   tokenUsage?: TokenUsage;
+  tokenBreakdown?: TokenBreakdown;
+  warnings?: GenerationWarnings;
 }
 
 // Internal type for parsed response before adding model info
@@ -45,6 +85,8 @@ export interface GenerateParams {
   refinementPrompt?: string;
   previousOutput?: Record<string, unknown> | Record<string, unknown>[];
   model?: string; // Optional model override
+  checkerModel?: string; // Optional checker/validation model override (Flash by default)
+  cardName?: string; // Required for generate-all, used for multi-card disambiguation
 }
 
 // Model constants - exported for validation
@@ -63,6 +105,11 @@ export const VALID_MODELS = Object.values(MODELS);
 function getModelsForGeneration(type: GenerationType, batchMode: boolean, isRefinement: boolean, selectedModel?: string): string[] {
   // All refinements use Flash only
   if (isRefinement) return [MODELS.GEMINI_3_FLASH_PREVIEW];
+
+  // Generate-all always uses Pro with Flash fallback (enforced, ignores user model selection)
+  if (type === 'generate-all') {
+    return [MODELS.GEMINI_31_PRO_PREVIEW, MODELS.GEMINI_3_FLASH_PREVIEW];
+  }
 
   // If user selected a specific model, use it with Flash as fallback
   if (selectedModel && VALID_MODELS.includes(selectedModel)) {
@@ -104,23 +151,15 @@ const PERK_SCHEMA = AI_PERK_SCHEMA;
 const MULTIPLIER_SCHEMA = AI_MULTIPLIER_SCHEMA;
 const ROTATING_CATEGORIES_SCHEMA = AI_ROTATING_CATEGORIES_SCHEMA;
 
-const CATEGORIES = {
-  travel: ['flights', 'hotels', 'portal', 'lounge access', 'ground transportation', 'car rental', 'tsa'],
-  dining: [],
-  shopping: ['supermarkets', 'online shopping', 'online grocery', 'drugstores', 'retail', 'department stores'],
-  gas: ['gas stations', 'ev charging'],
-  entertainment: ['streaming'],
-  transportation: ['rideshare'],
-  transit: [],
-  general: ['entertainment'],
-  portal: [],
-  rent: [],
-  insurance: ['purchase', 'travel', 'car rental', 'cell phone protection', 'rental car protection'],
-  'rewards boost': [],
-};
+// CATEGORIES is imported from ../constants/categories.ts (shared source of truth)
 
-function getSystemPrompt(generationType: GenerationType, batchMode: boolean = false): string {
-  const baseInstructions = `You are a credit card data extraction assistant.
+// ============================================
+// SHARED PROMPT HELPERS
+// Extracted from getSystemPrompt() cases to avoid duplication
+// between per-type and generate-all prompts.
+// ============================================
+
+const BASE_INSTRUCTIONS = `You are a credit card data extraction assistant.
 
 CRITICAL JSON REQUIREMENTS:
 1. Output ONLY valid, complete JSON - no text before or after
@@ -134,41 +173,15 @@ CRITICAL JSON REQUIREMENTS:
 
 Your response should start with { and end with } (or [ and ] for arrays). Nothing else.`;
 
-  const categoryInfo = `
+function getCategoryInfo(): string {
+  return `
 Available categories and subcategories:
 ${Object.entries(CATEGORIES).map(([cat, subs]) => `- ${cat}${subs.length > 0 ? `: ${subs.join(', ')}` : ''}`).join('\n')}
 `;
+}
 
-  // Load condensed schema rules for this generation type
-  const schemaRules = getCondensedRules(generationType);
-
-  switch (generationType) {
-    case 'card':
-      return `${baseInstructions}
-
-Extract credit card details and output a JSON object with the following schema:
-${JSON.stringify(CARD_SCHEMA, null, 2)}
-
-${categoryInfo}
-
-=== COLOR SELECTION INSTRUCTIONS ===
-For CardPrimaryColor and CardSecondaryColor, use your best guess of what the physical credit card looks like in real life:
-- **CardPrimaryColor**: The base/background color that covers the MAJORITY of the card surface. This is the dominant color you see when looking at the card.
-- **CardSecondaryColor**: The accent color used for details, logos, text, or decorative elements on the card. This is a secondary/highlight color.
-
-Examples:
-- Chase Sapphire Reserve: Primary #0A1F2E (dark navy), Secondary #A8C7DA (light blue accent)
-- American Express Platinum: Primary #B1B3B3 (silver), Secondary #FFFFFF (white text)
-- American Express Gold: Primary #D4AF37 (gold), Secondary #1A1A1A (black accents)
-- Capital One Venture X: Primary #1A1A1A (black), Secondary #E31837 (red accents)
-=====================================
-
-=== SCHEMA RULES (FOLLOW EXACTLY) ===
-${schemaRules}
-=====================================`;
-
-    case 'credit':
-      const anniversaryRules = `
+function getCreditSpecificRules(): string {
+  return `
 === ANNIVERSARY-BASED CREDITS ===
 The isAnniversaryBased field indicates whether a credit resets on the cardholder's card open date anniversary vs calendar boundaries.
 
@@ -195,9 +208,8 @@ DETECTION TIPS:
 | "annually" (ambiguous)    | Check context     |
 
 WHEN UNSURE: Default to false (calendar-based)
-=====================================`;
+=====================================
 
-      const nonMonetaryRules = `
 === NON-MONETARY CREDITS ===
 The isNonMonetary field indicates the credit value is a count/quantity, not a dollar amount.
 
@@ -246,57 +258,10 @@ IMPORTANT: Non-monetary credits must RECUR with a cadence of 1 year or shorter (
 
 WHEN UNSURE: Default to false (monetary). If unsure whether something recurs, classify as a Perk.
 =====================================`;
+}
 
-      if (batchMode) {
-        return `${baseInstructions}
-
-Extract ONLY credits/statement credits from the data and output a JSON ARRAY of objects.
-Each object should follow this schema:
-${JSON.stringify(CREDIT_SCHEMA, null, 2)}
-
-Output format: JSON array, e.g., [{...}, {...}, {...}]
-If no credits are found, return an empty array: []
-
-=== MULTI-CARD PAGES ===
-The source text may list benefits for MULTIPLE different cards on the same page. Only extract credits for the specific card being entered. If a credit mentions it is exclusive to a different card (e.g., "Platinum Card only", "Reserve card exclusive"), SKIP it entirely.
-=====================================
-
-${categoryInfo}
-
-${anniversaryRules}
-
-${nonMonetaryRules}
-
-=== SCHEMA RULES (FOLLOW EXACTLY) ===
-${schemaRules}
-=====================================`;
-      }
-      return `${baseInstructions}
-
-Extract credit/benefit details and output a JSON object with the following schema:
-${JSON.stringify(CREDIT_SCHEMA, null, 2)}
-
-${categoryInfo}
-
-${anniversaryRules}
-
-${nonMonetaryRules}
-
-=== SCHEMA RULES (FOLLOW EXACTLY) ===
-${schemaRules}
-=====================================`;
-
-    case 'perk':
-      if (batchMode) {
-        return `${baseInstructions}
-
-Extract ONLY perks/benefits from the data and output a JSON ARRAY of objects.
-Each object should follow this schema:
-${JSON.stringify(PERK_SCHEMA, null, 2)}
-
-Output format: JSON array, e.g., [{...}, {...}, {...}]
-If no perks are found, return an empty array: []
-
+function getPerkSpecificRules(): string {
+  return `
 === CREDIT vs PERK vs MULTIPLIER SEPARATION (CRITICAL) ===
 Do NOT include benefits that belong in Credits or Multipliers.
 
@@ -339,12 +304,6 @@ If UNSURE whether something is a credit or perk, include it here (better to dupl
 But if something is clearly a multiplier (earning rate per dollar), NEVER include it as a perk.
 =====================================
 
-=== MULTI-CARD PAGES ===
-The source text may list benefits for MULTIPLE different cards on the same page. Only extract perks for the specific card being entered. If a perk mentions it is exclusive to a different card (e.g., "Platinum Card only", "Reserve card exclusive"), SKIP it entirely.
-=====================================
-
-${categoryInfo}
-
 === PERKS TO EXCLUDE (DO NOT CREATE) ===
 Do NOT create perks for the following - they are either redundant or standard for all cards:
 - No Foreign Transaction Fee (already in Card Details ForeignExchangeFee field)
@@ -356,51 +315,199 @@ Do NOT create perks for the following - they are either redundant or standard fo
 - Price Protection (too common/standard)
 
 If the input text mentions these, SKIP them entirely.
+=====================================`;
+}
+
+function getMultiplierSpecificRules(): string {
+  return `
+=== PORTAL BOOKING CATEGORIZATION ===
+IMPORTANT: When a multiplier requires booking through a card issuer's travel portal (Chase Travel, Amex Travel, Capital One Travel, etc.), use:
+- Category: "travel" (this is the MAIN category - NOT "portal")
+- SubCategory: "portal" (this specifies it's portal-booked travel)
+
+Look for requirements like "BOOK THROUGH AMEXTRAVEL.COM", "MUST BE BOOKED ON CHASE TRAVEL PORTAL", etc.
+These are TRAVEL purchases made through a portal, so Category must be "travel" with SubCategory "portal".
 =====================================
+
+=== ROTATING MULTIPLIER SCHEDULE ENTRIES ===
+When multiplierType is "rotating", you MUST include a "scheduleEntries" array with the current quarter/period categories.
+
+Each scheduleEntry object must have:
+- category: string (e.g., "shopping", "dining", "gas")
+- subCategory: string (e.g., "amazon.com", "gas stations", or "" if none)
+- periodType: "quarter" | "month" | "half_year" | "year"
+- periodValue: number (1-4 for quarter, 1-12 for month, 1-2 for half_year)
+- year: number (e.g., 2025)
+- title: string (REQUIRED) - A descriptive name for display
+
+IMPORTANT: The "title" field is REQUIRED and should be human-readable. Do NOT just repeat the category name.
+Good examples: "Amazon.com purchases", "Grocery stores & supermarkets", "Streaming services", "Dining & Restaurants"
+Bad examples: "shopping", "dining" (too generic)
+
+Example rotating multiplier with schedule:
+{
+  "Name": "Rotating 5% Categories",
+  "Category": "",
+  "SubCategory": "",
+  "Description": "Earn 5% cash back on bonus categories that rotate each quarter.",
+  "Multiplier": 5,
+  "Requirements": "MUST ACTIVATE EACH QUARTER",
+  "Details": "Up to $1,500 in combined purchases per quarter",
+  "multiplierType": "rotating",
+  "scheduleEntries": [
+    {
+      "category": "shopping",
+      "subCategory": "amazon.com",
+      "periodType": "quarter",
+      "periodValue": 1,
+      "year": 2025,
+      "title": "Amazon.com purchases"
+    },
+    {
+      "category": "dining",
+      "subCategory": "",
+      "periodType": "quarter",
+      "periodValue": 1,
+      "year": 2025,
+      "title": "Dining & Restaurants"
+    }
+  ]
+}
+
+Note: Multiple categories can exist for the same period (e.g., Q1 2025 with both Amazon and Dining).
+=====================================`;
+}
+
+function getMultiCardRules(): string {
+  return `
+=== MULTI-CARD PAGES ===
+The source text may list benefits for MULTIPLE different cards on the same page. Only extract items for the specific card being entered. If an item mentions it is exclusive to a different card (e.g., "Platinum Card only", "Reserve card exclusive"), SKIP it entirely.
+=====================================`;
+}
+
+function getTargetCardSection(cardName: string): string {
+  // Sanitize cardName to prevent prompt structure breakage (defense-in-depth)
+  const sanitized = cardName.replace(/["\n\r]/g, '');
+  return `
+=== TARGET CARD ===
+Extract ONLY benefits for the card named: "${sanitized}"
+If the source text lists benefits for multiple cards, SKIP any benefit that belongs to a different card.
+=====================================`;
+}
+
+function getSystemPrompt(generationType: GenerationType, batchMode: boolean = false, cardName?: string): string {
+  const categoryInfo = getCategoryInfo();
+
+  switch (generationType) {
+    case 'card': {
+      const schemaRules = getCondensedRules('card');
+      const targetCardSection = cardName ? getTargetCardSection(cardName) : '';
+      return `${BASE_INSTRUCTIONS}
+
+Extract credit card details and output a JSON object with the following schema:
+${JSON.stringify(CARD_SCHEMA, null, 2)}
+
+${categoryInfo}
+
+=== COLOR SELECTION INSTRUCTIONS ===
+For CardPrimaryColor and CardSecondaryColor, use your best guess of what the physical credit card looks like in real life:
+- **CardPrimaryColor**: The base/background color that covers the MAJORITY of the card surface. This is the dominant color you see when looking at the card.
+- **CardSecondaryColor**: The accent color used for details, logos, text, or decorative elements on the card. This is a secondary/highlight color.
+
+Examples:
+- Chase Sapphire Reserve: Primary #0A1F2E (dark navy), Secondary #A8C7DA (light blue accent)
+- American Express Platinum: Primary #B1B3B3 (silver), Secondary #FFFFFF (white text)
+- American Express Gold: Primary #D4AF37 (gold), Secondary #1A1A1A (black accents)
+- Capital One Venture X: Primary #1A1A1A (black), Secondary #E31837 (red accents)
+=====================================
+${targetCardSection}
+=== SCHEMA RULES (FOLLOW EXACTLY) ===
+${schemaRules}
+=====================================`;
+    }
+
+    case 'credit': {
+      const schemaRules = getCondensedRules('credit');
+      const creditRules = getCreditSpecificRules();
+
+      if (batchMode) {
+        return `${BASE_INSTRUCTIONS}
+
+Extract ONLY credits/statement credits from the data and output a JSON ARRAY of objects.
+Each object should follow this schema:
+${JSON.stringify(CREDIT_SCHEMA, null, 2)}
+
+Output format: JSON array, e.g., [{...}, {...}, {...}]
+If no credits are found, return an empty array: []
+
+${getMultiCardRules()}
+
+${categoryInfo}
+
+${creditRules}
 
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
 =====================================`;
       }
-      return `${baseInstructions}
+      return `${BASE_INSTRUCTIONS}
 
-Extract perk/benefit details and output a JSON object with the following schema:
-${JSON.stringify(PERK_SCHEMA, null, 2)}
-
-=== CREDIT vs PERK vs MULTIPLIER SEPARATION (CRITICAL) ===
-Do NOT include benefits that belong in Credits or Multipliers.
-MULTIPLIERS: Any earning rate per dollar spent IN THE CARD'S MAIN REWARDS CURRENCY (e.g., "3X on dining", "2% back on groceries", "5X on flights") is a MULTIPLIER -- NEVER a perk.
-BUT: Percentage-back STATEMENT CREDITS on narrow/specific purchases (e.g., "20% back on in-flight food", "15% back on Wi-Fi") ARE perks -- they pay as statement credits, not the card's rewards currency.
-CREDITS: If redeemable with a dollar value or trackable count recurring yearly or more often, it is a CREDIT -- do not duplicate here.
-If UNSURE whether something is a credit or perk, include it here. But if it is clearly a multiplier, NEVER include it.
-=====================================
-
-=== MULTI-CARD PAGES ===
-The source text may list benefits for MULTIPLE different cards on the same page. Only extract perks for the specific card being entered. If a perk mentions it is exclusive to a different card (e.g., "Platinum Card only", "Reserve card exclusive"), SKIP it entirely.
-=====================================
+Extract credit/benefit details and output a JSON object with the following schema:
+${JSON.stringify(CREDIT_SCHEMA, null, 2)}
 
 ${categoryInfo}
 
-=== PERKS TO EXCLUDE (DO NOT CREATE) ===
-Do NOT create perks for the following - they are either redundant or standard for all cards:
-- No Foreign Transaction Fee (already in Card Details ForeignExchangeFee field)
-- Unauthorized Charge Protection / Zero Liability / Fraud Protection (standard for all cards by law)
-- Purchase Protection (too common/standard)
-- Extended Warranty Protection (too common/standard)
-- 24/7 Customer Support / Customer Service (standard for all cards)
-- Return Protection (too common/standard)
-- Price Protection (too common/standard)
-
-If the input text mentions these, SKIP them entirely.
-=====================================
+${creditRules}
 
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
 =====================================`;
+    }
 
-    case 'multiplier':
+    case 'perk': {
+      const schemaRules = getCondensedRules('perk');
+      const perkRules = getPerkSpecificRules();
+
       if (batchMode) {
-        return `${baseInstructions}
+        return `${BASE_INSTRUCTIONS}
+
+Extract ONLY perks/benefits from the data and output a JSON ARRAY of objects.
+Each object should follow this schema:
+${JSON.stringify(PERK_SCHEMA, null, 2)}
+
+Output format: JSON array, e.g., [{...}, {...}, {...}]
+If no perks are found, return an empty array: []
+
+${perkRules}
+
+${getMultiCardRules()}
+
+${categoryInfo}
+
+=== SCHEMA RULES (FOLLOW EXACTLY) ===
+${schemaRules}
+=====================================`;
+      }
+      return `${BASE_INSTRUCTIONS}
+
+Extract perk/benefit details and output a JSON object with the following schema:
+${JSON.stringify(PERK_SCHEMA, null, 2)}
+
+${perkRules}
+
+${categoryInfo}
+
+=== SCHEMA RULES (FOLLOW EXACTLY) ===
+${schemaRules}
+=====================================`;
+    }
+
+    case 'multiplier': {
+      const schemaRules = getCondensedRules('multiplier');
+      const multiplierRules = getMultiplierSpecificRules();
+
+      if (batchMode) {
+        return `${BASE_INSTRUCTIONS}
 
 Extract ONLY multipliers/rewards rates from the data and output a JSON ARRAY of objects.
 Each object should follow this schema:
@@ -409,143 +516,33 @@ ${JSON.stringify(MULTIPLIER_SCHEMA, null, 2)}
 Output format: JSON array, e.g., [{...}, {...}, {...}]
 If no multipliers are found, return an empty array: []
 
-=== MULTI-CARD PAGES ===
-The source text may list benefits for MULTIPLE different cards on the same page. Only extract multipliers for the specific card being entered. If a multiplier mentions it is exclusive to a different card (e.g., "Platinum Card only", "Reserve card exclusive"), SKIP it entirely.
-=====================================
+${getMultiCardRules()}
 
 ${categoryInfo}
 
-=== PORTAL BOOKING CATEGORIZATION ===
-IMPORTANT: When a multiplier requires booking through a card issuer's travel portal (Chase Travel, Amex Travel, Capital One Travel, etc.), use:
-- Category: "travel" (this is the MAIN category - NOT "portal")
-- SubCategory: "portal" (this specifies it's portal-booked travel)
-
-Look for requirements like "BOOK THROUGH AMEXTRAVEL.COM", "MUST BE BOOKED ON CHASE TRAVEL PORTAL", etc.
-These are TRAVEL purchases made through a portal, so Category must be "travel" with SubCategory "portal".
-=====================================
-
-=== ROTATING MULTIPLIER SCHEDULE ENTRIES ===
-When multiplierType is "rotating", you MUST include a "scheduleEntries" array with the current quarter/period categories.
-
-Each scheduleEntry object must have:
-- category: string (e.g., "shopping", "dining", "gas")
-- subCategory: string (e.g., "amazon.com", "gas stations", or "" if none)
-- periodType: "quarter" | "month" | "half_year" | "year"
-- periodValue: number (1-4 for quarter, 1-12 for month, 1-2 for half_year)
-- year: number (e.g., 2025)
-- title: string (REQUIRED) - A descriptive name for display
-
-IMPORTANT: The "title" field is REQUIRED and should be human-readable. Do NOT just repeat the category name.
-Good examples: "Amazon.com purchases", "Grocery stores & supermarkets", "Streaming services", "Dining & Restaurants"
-Bad examples: "shopping", "dining" (too generic)
-
-Example rotating multiplier with schedule:
-{
-  "Name": "Rotating 5% Categories",
-  "Category": "",
-  "SubCategory": "",
-  "Description": "Earn 5% cash back on bonus categories that rotate each quarter.",
-  "Multiplier": 5,
-  "Requirements": "MUST ACTIVATE EACH QUARTER",
-  "Details": "Up to $1,500 in combined purchases per quarter",
-  "multiplierType": "rotating",
-  "scheduleEntries": [
-    {
-      "category": "shopping",
-      "subCategory": "amazon.com",
-      "periodType": "quarter",
-      "periodValue": 1,
-      "year": 2025,
-      "title": "Amazon.com purchases"
-    },
-    {
-      "category": "dining",
-      "subCategory": "",
-      "periodType": "quarter",
-      "periodValue": 1,
-      "year": 2025,
-      "title": "Dining & Restaurants"
-    }
-  ]
-}
-
-Note: Multiple categories can exist for the same period (e.g., Q1 2025 with both Amazon and Dining).
-=====================================
+${multiplierRules}
 
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
 =====================================`;
       }
-      return `${baseInstructions}
+      return `${BASE_INSTRUCTIONS}
 
 Extract multiplier/rewards rate details and output a JSON object with the following schema:
 ${JSON.stringify(MULTIPLIER_SCHEMA, null, 2)}
 
 ${categoryInfo}
 
-=== PORTAL BOOKING CATEGORIZATION ===
-IMPORTANT: When a multiplier requires booking through a card issuer's travel portal (Chase Travel, Amex Travel, Capital One Travel, etc.), use:
-- Category: "travel" (this is the MAIN category - NOT "portal")
-- SubCategory: "portal" (this specifies it's portal-booked travel)
-
-Look for requirements like "BOOK THROUGH AMEXTRAVEL.COM", "MUST BE BOOKED ON CHASE TRAVEL PORTAL", etc.
-These are TRAVEL purchases made through a portal, so Category must be "travel" with SubCategory "portal".
-=====================================
-
-=== ROTATING MULTIPLIER SCHEDULE ENTRIES ===
-When multiplierType is "rotating", you MUST include a "scheduleEntries" array with the current quarter/period categories.
-
-Each scheduleEntry object must have:
-- category: string (e.g., "shopping", "dining", "gas")
-- subCategory: string (e.g., "amazon.com", "gas stations", or "" if none)
-- periodType: "quarter" | "month" | "half_year" | "year"
-- periodValue: number (1-4 for quarter, 1-12 for month, 1-2 for half_year)
-- year: number (e.g., 2025)
-- title: string (REQUIRED) - A descriptive name for display
-
-IMPORTANT: The "title" field is REQUIRED and should be human-readable. Do NOT just repeat the category name.
-Good examples: "Amazon.com purchases", "Grocery stores & supermarkets", "Streaming services", "Dining & Restaurants"
-Bad examples: "shopping", "dining" (too generic)
-
-Example rotating multiplier with schedule:
-{
-  "Name": "Rotating 5% Categories",
-  "Category": "",
-  "SubCategory": "",
-  "Description": "Earn 5% cash back on bonus categories that rotate each quarter.",
-  "Multiplier": 5,
-  "Requirements": "MUST ACTIVATE EACH QUARTER",
-  "Details": "Up to $1,500 in combined purchases per quarter",
-  "multiplierType": "rotating",
-  "scheduleEntries": [
-    {
-      "category": "shopping",
-      "subCategory": "amazon.com",
-      "periodType": "quarter",
-      "periodValue": 1,
-      "year": 2025,
-      "title": "Amazon.com purchases"
-    },
-    {
-      "category": "dining",
-      "subCategory": "",
-      "periodType": "quarter",
-      "periodValue": 1,
-      "year": 2025,
-      "title": "Dining & Restaurants"
-    }
-  ]
-}
-
-Note: Multiple categories can exist for the same period (e.g., Q1 2025 with both Amazon and Dining).
-=====================================
+${multiplierRules}
 
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
 =====================================`;
+    }
 
-    case 'rotating-categories':
-      return `${baseInstructions}
+    case 'rotating-categories': {
+      const schemaRules = getCondensedRules('rotating-categories');
+      return `${BASE_INSTRUCTIONS}
 
 Extract rotating category schedule entries from the provided text and output a JSON ARRAY.
 
@@ -590,13 +587,80 @@ ${categoryInfo}
 === SCHEMA RULES (FOLLOW EXACTLY) ===
 ${schemaRules}
 =====================================`;
+    }
+
+    case 'generate-all': {
+      const creditSchemaRules = getCondensedRules('credit');
+      const perkSchemaRules = getCondensedRules('perk');
+      const multiplierSchemaRules = getCondensedRules('multiplier');
+      const targetCardSection = cardName ? getTargetCardSection(cardName) : '';
+
+      return `${BASE_INSTRUCTIONS}
+
+Extract ALL credits, perks, and multipliers from the provided data.
+Classify each benefit into EXACTLY ONE category. Never duplicate a benefit across types.
+
+Output a single JSON object with three top-level keys:
+{
+  "credits": [ ... array of credit objects ... ],
+  "perks": [ ... array of perk objects ... ],
+  "multipliers": [ ... array of multiplier objects ... ]
+}
+
+If no items are found for a category, use an empty array.
+
+=== CROSS-TYPE CLASSIFICATION RULES ===
+Before outputting, classify each benefit:
+- CREDIT: Redeemable, recurring (cadence <= 1 year), has a specific dollar value OR is a non-monetary redeemable (Priority Pass visits, companion certs, free nights)
+- PERK: Auto-applied, status-based, cadence > 1 year, auto-awarded points/miles/PQP, percentage discounts, or requires spending earned rewards
+- MULTIPLIER: Earning rate per dollar spent (NX points, N% cash back)
+Each benefit appears in EXACTLY ONE array.
+
+=== CREDIT SCHEMA ===
+${JSON.stringify(CREDIT_SCHEMA, null, 2)}
+
+=== PERK SCHEMA ===
+${JSON.stringify(PERK_SCHEMA, null, 2)}
+
+=== MULTIPLIER SCHEMA ===
+${JSON.stringify(MULTIPLIER_SCHEMA, null, 2)}
+
+${categoryInfo}
+
+=== CREDIT RULES ===
+${getCreditSpecificRules()}
+
+=== PERK RULES ===
+${getPerkSpecificRules()}
+
+=== MULTIPLIER RULES ===
+${getMultiplierSpecificRules()}
+${targetCardSection}
+=== EFFECTIVE DATES ===
+Do NOT include EffectiveFrom or EffectiveTo in any output. These are injected server-side after generation.
+(This is consistent with existing per-type rules which say "DO NOT include EffectiveFrom or EffectiveTo fields (auto-generated)")
+
+${getMultiCardRules()}
+
+=== CREDIT SCHEMA RULES (FOLLOW EXACTLY) ===
+${creditSchemaRules}
+
+=== PERK SCHEMA RULES (FOLLOW EXACTLY) ===
+${perkSchemaRules}
+
+=== MULTIPLIER SCHEMA RULES (FOLLOW EXACTLY) ===
+${multiplierSchemaRules}`;
+    }
 
     default:
-      return baseInstructions;
+      return BASE_INSTRUCTIONS;
   }
 }
 
 function schemaToFields(generationType: GenerationType): GeneratedField[] {
+  // generate-all doesn't use field-level display (it uses tabs with per-type items)
+  if (generationType === 'generate-all') return [];
+
   const schema = generationType === 'card' ? CARD_SCHEMA :
                  generationType === 'credit' ? CREDIT_SCHEMA :
                  generationType === 'perk' ? PERK_SCHEMA :
@@ -827,6 +891,311 @@ function extractJsonFromText(text: string): string {
   return cleaned.trim();
 }
 
+/**
+ * Parses the generate-all response into structured credits/perks/multipliers arrays.
+ * Reuses extractJsonFromText for JSON extraction, then validates top-level structure.
+ */
+function parseGenerateAllResponse(text: string): {
+  credits: Record<string, unknown>[];
+  perks: Record<string, unknown>[];
+  multipliers: Record<string, unknown>[];
+} {
+  const extracted = extractJsonFromText(text);
+  const json = JSON.parse(extracted);
+
+  if (typeof json !== 'object' || json === null || Array.isArray(json)) {
+    throw new Error('generate-all response must be a JSON object with credits, perks, multipliers keys');
+  }
+
+  const result = {
+    credits: Array.isArray(json.credits) ? json.credits : [],
+    perks: Array.isArray(json.perks) ? json.perks : [],
+    multipliers: Array.isArray(json.multipliers) ? json.multipliers : [],
+  };
+
+  console.log(`Parsed generate-all response: ${result.credits.length} credits, ${result.perks.length} perks, ${result.multipliers.length} multipliers`);
+
+  return result;
+}
+
+// ============================================
+// FLASH VALIDATION FUNCTIONS
+// ============================================
+
+/**
+ * Validates and fixes the combined generate-all JSON output using Gemini Flash.
+ * Narrow mandate: fix structural/schema issues only, do NOT reclassify items.
+ * Best-effort: on failure, returns the original output unchanged.
+ */
+async function validateWithFlash(
+  ai: GoogleGenAI,
+  combinedJson: { credits: Record<string, unknown>[]; perks: Record<string, unknown>[]; multipliers: Record<string, unknown>[] },
+  checkerModel: string = MODELS.GEMINI_3_FLASH_PREVIEW
+): Promise<{
+  result: { credits: Record<string, unknown>[]; perks: Record<string, unknown>[]; multipliers: Record<string, unknown>[] };
+  tokenEntry?: TokenBreakdownEntry;
+}> {
+  const validationPrompt = `You are a JSON validation assistant. Your ONLY job is to fix structural/schema issues in the provided JSON.
+You must NOT reclassify items between categories.
+
+The input is a JSON object with three arrays: credits, perks, multipliers.
+
+Your mandate is NARROW -- fix ONLY these issues:
+1. Missing required fields: add with sensible defaults based on nearby context
+2. Wrong field types: convert strings to numbers where the schema requires numbers, etc.
+3. Invalid enum values: fix TimePeriod, multiplierType, etc. to valid values
+4. Remove unexpected fields that are not in the schema
+5. Fix empty required string fields (Title, Description, Category, Name)
+6. Ensure SubCategory is a string (empty string "" if not applicable)
+
+Do NOT:
+- Add new items that are not in the input
+- Remove items from any array
+- Move items between arrays (credits/perks/multipliers)
+- Change classification decisions
+- Reclassify or rewrite content -- only fix structure
+
+Expected schemas:
+Credits: ${JSON.stringify(CREDIT_SCHEMA, null, 2)}
+Perks: ${JSON.stringify(PERK_SCHEMA, null, 2)}
+Multipliers: ${JSON.stringify(MULTIPLIER_SCHEMA, null, 2)}
+
+Input JSON:
+${JSON.stringify(combinedJson, null, 2)}
+
+Output the corrected JSON object with the same three keys. Output ONLY valid JSON.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: checkerModel,
+      contents: [{ role: 'user', parts: [{ text: validationPrompt }] }],
+      config: {
+        temperature: 0,
+        maxOutputTokens: 65536,
+        thinkingConfig: {
+          thinkingLevel: 'MEDIUM' as any,
+        },
+      },
+    });
+
+    const text = response.text;
+    if (!text) {
+      console.warn('Flash validation returned empty response, using original output');
+      return { result: combinedJson };
+    }
+
+    const validated = parseGenerateAllResponse(text);
+    const inputTokens = response.usageMetadata?.promptTokenCount || 0;
+    const outputTokens = (response.usageMetadata?.candidatesTokenCount || 0) + (response.usageMetadata?.thoughtsTokenCount || 0);
+    const thinkingTokens = response.usageMetadata?.thoughtsTokenCount || 0;
+
+    const tokenEntry: TokenBreakdownEntry = {
+      inputTokens,
+      outputTokens,
+      ...(thinkingTokens > 0 ? { thinkingTokens } : {}),
+      model: checkerModel,
+    };
+
+    console.log(`Checker validation completed (${checkerModel}): ${validated.credits.length} credits, ${validated.perks.length} perks, ${validated.multipliers.length} multipliers`);
+    return { result: validated, tokenEntry };
+  } catch (error) {
+    console.warn('Checker validation failed, using original output:', error instanceof Error ? error.message : error);
+    return { result: combinedJson };
+  }
+}
+
+/**
+ * Validates and fixes card details JSON using Gemini Flash.
+ * Same pattern as validateWithFlash but with card-details-specific prompt.
+ */
+async function validateCardDetailsWithFlash(
+  ai: GoogleGenAI,
+  cardJson: Record<string, unknown>,
+  checkerModel: string = MODELS.GEMINI_3_FLASH_PREVIEW
+): Promise<{
+  result: Record<string, unknown>;
+  tokenEntry?: TokenBreakdownEntry;
+}> {
+  const validationPrompt = `You are a JSON validation assistant. Fix ONLY structural/schema issues in this card details JSON.
+
+Your mandate is NARROW -- fix ONLY these issues:
+1. Missing required fields (CardName, CardIssuer, CardNetwork, AnnualFee, RewardsCurrency)
+2. Wrong field types: AnnualFee/ForeignExchangeFeePercentage/PointsPerDollar must be numbers
+3. Invalid CardNetwork values (must be: "Visa", "Mastercard", "American Express", "Discover")
+4. Color values must be valid hex codes
+5. RewardsCurrency must be lowercase ("points", "miles", or "cash back")
+
+Do NOT rewrite content or change values that are already valid.
+
+Expected schema:
+${JSON.stringify(CARD_SCHEMA, null, 2)}
+
+Input JSON:
+${JSON.stringify(cardJson, null, 2)}
+
+Output the corrected JSON object. Output ONLY valid JSON.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: checkerModel,
+      contents: [{ role: 'user', parts: [{ text: validationPrompt }] }],
+      config: {
+        temperature: 0,
+        maxOutputTokens: 65536,
+        thinkingConfig: {
+          thinkingLevel: 'MEDIUM' as any,
+        },
+      },
+    });
+
+    const text = response.text;
+    if (!text) {
+      console.warn('Card checker validation returned empty response, using original output');
+      return { result: cardJson };
+    }
+
+    const extracted = extractJsonFromText(text);
+    const validated = JSON.parse(extracted);
+
+    if (typeof validated !== 'object' || validated === null || Array.isArray(validated)) {
+      console.warn('Card checker validation returned non-object, using original output');
+      return { result: cardJson };
+    }
+
+    const inputTokens = response.usageMetadata?.promptTokenCount || 0;
+    const outputTokens = (response.usageMetadata?.candidatesTokenCount || 0) + (response.usageMetadata?.thoughtsTokenCount || 0);
+    const thinkingTokens = response.usageMetadata?.thoughtsTokenCount || 0;
+
+    const tokenEntry: TokenBreakdownEntry = {
+      inputTokens,
+      outputTokens,
+      ...(thinkingTokens > 0 ? { thinkingTokens } : {}),
+      model: checkerModel,
+    };
+
+    console.log(`Card details checker validation completed (${checkerModel})`);
+    return { result: validated, tokenEntry };
+  } catch (error) {
+    console.warn('Card checker validation failed, using original output:', error instanceof Error ? error.message : error);
+    return { result: cardJson };
+  }
+}
+
+// ============================================
+// PROGRAMMATIC POST-GENERATION CHECKS
+// ============================================
+
+/**
+ * Validates categories and subcategories against the AI-facing categories list.
+ * Returns warnings for invalid values (informational, does not modify data).
+ */
+function validateCategories(
+  items: { credits: Record<string, unknown>[]; perks: Record<string, unknown>[]; multipliers: Record<string, unknown>[] }
+): CategoryWarning[] {
+  const warnings: CategoryWarning[] = [];
+  const validCategories = Object.keys(CATEGORIES);
+
+  const checkItems = (componentType: ComponentType, itemList: Record<string, unknown>[]) => {
+    for (let i = 0; i < itemList.length; i++) {
+      const item = itemList[i];
+      const category = item.Category as string | undefined;
+      const subCategory = item.SubCategory as string | undefined;
+
+      if (category && !validCategories.includes(category)) {
+        warnings.push({
+          componentType,
+          itemIndex: i,
+          field: 'Category',
+          value: category,
+          message: `Invalid category: "${category}"`,
+        });
+      } else if (category && subCategory && subCategory !== '') {
+        const validSubs = CATEGORIES[category as keyof typeof CATEGORIES] as readonly string[];
+        if (validSubs && validSubs.length > 0 && !validSubs.includes(subCategory)) {
+          warnings.push({
+            componentType,
+            itemIndex: i,
+            field: 'SubCategory',
+            value: subCategory,
+            message: `Unknown subcategory "${subCategory}" for category "${category}"`,
+          });
+        }
+      }
+    }
+  };
+
+  checkItems('credit', items.credits);
+  checkItems('perk', items.perks);
+  checkItems('multiplier', items.multipliers);
+
+  return warnings;
+}
+
+/**
+ * Detects potential duplicate items across the three component types.
+ * Uses case-insensitive title matching (exact and substring).
+ */
+function detectCrossTypeDuplicates(
+  items: { credits: Record<string, unknown>[]; perks: Record<string, unknown>[]; multipliers: Record<string, unknown>[] }
+): DuplicateWarning[] {
+  const warnings: DuplicateWarning[] = [];
+
+  // Normalize title for comparison: lowercase, strip punctuation, collapse whitespace
+  const normalize = (s: string): string =>
+    s.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+
+  // Build title list with type info
+  type TitleEntry = { type: ComponentType; index: number; title: string; normalized: string };
+  const entries: TitleEntry[] = [];
+
+  const addEntries = (type: ComponentType, itemList: Record<string, unknown>[]) => {
+    for (let i = 0; i < itemList.length; i++) {
+      const title = (itemList[i].Title || itemList[i].Name || '') as string;
+      if (title) {
+        entries.push({ type, index: i, title, normalized: normalize(title) });
+      }
+    }
+  };
+
+  addEntries('credit', items.credits);
+  addEntries('perk', items.perks);
+  addEntries('multiplier', items.multipliers);
+
+  // Compare all pairs across different types
+  for (let a = 0; a < entries.length; a++) {
+    for (let b = a + 1; b < entries.length; b++) {
+      const entryA = entries[a];
+      const entryB = entries[b];
+
+      // Only compare across different types
+      if (entryA.type === entryB.type) continue;
+
+      if (entryA.normalized === entryB.normalized) {
+        warnings.push({
+          itemA: { type: entryA.type, index: entryA.index, title: entryA.title },
+          itemB: { type: entryB.type, index: entryB.index, title: entryB.title },
+          confidence: 'high',
+        });
+      } else if (
+        entryA.normalized.includes(entryB.normalized) ||
+        entryB.normalized.includes(entryA.normalized)
+      ) {
+        // Only flag substring matches if the shorter string is at least 5 chars
+        const shorter = entryA.normalized.length < entryB.normalized.length ? entryA.normalized : entryB.normalized;
+        if (shorter.length >= 5) {
+          warnings.push({
+            itemA: { type: entryA.type, index: entryA.index, title: entryA.title },
+            itemB: { type: entryB.type, index: entryB.index, title: entryB.title },
+            confidence: 'medium',
+          });
+        }
+      }
+    }
+  }
+
+  return warnings;
+}
+
 function parseAndValidateResponse(text: string, generationType: GenerationType, batchMode: boolean): ParsedResponse {
   const extracted = extractJsonFromText(text);
 
@@ -884,15 +1253,24 @@ export async function generateData(params: GenerateParams): Promise<GenerationRe
   const batchMode = isBatchRefinement || (params.batchMode ?? false);
   const modelsToTry = getModelsForGeneration(params.generationType, batchMode, isRefinement, params.model);
 
-  const systemPrompt = getSystemPrompt(params.generationType, batchMode);
-  
+  const systemPrompt = getSystemPrompt(params.generationType, batchMode, params.cardName);
+
   let userPrompt = `Extract and structure the following credit card information:\n\n${params.rawData}`;
   
   if (params.refinementPrompt && params.previousOutput) {
-    const outputFormat = Array.isArray(params.previousOutput) 
-      ? 'Output ONLY the updated JSON array.'
-      : 'Output ONLY the updated JSON object.';
-    userPrompt = `Previous output:\n${JSON.stringify(params.previousOutput, null, 2)}\n\nRefinement instructions: ${params.refinementPrompt}\n\nPlease update the output according to the refinement instructions. ${outputFormat}`;
+    // For generate-all refinement, the previousOutput is a { credits, perks, multipliers } object
+    const isGenerateAllRefinement = params.generationType === 'generate-all'
+      && !Array.isArray(params.previousOutput)
+      && params.previousOutput.credits !== undefined;
+
+    if (isGenerateAllRefinement) {
+      userPrompt = `Here is the current output with three arrays (credits, perks, multipliers):\n${JSON.stringify(params.previousOutput, null, 2)}\n\nRefinement instructions: ${params.refinementPrompt}\n\nPlease update the output according to the refinement instructions. Return the same JSON structure with all three keys (credits, perks, multipliers). Output ONLY the updated JSON object.`;
+    } else {
+      const outputFormat = Array.isArray(params.previousOutput)
+        ? 'Output ONLY the updated JSON array.'
+        : 'Output ONLY the updated JSON object.';
+      userPrompt = `Previous output:\n${JSON.stringify(params.previousOutput, null, 2)}\n\nRefinement instructions: ${params.refinementPrompt}\n\nPlease update the output according to the refinement instructions. ${outputFormat}`;
+    }
   }
 
   let lastError: Error | null = null;
@@ -940,18 +1318,111 @@ export async function generateData(params: GenerateParams): Promise<GenerationRe
           }
         }
 
-        const result = parseAndValidateResponse(text, params.generationType, batchMode);
-
         // Extract token usage from response
         if (response.usageMetadata) {
           console.log('Token usage:', JSON.stringify(response.usageMetadata, null, 2));
         }
-        const tokenUsage: TokenUsage | undefined = response.usageMetadata ? {
-          inputTokens: response.usageMetadata.promptTokenCount || 0,
-          outputTokens: (response.usageMetadata.candidatesTokenCount || 0) + (response.usageMetadata.thoughtsTokenCount || 0),
+        const inputTokens = response.usageMetadata?.promptTokenCount || 0;
+        const outputTokens = (response.usageMetadata?.candidatesTokenCount || 0) + (response.usageMetadata?.thoughtsTokenCount || 0);
+        const thinkingTokens = response.usageMetadata?.thoughtsTokenCount || 0;
+        let tokenUsage: TokenUsage | undefined = response.usageMetadata ? {
+          inputTokens,
+          outputTokens,
         } : undefined;
 
-        return { ...result, modelUsed: model, tokenUsage };
+        // Handle generate-all: parse, validate with Flash, check, inject dates, build result
+        if (params.generationType === 'generate-all') {
+          const parsed = parseGenerateAllResponse(text);
+
+          const generationEntry: TokenBreakdownEntry = {
+            inputTokens,
+            outputTokens,
+            ...(thinkingTokens > 0 ? { thinkingTokens } : {}),
+            model,
+          };
+
+          // Flash validation (BEFORE date injection so Flash doesn't strip dates)
+          const checkerModelToUse = params.checkerModel || MODELS.GEMINI_3_FLASH_PREVIEW;
+          const { result: validated, tokenEntry: validationEntry } = await validateWithFlash(ai, parsed, checkerModelToUse);
+
+          // Inject effective dates server-side AFTER Flash validation
+          const injectDates = (items: Record<string, unknown>[]) => {
+            for (const item of items) {
+              item.EffectiveFrom = EARLIEST_EFFECTIVE_DATE;
+              item.EffectiveTo = ONGOING_SENTINEL_DATE;
+            }
+          };
+          injectDates(validated.credits);
+          injectDates(validated.perks);
+          injectDates(validated.multipliers);
+
+          // Programmatic checks (after dates are injected)
+          const categoryWarnings = validateCategories(validated);
+          const duplicateWarnings = detectCrossTypeDuplicates(validated);
+
+          // Combine token usage (generation + validation)
+          const totalInputTokens = inputTokens + (validationEntry?.inputTokens || 0);
+          const totalOutputTokens = outputTokens + (validationEntry?.outputTokens || 0);
+
+          return {
+            items: [
+              { fields: [], json: { _componentType: 'credit', items: validated.credits } },
+              { fields: [], json: { _componentType: 'perk', items: validated.perks } },
+              { fields: [], json: { _componentType: 'multiplier', items: validated.multipliers } },
+            ],
+            modelUsed: model,
+            tokenUsage: { inputTokens: totalInputTokens, outputTokens: totalOutputTokens },
+            tokenBreakdown: {
+              generation: generationEntry,
+              ...(validationEntry ? { validation: validationEntry } : {}),
+            },
+            warnings: {
+              categoryWarnings,
+              duplicateWarnings,
+            },
+          };
+        }
+
+        // Standard (non-generate-all) response parsing
+        let result = parseAndValidateResponse(text, params.generationType, batchMode);
+
+        // Build token breakdown for card type (when cardName provided, used by generate-all frontend)
+        let tokenBreakdown: TokenBreakdown | undefined;
+        if (params.cardName) {
+          const generationEntry: TokenBreakdownEntry = {
+            inputTokens,
+            outputTokens,
+            ...(thinkingTokens > 0 ? { thinkingTokens } : {}),
+            model,
+          };
+          tokenBreakdown = { generation: generationEntry };
+
+          // Flash validation for card details (when called from generate-all flow)
+          if (params.generationType === 'card' && result.items.length === 1 && !Array.isArray(result.items[0].json)) {
+            const cardJson = result.items[0].json as Record<string, unknown>;
+            const cardCheckerModel = params.checkerModel || MODELS.GEMINI_3_FLASH_PREVIEW;
+            const { result: validatedCard, tokenEntry: cardValidationEntry } = await validateCardDetailsWithFlash(ai, cardJson, cardCheckerModel);
+
+            // Update result with validated card JSON
+            result = {
+              items: [{
+                fields: jsonToFields(validatedCard, 'card'),
+                json: validatedCard,
+              }],
+            };
+
+            if (cardValidationEntry) {
+              tokenBreakdown.validation = cardValidationEntry;
+              // Update total token usage
+              tokenUsage = tokenUsage ? {
+                inputTokens: tokenUsage.inputTokens + cardValidationEntry.inputTokens,
+                outputTokens: tokenUsage.outputTokens + cardValidationEntry.outputTokens,
+              } : undefined;
+            }
+          }
+        }
+
+        return { ...result, modelUsed: model, tokenUsage, ...(tokenBreakdown ? { tokenBreakdown } : {}) };
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         console.error(`Gemini generation error (${model}):`, lastError.message);

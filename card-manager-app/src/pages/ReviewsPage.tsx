@@ -53,7 +53,7 @@ export function ReviewsPage() {
 
   return (
     <div className="reviews-page">
-      <PageHeader title="Card Reviews" backTo="/" actions={<ProfilePopover />} />
+      <PageHeader title="AI Card Review" actions={<ProfilePopover />} />
 
       <div className="tabs-container">
         <div className="tab-list">
