@@ -11,7 +11,7 @@ type TabId = 'queue' | 'completed' | 'manual';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'completed', label: 'Reviews' },
-  { id: 'queue', label: 'Queue Reviews' },
+  { id: 'queue', label: 'Review Queue' },
   { id: 'manual', label: 'Manual Compare' },
 ];
 

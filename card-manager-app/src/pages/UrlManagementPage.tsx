@@ -313,6 +313,14 @@ export function UrlManagementPage() {
                     ? <ChevronRight size={14} className="chevron" />
                     : <ChevronDown size={14} className="chevron" />
                   }
+                  <span
+                    className="card-color-dot"
+                    style={{
+                      background: card.CardPrimaryColor
+                        ? `linear-gradient(135deg, ${card.CardPrimaryColor} 50%, ${card.CardSecondaryColor || card.CardPrimaryColor} 50%)`
+                        : '#d1d5db',
+                    }}
+                  />
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <a

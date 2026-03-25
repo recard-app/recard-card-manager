@@ -668,6 +668,13 @@ export function CardReviewDetailPage() {
       <div className="review-card-info">
         <div className="review-card-info-left">
           <div className="review-card-name-row">
+            <span style={{
+              flexShrink: 0, width: 16, height: 16, borderRadius: 3,
+              border: '0.5px solid #d1d5db',
+              background: review.cardPrimaryColor
+                ? `linear-gradient(135deg, ${review.cardPrimaryColor} 50%, ${review.cardSecondaryColor || review.cardPrimaryColor} 50%)`
+                : '#d1d5db',
+            }} />
             <h2 className="review-card-name">{review.cardName}</h2>
             <Button size="sm" variant="ghost" onClick={handleOpenCard} title="Open card in new tab">
               <ExternalLink size={14} />
