@@ -18,6 +18,8 @@ const ComparisonRequestSchema = z.object({
  * Compare database card data against website text to identify discrepancies
  */
 router.post('/analyze', verifyAuth, async (req: Request, res: Response) => {
+  req.setTimeout(5 * 60 * 1000); // 5 minutes
+  res.setTimeout(5 * 60 * 1000);
   try {
     const parsed = ComparisonRequestSchema.safeParse(req.body);
 

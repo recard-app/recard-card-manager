@@ -233,6 +233,9 @@ SET isNonMonetary: false (DEFAULT) WHEN:
   - "$100 hotel credit" -> Value: 100, isNonMonetary: false
   - "$12.95/month Walmart+ credit" -> Value: 12.95, isNonMonetary: false (this is a DOLLAR credit toward the subscription cost)
 
+SKIP ENTIRELY (do NOT create as credit, perk, or multiplier):
+- Welcome offers / sign-up bonuses (e.g., "Earn 60,000 points after spending $4,000 in the first 3 months") -- these are temporary promotional offers that change frequently. Do not store them in any category.
+
 CLASSIFY AS PERK (NOT a credit at all) WHEN:
 - The benefit is one-time only and does NOT renew/recur (e.g., "complimentary DoorDash DashPass for 1 year" as a sign-up bonus -- this is a one-time perk, not a recurring credit)
 - The benefit recurs less frequently than annually (e.g., "Global Entry credit every 4 years")
@@ -313,6 +316,7 @@ Do NOT create perks for the following - they are either redundant or standard fo
 - 24/7 Customer Support / Customer Service (standard for all cards)
 - Return Protection (too common/standard)
 - Price Protection (too common/standard)
+- Welcome Offers / Sign-Up Bonuses (e.g., "Earn 60,000 points after spending $4,000 in the first 3 months") -- these are temporary promotional offers that change frequently and we do not store them
 
 If the input text mentions these, SKIP them entirely.
 =====================================`;
@@ -615,6 +619,9 @@ Before outputting, classify each benefit:
 - PERK: Auto-applied, status-based, cadence > 1 year, auto-awarded points/miles/PQP, percentage discounts, or requires spending earned rewards
 - MULTIPLIER: Earning rate per dollar spent (NX points, N% cash back)
 Each benefit appears in EXACTLY ONE array.
+
+SKIP ENTIRELY (do NOT include in any array):
+- Welcome offers / sign-up bonuses (e.g., "Earn 60,000 points after spending $4,000 in the first 3 months") -- temporary promotional offers that change frequently. Do not store them.
 
 === CREDIT SCHEMA ===
 ${JSON.stringify(CREDIT_SCHEMA, null, 2)}

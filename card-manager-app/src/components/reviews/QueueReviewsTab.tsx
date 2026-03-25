@@ -82,10 +82,6 @@ export function QueueReviewsTab() {
         </Button>
         {activeReviews.length > 0 && (
           <div className="queue-stats">
-            <span className="stat-item">
-              <span className="stat-number">{activeReviews.length}</span>
-              <span className="stat-label">total</span>
-            </span>
             {runningReviews.length > 0 && (
               <span className="stat-item active">
                 <span className="stat-number">{runningReviews.length}</span>

@@ -21,7 +21,10 @@ const GenerateRequestSchema = z.object({
 });
 
 // POST /admin/ai/generate - Generate structured data from raw text using AI
+// Extended timeout: AI generation can take 2-3 minutes for generate-all mode
 router.post('/generate', verifyAuth, async (req: Request, res: Response) => {
+  req.setTimeout(5 * 60 * 1000); // 5 minutes
+  res.setTimeout(5 * 60 * 1000);
   try {
     const parsed = GenerateRequestSchema.safeParse(req.body);
     

@@ -55,10 +55,14 @@ app.get('/ping', (_req: Request, res: Response) => {
   res.status(200).send('pong');
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Admin server started successfully on port ${PORT}`);
   console.log(`CORS enabled for: ${CORS_ORIGIN}`);
 
   // Start the review queue processor (recovers incomplete jobs on startup)
   startQueueProcessor();
 });
+
+// Raise default server timeouts for long-running AI operations
+server.keepAliveTimeout = 5 * 60 * 1000; // 5 minutes
+server.headersTimeout = 5 * 60 * 1000 + 1000; // slightly above keepAlive
