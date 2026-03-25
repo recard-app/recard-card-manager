@@ -362,6 +362,30 @@ export async function getLastReviewedDates(): Promise<Record<string, string>> {
 }
 
 /**
+ * Returns a map of referenceCardId -> latest successful reviewedAt timestamp.
+ * Unlike getLastReviewedDates(), this includes ALL successful reviews regardless
+ * of human review status. Used for the "Last Run" column in the queue modal.
+ */
+export async function getLastRunDates(): Promise<Record<string, string>> {
+  const snapshot = await db.collection(RESULTS_COLLECTION)
+    .where('status', '==', 'success')
+    .orderBy('reviewedAt', 'desc')
+    .limit(500)
+    .get();
+
+  const dates: Record<string, string> = {};
+  snapshot.forEach(doc => {
+    const data = doc.data();
+    const cardId = data.referenceCardId as string;
+    if (!dates[cardId] && data.reviewedAt) {
+      dates[cardId] = data.reviewedAt as string;
+    }
+  });
+
+  return dates;
+}
+
+/**
  * Checks if a card already has a queued or running review (for deduplication).
  */
 export async function hasActiveReviewForCard(

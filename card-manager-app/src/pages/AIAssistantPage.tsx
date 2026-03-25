@@ -236,7 +236,6 @@ export function AIAssistantPage() {
   };
 
   const clearGenerateAllState = () => {
-    generateIdRef.current++;
     setLoading(false);
     setCardDetailsResult(null);
     setCardDetailsApplied(false);
@@ -642,7 +641,17 @@ export function AIAssistantPage() {
 
     if (isGenerateAll) {
       // Generate-all: fire two independent promise chains for partial rendering
-      clearGenerateAllState();
+      // Clear previous generate-all state but preserve loading=true (already set above)
+      setCardDetailsResult(null);
+      setCardDetailsApplied(false);
+      setCombinedError('');
+      setCardDetailsError('');
+      setGenerateAllActiveTab('card');
+      setCreatedComponentItems(createEmptyComponentIdSets());
+      setSelectedItems(createEmptyComponentIdSets());
+      setItemIdMap(new Map());
+      setTokenUsageExpanded(false);
+      setGenerationTypeLocked(false);
       let hadSuccessfulResponse = false;
 
       const combinedPromise = AIService.generate({
@@ -1125,6 +1134,7 @@ export function AIAssistantPage() {
                     onClick={() => {
                       const confirmed = window.confirm('Switching generation type will clear current results. Continue?');
                       if (confirmed) {
+                        generateIdRef.current++;
                         clearGenerateAllState();
                         setResult(null);
                         setShowRefinement(false);

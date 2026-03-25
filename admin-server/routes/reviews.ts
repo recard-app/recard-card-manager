@@ -16,6 +16,7 @@ import {
   getActiveReviews,
   getLatestReviewForCard,
   getLastReviewedDates,
+  getLastRunDates,
   dismissSuggestedUrl,
   updateReviewStatus,
   cancelReview,
@@ -264,6 +265,25 @@ router.get('/last-reviewed-dates', async (_req: Request, res: Response) => {
     console.error('Get last reviewed dates error:', error);
     res.status(500).json({
       error: 'Failed to get last reviewed dates',
+      message: getErrorMessage(error),
+    });
+  }
+});
+
+/**
+ * GET /admin/reviews/last-run-dates
+ * Returns a map of referenceCardId -> latest successful reviewedAt timestamp.
+ * Includes ALL successful reviews regardless of human review status.
+ * Used by the queue modal for the "Last Run" column.
+ */
+router.get('/last-run-dates', async (_req: Request, res: Response) => {
+  try {
+    const dates = await getLastRunDates();
+    res.json(dates);
+  } catch (error: unknown) {
+    console.error('Get last run dates error:', error);
+    res.status(500).json({
+      error: 'Failed to get last run dates',
       message: getErrorMessage(error),
     });
   }

@@ -8,148 +8,20 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Check, Filter, X } from 'lucide-react';
+import { Plus, Search, RefreshCw, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle2, Clock, AlertTriangle, AlertOctagon, Filter, X } from 'lucide-react';
 import { CreateCardModal } from '@/components/Modals/CreateCardModal';
 import { PageHeader } from '@/components/PageHeader';
 import { ProfilePopover } from '@/components/ProfilePopover';
 import { ReviewService } from '@/services/review.service';
+import { MultiSelectFilter } from '@/components/ui/MultiSelectFilter';
+import { formatDateShort, getStalenessInfo, getStalenessTier, type StalenessTier } from '@/utils/staleness-utils';
 import './CardsListPage.scss';
 
 type SortColumn = 'CardName' | 'CardIssuer' | 'status' | 'lastUpdated' | 'lastReviewed' | 'links';
 type SortDirection = 'asc' | 'desc';
-type LastUpdatedTier = 'all' | 'lt30' | 'gt30' | 'gt60' | 'gt90';
+type LastUpdatedTier = 'all' | StalenessTier;
 
-// Moved outside CardsListPage to prevent re-creation on parent re-renders
-function MultiSelectFilter<T extends string>({
-  label,
-  options,
-  selected,
-  onChange
-}: {
-  label: string;
-  options: { value: T, label: React.ReactNode }[];
-  selected: T[];
-  onChange: (values: T[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  
-  // Close on click outside
-  useEffect(() => {
-    if (!open) return;
-    
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      // Check if click is outside both the content and the trigger
-      const isOutsideContent = contentRef.current && !contentRef.current.contains(target);
-      const isOutsideTrigger = triggerRef.current && !triggerRef.current.contains(target);
-      
-      if (isOutsideContent && isOutsideTrigger) {
-        setOpen(false);
-      }
-    };
-    
-    // Use setTimeout to avoid the click that opened it from immediately closing it
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 0);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [open]);
-  
-  return (
-    <Popover open={open} onOpenChange={() => {}}>
-      <PopoverTrigger asChild>
-        <Button 
-          ref={triggerRef}
-          variant="outline" 
-          className={cn(
-            "h-9 gap-1.5",
-            selected.length > 0
-              ? "border border-slate-300 bg-slate-50 hover:bg-slate-100"
-              : "border-dashed"
-          )}
-          onClick={(e) => {
-            e.preventDefault();
-            setOpen(!open);
-          }}
-        >
-          <Filter size={14} className="text-slate-500" />
-          <span className="text-xs text-slate-600">{label}</span>
-          <ChevronDown size={14} className="text-slate-400" />
-          {selected.length > 0 && (
-            <>
-              <span className="mx-1 h-4 w-[1px] bg-slate-200" />
-              <Badge variant="secondary" className="rounded-sm px-1.5 font-normal text-xs">
-                {selected.length}
-              </Badge>
-            </>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent 
-        ref={contentRef}
-        className="w-[220px] p-0" 
-        align="start"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        onCloseAutoFocus={(e) => e.preventDefault()}
-      >
-        <div className="p-1">
-          {options.map((option) => {
-            const isSelected = selected.includes(option.value);
-
-            return (
-              <div
-                key={option.value}
-                className={cn(
-                  "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 hover:text-slate-900",
-                  isSelected && "bg-slate-100"
-                )}
-                onClick={() => {
-                  if (selected.includes(option.value)) {
-                    const next = selected.filter(v => v !== option.value);
-                    onChange(next);
-                  } else {
-                    onChange([...selected, option.value]);
-                  }
-                }}
-              >
-                <div className={cn(
-                  "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-slate-400",
-                  isSelected ? "bg-slate-900 text-slate-50 border-slate-900" : "[&_svg]:invisible"
-                )}>
-                  <Check className="h-3 w-3" />
-                </div>
-                {option.label}
-              </div>
-            );
-          })}
-        </div>
-        {selected.length > 0 && (
-          <>
-            <div className="h-px bg-slate-200 my-1" />
-            <div className="p-1">
-              <Button
-                variant="ghost"
-                className="w-full justify-center h-8 text-xs"
-                onClick={() => {
-                  onChange([]);
-                  setOpen(false);
-                }}
-              >
-                Clear filters
-              </Button>
-            </div>
-          </>
-        )}
-      </PopoverContent>
-    </Popover>
-  );
-}
+// MultiSelectFilter extracted to @/components/ui/MultiSelectFilter.tsx
 
 function SingleSelectFilter<T extends string>({
   label,
@@ -459,56 +331,12 @@ export function CardsListPage() {
     }
   };
 
-  const formatLastUpdated = (dateString?: string): string => {
-    if (!dateString) return '';
-    // Parse as local date to avoid timezone shift
-    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    if (isNaN(date.getTime())) return '';
-    // Format without leading zeros on month [[memory:7251081]]
-    return `${month}/${day}/${year}`;
-  };
+  // Staleness helpers imported from @/utils/staleness-utils:
+  // formatDateShort, getStalenessInfo, getStalenessTier
 
-  const getStalenessInfo = (dateString?: string): { icon: React.ReactNode; color: string } | null => {
-    if (!dateString) return null;
-    // Parse as local date to avoid timezone shift
-    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    if (isNaN(date.getTime())) return null;
-    
-    const now = new Date();
-    const diffTime = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays > 90) {
-      // Red: more than 90 days
-      return { icon: <AlertOctagon size={14} />, color: '#dc2626' };
-    } else if (diffDays > 60) {
-      // Yellow: more than 60 days
-      return { icon: <AlertTriangle size={14} />, color: '#ca8a04' };
-    } else if (diffDays > 30) {
-      // Gray: more than 30 days
-      return { icon: <Clock size={14} />, color: '#6b7280' };
-    } else {
-      // Green: less than 30 days
-      return { icon: <CheckCircle2 size={14} />, color: '#16a34a' };
-    }
-  };
-
-  const getLastUpdatedTier = (dateString?: string): Exclude<LastUpdatedTier, 'all'> | null => {
-    if (!dateString) return null;
-    // Parse as local date to avoid timezone shift
-    const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    if (isNaN(date.getTime())) return null;
-    const now = new Date();
-    const diffTime = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays > 90) return 'gt90';
-    if (diffDays > 60) return 'gt60';
-    if (diffDays > 30) return 'gt30';
-    return 'lt30';
-  };
+  // Alias for backwards compat with existing references in this file
+  const formatLastUpdated = formatDateShort;
+  const getLastUpdatedTier = getStalenessTier;
 
   // Get the effective last updated timestamp (max of lastUpdated and componentsLastUpdated)
   const getEffectiveLastUpdated = (card: CardWithStatus): string | undefined => {

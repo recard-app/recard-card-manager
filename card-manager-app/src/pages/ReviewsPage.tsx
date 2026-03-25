@@ -10,15 +10,15 @@ import './ReviewsPage.scss';
 type TabId = 'queue' | 'completed' | 'manual';
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'queue', label: 'Queue Reviews' },
   { id: 'completed', label: 'Reviews' },
+  { id: 'queue', label: 'Queue Reviews' },
   { id: 'manual', label: 'Manual Compare' },
 ];
 
 export function ReviewsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab') as TabId | null;
-  const activeTab: TabId = tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'queue';
+  const activeTab: TabId = tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'completed';
 
   const [hasUnsavedManualData, setHasUnsavedManualData] = useState(false);
 

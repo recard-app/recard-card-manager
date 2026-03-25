@@ -1,17 +1,29 @@
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
-import { Search } from 'lucide-react';
+import { Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
+import { MultiSelectFilter } from '@/components/ui/MultiSelectFilter';
 import { CardService } from '@/services/card.service';
 import { ReviewService } from '@/services/review.service';
+import { CardStatus } from '@/types/ui-types';
 import type { CardWithStatus } from '@/types/ui-types';
+import {
+  formatDateShort,
+  getStalenessInfo,
+  getStalenessTier,
+  STALENESS_TIERS,
+  type StalenessTier,
+} from '@/utils/staleness-utils';
 
 interface QueueReviewsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }
+
+type SortField = 'name' | 'lastReviewed' | 'lastRun';
+type SortDir = 'asc' | 'desc';
 
 export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReviewsModalProps) {
   const [cards, setCards] = useState<CardWithStatus[]>([]);
@@ -20,20 +32,48 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
 
+  // Date maps
+  const [lastReviewedDates, setLastReviewedDates] = useState<Record<string, string>>({});
+  const [lastRunDates, setLastRunDates] = useState<Record<string, string>>({});
+
+  // Filters
+  const [lastReviewedFilter, setLastReviewedFilter] = useState<StalenessTier[]>([]);
+  const [lastRunFilter, setLastRunFilter] = useState<StalenessTier[]>([]);
+
+  // Sort
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
   useEffect(() => {
     if (open) {
-      loadCards();
+      loadData();
       setSelectedIds(new Set());
       setSearchQuery('');
+      setLastReviewedFilter([]);
+      setLastRunFilter([]);
+      setSortField('name');
+      setSortDir('asc');
     }
   }, [open]);
 
-  const loadCards = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const data = await CardService.getAllCardsWithStatus();
-      data.sort((a, b) => a.CardName.localeCompare(b.CardName));
-      setCards(data);
+      const [cardsData, reviewedDates, runDates] = await Promise.all([
+        CardService.getAllCardsWithStatus(),
+        ReviewService.getLastReviewedDates().catch((err) => {
+          console.error('Failed to load last reviewed dates:', err);
+          return {} as Record<string, string>;
+        }),
+        ReviewService.getLastRunDates().catch((err) => {
+          console.error('Failed to load last run dates:', err);
+          return {} as Record<string, string>;
+        }),
+      ]);
+      cardsData.sort((a, b) => a.CardName.localeCompare(b.CardName));
+      setCards(cardsData);
+      setLastReviewedDates(reviewedDates);
+      setLastRunDates(runDates);
     } catch {
       toast.error('Failed to load cards');
     } finally {
@@ -41,14 +81,56 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
     }
   };
 
-  const filteredCards = useMemo(() => {
-    if (!searchQuery) return cards;
-    const q = searchQuery.toLowerCase();
-    return cards.filter(card =>
-      card.CardName.toLowerCase().includes(q) ||
-      card.CardIssuer.toLowerCase().includes(q)
-    );
-  }, [cards, searchQuery]);
+  const filteredAndSortedCards = useMemo(() => {
+    let result = [...cards];
+
+    // Text search
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(card =>
+        card.CardName.toLowerCase().includes(q) ||
+        card.CardIssuer.toLowerCase().includes(q)
+      );
+    }
+
+    // Last Reviewed filter
+    if (lastReviewedFilter.length > 0) {
+      result = result.filter(card => {
+        const tier = getStalenessTier(lastReviewedDates[card.ReferenceCardId]);
+        return tier !== null && lastReviewedFilter.includes(tier);
+      });
+    }
+
+    // Last Run filter
+    if (lastRunFilter.length > 0) {
+      result = result.filter(card => {
+        const tier = getStalenessTier(lastRunDates[card.ReferenceCardId]);
+        return tier !== null && lastRunFilter.includes(tier);
+      });
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      if (sortField === 'name') {
+        const cmp = a.CardName.localeCompare(b.CardName);
+        return sortDir === 'desc' ? -cmp : cmp;
+      }
+
+      const dateMap = sortField === 'lastReviewed' ? lastReviewedDates : lastRunDates;
+      const dateA = dateMap[a.ReferenceCardId] || '';
+      const dateB = dateMap[b.ReferenceCardId] || '';
+
+      // Empty dates always go to the end regardless of sort direction
+      if (!dateA && !dateB) return a.CardName.localeCompare(b.CardName);
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+
+      const cmp = dateA.localeCompare(dateB);
+      return sortDir === 'desc' ? -cmp : cmp;
+    });
+
+    return result;
+  }, [cards, searchQuery, lastReviewedFilter, lastRunFilter, lastReviewedDates, lastRunDates, sortField, sortDir]);
 
   const toggleCard = (cardId: string) => {
     setSelectedIds(prev => {
@@ -62,21 +144,21 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
     });
   };
 
+  const isSelectable = (card: CardWithStatus) =>
+    (card.websiteUrls?.length ?? 0) > 0 && card.status === CardStatus.Active;
+
   const toggleSelectAll = () => {
-    // Only select cards that have URLs configured
-    const selectableCards = filteredCards.filter(c => (c.websiteUrls?.length ?? 0) > 0);
+    const selectableCards = filteredAndSortedCards.filter(isSelectable);
     const selectableIds = selectableCards.map(c => c.ReferenceCardId);
     const allSelected = selectableIds.length > 0 && selectableIds.every(id => selectedIds.has(id));
 
     if (allSelected) {
-      // Deselect all visible
       setSelectedIds(prev => {
         const next = new Set(prev);
         selectableIds.forEach(id => next.delete(id));
         return next;
       });
     } else {
-      // Select all visible that have URLs
       setSelectedIds(prev => {
         const next = new Set(prev);
         selectableIds.forEach(id => next.add(id));
@@ -87,7 +169,6 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
 
   const handleSubmit = async () => {
     if (selectedIds.size === 0) return;
-
     setSubmitting(true);
     try {
       const result = await ReviewService.queueReviews(Array.from(selectedIds));
@@ -111,8 +192,54 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
     }
   };
 
-  const selectableVisible = filteredCards.filter(c => (c.websiteUrls?.length ?? 0) > 0);
+  const handleSortClick = (field: SortField) => {
+    if (sortField === field) {
+      if (sortDir === 'asc') {
+        setSortDir('desc');
+      } else {
+        // Reset to default
+        setSortField('name');
+        setSortDir('asc');
+      }
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
+
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ChevronsUpDown size={12} style={{ color: '#9ca3af' }} />;
+    return sortDir === 'asc'
+      ? <ChevronUp size={12} style={{ color: '#374151' }} />
+      : <ChevronDown size={12} style={{ color: '#374151' }} />;
+  };
+
+  const renderDateCell = (dateString?: string) => {
+    if (!dateString) return <span style={{ color: '#d1d5db' }}>--</span>;
+    const staleness = getStalenessInfo(dateString);
+    return (
+      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        {staleness && <span style={{ color: staleness.color, display: 'flex' }}>{staleness.icon}</span>}
+        <span>{formatDateShort(dateString)}</span>
+      </span>
+    );
+  };
+
+  const selectableVisible = filteredAndSortedCards.filter(isSelectable);
   const allVisibleSelected = selectableVisible.length > 0 && selectableVisible.every(c => selectedIds.has(c.ReferenceCardId));
+
+  // Build filter options with staleness icons
+  const stalenessFilterOptions = STALENESS_TIERS.map(tier => ({
+    value: tier.value,
+    label: (
+      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <tier.Icon size={14} style={{ color: tier.color }} />
+        {tier.label}
+      </span>
+    ),
+  }));
+
+  const gridColumns = '32px 1fr 120px 120px';
 
   return (
     <Dialog
@@ -120,82 +247,149 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
       onOpenChange={onOpenChange}
       title="Queue Reviews"
       description="Select cards to review"
+      contentClassName="max-w-5xl"
+      preventEscClose
+      preventOutsideClose
     >
       <div>
-        {/* Search */}
-        <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
-          <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search cards..."
-            style={{
-              width: '100%',
-              padding: '0.5rem 0.75rem 0.5rem 2.25rem',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '0.875rem',
-            }}
+        {/* Search + Filters row */}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+            <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search cards..."
+              style={{
+                width: '100%',
+                padding: '0.5rem 0.75rem 0.5rem 2.25rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                fontSize: '0.875rem',
+                height: '36px',
+              }}
+            />
+          </div>
+          <MultiSelectFilter
+            label="Last Reviewed"
+            options={stalenessFilterOptions}
+            selected={lastReviewedFilter}
+            onChange={setLastReviewedFilter}
+          />
+          <MultiSelectFilter
+            label="Last Run"
+            options={stalenessFilterOptions}
+            selected={lastRunFilter}
+            onChange={setLastRunFilter}
           />
         </div>
 
-        {/* Select All */}
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.5rem 0',
-            cursor: 'pointer',
-            fontWeight: 500,
-            fontSize: '0.875rem',
-            borderBottom: '1px solid #e5e7eb',
-            marginBottom: '0.5rem',
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={allVisibleSelected}
-            onChange={toggleSelectAll}
-            style={{ width: '1rem', height: '1rem' }}
-          />
-          Select All{searchQuery ? ' (filtered)' : ''}
-        </label>
+        {/* Column headers */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: gridColumns,
+          gap: '0.5rem',
+          padding: '0.375rem 0',
+          borderBottom: '1px solid #e5e7eb',
+          marginBottom: '0.25rem',
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          color: '#6b7280',
+          alignItems: 'center',
+        }}>
+          <div>
+            <input
+              type="checkbox"
+              checked={allVisibleSelected}
+              onChange={toggleSelectAll}
+              style={{ width: '1rem', height: '1rem' }}
+            />
+          </div>
+          <div
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', userSelect: 'none' }}
+            onClick={() => handleSortClick('name')}
+          >
+            Card Name {renderSortIcon('name')}
+          </div>
+          <div
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', userSelect: 'none' }}
+            onClick={() => handleSortClick('lastReviewed')}
+          >
+            Last Reviewed {renderSortIcon('lastReviewed')}
+          </div>
+          <div
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', userSelect: 'none' }}
+            onClick={() => handleSortClick('lastRun')}
+          >
+            Last Run {renderSortIcon('lastRun')}
+          </div>
+        </div>
 
         {/* Card list */}
-        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+        <div style={{ maxHeight: '650px', overflowY: 'auto' }}>
           {loading ? (
             <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>Loading cards...</div>
-          ) : filteredCards.length === 0 ? (
+          ) : filteredAndSortedCards.length === 0 ? (
             <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>No cards found</div>
           ) : (
-            filteredCards.map(card => {
+            filteredAndSortedCards.map(card => {
+              const selectable = isSelectable(card);
               const hasUrls = (card.websiteUrls?.length ?? 0) > 0;
+              const hasActiveVersion = card.status === CardStatus.Active;
+              const reviewedDate = lastReviewedDates[card.ReferenceCardId];
+              const runDate = lastRunDates[card.ReferenceCardId];
+
               return (
                 <label
                   key={card.ReferenceCardId}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
+                    display: 'grid',
+                    gridTemplateColumns: gridColumns,
                     gap: '0.5rem',
                     padding: '0.375rem 0',
-                    cursor: hasUrls ? 'pointer' : 'default',
-                    opacity: hasUrls ? 1 : 0.5,
-                    fontSize: '0.875rem',
+                    cursor: selectable ? 'pointer' : 'default',
+                    opacity: selectable ? 1 : 0.5,
+                    fontSize: '0.8125rem',
+                    alignItems: 'center',
+                    borderBottom: '1px solid #f3f4f6',
                   }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(card.ReferenceCardId)}
-                    onChange={() => toggleCard(card.ReferenceCardId)}
-                    disabled={!hasUrls}
-                    style={{ width: '1rem', height: '1rem' }}
-                  />
-                  <span>{card.CardName}</span>
-                  {!hasUrls && (
-                    <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>(no URLs)</span>
-                  )}
+                  <div>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(card.ReferenceCardId)}
+                      onChange={() => toggleCard(card.ReferenceCardId)}
+                      disabled={!selectable}
+                      style={{ width: '1rem', height: '1rem' }}
+                    />
+                  </div>
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{
+                      flexShrink: 0,
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '3px',
+                      background: card.CardPrimaryColor
+                        ? `linear-gradient(135deg, ${card.CardPrimaryColor} 50%, ${card.CardSecondaryColor || card.CardPrimaryColor} 50%)`
+                        : '#d1d5db',
+                    }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {card.CardName}
+                    </span>
+                    {!hasActiveVersion && (
+                      <span style={{ fontSize: '0.6875rem', color: '#9ca3af', flexShrink: 0 }}>(no active version)</span>
+                    )}
+                    {hasActiveVersion && !hasUrls && (
+                      <span style={{ fontSize: '0.6875rem', color: '#9ca3af', flexShrink: 0 }}>(no URLs)</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#4b5563' }}>
+                    {renderDateCell(reviewedDate)}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#4b5563' }}>
+                    {renderDateCell(runDate)}
+                  </div>
                 </label>
               );
             })
@@ -203,8 +397,11 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
         </div>
 
         {/* Count */}
-        <div style={{ marginTop: '0.75rem', fontSize: '0.8125rem', color: '#666' }}>
+        <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb', fontSize: '0.8125rem', color: '#666' }}>
           {selectedIds.size} of {cards.length} cards selected
+          {(lastReviewedFilter.length > 0 || lastRunFilter.length > 0 || searchQuery) && (
+            <span> ({filteredAndSortedCards.length} shown)</span>
+          )}
         </div>
       </div>
 

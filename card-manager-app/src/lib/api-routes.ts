@@ -99,6 +99,7 @@ export const API_ROUTES = {
     ACTIVE: '/admin/reviews/active',
     LATEST: (cardId: string) => `/admin/reviews/latest/${cardId}`,
     LAST_REVIEWED_DATES: '/admin/reviews/last-reviewed-dates',
+    LAST_RUN_DATES: '/admin/reviews/last-run-dates',
     DISMISS_URL: (id: string) => `/admin/reviews/results/${id}/dismiss-url`,
     REVIEW_STATUS: (id: string) => `/admin/reviews/results/${id}/review-status`,
     CANCEL: (id: string) => `/admin/reviews/results/${id}/cancel`,

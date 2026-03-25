@@ -101,6 +101,17 @@ export class ReviewService {
   }
 
   /**
+   * Get last run dates for all cards (any successful review, regardless of human review status).
+   * Returns a map of referenceCardId -> ISO timestamp.
+   */
+  static async getLastRunDates(): Promise<Record<string, string>> {
+    const response = await apiClient.get<Record<string, string>>(
+      API_ROUTES.REVIEWS.LAST_RUN_DATES
+    );
+    return response.data;
+  }
+
+  /**
    * Dismiss a suggested URL replacement on a review result.
    */
   static async dismissUrl(resultId: string, urlIndex: number): Promise<void> {

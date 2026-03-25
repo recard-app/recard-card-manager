@@ -127,6 +127,9 @@ export function CompletedReviewsTab() {
   const filterModeParam = searchParams.get('filter');
   const filterMode: FilterMode = filterModeParam && VALID_FILTER_MODES.includes(filterModeParam as FilterMode)
     ? filterModeParam as FilterMode : 'all';
+  const statusFilterParam = searchParams.get('status');
+  const statusFilter: 'all' | 'not_reviewed' | 'reviewed' =
+    statusFilterParam === 'not_reviewed' || statusFilterParam === 'reviewed' ? statusFilterParam : 'all';
 
   const setSearchQuery = (value: string) => {
     setSearchParams(prev => {
@@ -140,6 +143,14 @@ export function CompletedReviewsTab() {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       if (value !== 'all') { next.set('filter', value); } else { next.delete('filter'); }
+      return next;
+    }, { replace: true });
+  };
+
+  const setStatusFilter = (value: string) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (value !== 'all') { next.set('status', value); } else { next.delete('status'); }
       return next;
     }, { replace: true });
   };
@@ -258,7 +269,7 @@ export function CompletedReviewsTab() {
       );
     }
 
-    // Attention filter (client-side -- can't do this server-side easily)
+    // Health filter (client-side -- can't do this server-side easily)
     if (filterMode === 'attention') {
       filtered = filtered.filter(r =>
         r.status === 'failed' || r.status === 'skipped' ||
@@ -268,8 +279,15 @@ export function CompletedReviewsTab() {
       filtered = filtered.filter(r => r.status === 'success' && r.health?.score === 100);
     }
 
+    // Review status filter
+    if (statusFilter === 'not_reviewed') {
+      filtered = filtered.filter(r => !r.reviewStatus || r.reviewStatus === 'not_reviewed');
+    } else if (statusFilter === 'reviewed') {
+      filtered = filtered.filter(r => r.reviewStatus === 'reviewed');
+    }
+
     return filtered;
-  }, [reviews, searchQuery, filterMode]);
+  }, [reviews, searchQuery, filterMode, statusFilter]);
 
   const dayGroups = useMemo(() => groupByDay(filteredReviews), [filteredReviews]);
 
@@ -326,14 +344,23 @@ export function CompletedReviewsTab() {
           />
         </div>
         <Select
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={[
+            { value: 'all', label: 'Status: All' },
+            { value: 'not_reviewed', label: 'Status: Not Reviewed' },
+            { value: 'reviewed', label: 'Status: Reviewed' },
+          ]}
+        />
+        <Select
           value={filterMode}
           onChange={(value) => setFilterMode(value as FilterMode)}
           options={[
-            { value: 'all', label: 'All' },
-            { value: 'attention', label: 'Needs Attention' },
-            { value: 'successful', label: 'Successful' },
-            { value: 'failed', label: 'Failed' },
-            { value: 'healthy', label: 'Healthy (100%)' },
+            { value: 'all', label: 'Health: All' },
+            { value: 'attention', label: 'Health: Needs Attention' },
+            { value: 'successful', label: 'Health: Successful' },
+            { value: 'failed', label: 'Health: Failed / Skipped' },
+            { value: 'healthy', label: 'Health: 100% Match' },
           ]}
         />
       </div>

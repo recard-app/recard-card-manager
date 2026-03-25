@@ -1,4 +1,5 @@
 import * as React from "react"
+import { cn } from "@/lib/utils"
 import {
   Dialog as ShadcnDialog,
   DialogContent,
@@ -15,6 +16,9 @@ interface DialogWrapperProps {
   title?: string
   description?: string
   header?: React.ReactNode
+  contentClassName?: string
+  preventEscClose?: boolean
+  preventOutsideClose?: boolean
 }
 
 // Helper function to recursively find DialogFooter
@@ -61,6 +65,9 @@ export function DialogWrapper({
   title,
   description,
   header,
+  contentClassName,
+  preventEscClose,
+  preventOutsideClose,
 }: DialogWrapperProps) {
   // Recursively find and extract footer
   const { footer: footerChild, otherChildren: contentChildren } = findDialogFooter(children)
@@ -70,7 +77,11 @@ export function DialogWrapper({
 
   return (
     <ShadcnDialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col overflow-hidden p-0 max-h-[90vh]">
+      <DialogContent
+        className={cn("flex flex-col overflow-hidden p-0 max-h-[90vh]", contentClassName)}
+        onEscapeKeyDown={preventEscClose ? (e) => e.preventDefault() : undefined}
+        onInteractOutside={preventOutsideClose ? (e) => e.preventDefault() : undefined}
+      >
         {hasHeader && (
           <div className="px-6 pt-6 pb-4 flex-shrink-0 border-b border-gray-200">
             {header ? (
