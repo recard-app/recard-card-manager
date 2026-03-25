@@ -32,7 +32,7 @@ import { PerkModal } from '@/components/Modals/PerkModal';
 import { MultiplierModal } from '@/components/Modals/MultiplierModal';
 import { UrlManagementModal } from '@/components/Modals/UrlManagementModal';
 import type { ReviewResult } from '@/types/review-types';
-import type { ComponentComparisonResult } from '@/types/comparison-types';
+import type { ComponentComparisonResult, FieldComparisonResult } from '@/types/comparison-types';
 import type { CardCredit, CardPerk, CardMultiplier } from '@/types';
 import type { CreditCardName } from '@/types/ui-types';
 import './CardReviewDetailPage.scss';
@@ -46,6 +46,33 @@ function isUrlHealthy(urlResult: ReviewUrlResult): boolean {
 
 function isUrlNeedsReview(urlResult: ReviewUrlResult): boolean {
   return urlResult.status === 'broken' || urlResult.status === 'stale' || urlResult.truncated;
+}
+
+const CARD_DETAIL_SEVERITY: Record<string, number> = { mismatch: 0, questionable: 1, missing_from_website: 2, match: 3 };
+const COMPONENT_SEVERITY: Record<string, number> = { outdated: 0, new: 1, missing: 2, questionable: 3, match: 4 };
+
+function sortCardDetails(items: FieldComparisonResult[]) {
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => (CARD_DETAIL_SEVERITY[a.item.status] ?? 99) - (CARD_DETAIL_SEVERITY[b.item.status] ?? 99));
+}
+
+function sortComponents(items: ComponentComparisonResult[]) {
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => (COMPONENT_SEVERITY[a.item.status] ?? 99) - (COMPONENT_SEVERITY[b.item.status] ?? 99));
+}
+
+function sortUrls(items: ReviewUrlResult[]) {
+  const getOrder = (u: ReviewUrlResult) => {
+    if (u.status === 'broken') return 0;
+    if (u.status === 'stale') return 1;
+    if (u.status === 'ok' && u.truncated) return 2;
+    return 3;
+  };
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => getOrder(a.item) - getOrder(b.item));
 }
 
 function sanitizeReviewedIndexes(
@@ -103,7 +130,10 @@ export function CardReviewDetailPage() {
   const [editingComponent, setEditingComponent] = useState<CardCredit | CardPerk | CardMultiplier | null>(null);
   const [editInitialJson, setEditInitialJson] = useState<Record<string, unknown> | undefined>(undefined);
   const [editModalKey, setEditModalKey] = useState(0);
-
+  // Track pending create context so onSuccess can mark it
+  const [pendingEditContext, setPendingEditContext] = useState<{ type: 'credits' | 'perks' | 'multipliers'; index: number; isCreate: boolean } | null>(null);
+  // Track which components have been created via the Create button (type:index keys)
+  const [createdComponents, setCreatedComponents] = useState<Set<string>>(new Set());
 
   // Scraped content viewer modal
   const [contentViewerOpen, setContentViewerOpen] = useState(false);
@@ -418,9 +448,12 @@ export function CardReviewDetailPage() {
 
   const handleEditComponent = async (
     componentType: 'credits' | 'perks' | 'multipliers',
-    component: ComponentComparisonResult
+    component: ComponentComparisonResult,
+    index: number
   ) => {
     if (!review) return;
+
+    setPendingEditContext({ type: componentType, index, isCreate: component.status === 'new' });
 
     if (component.status === 'new') {
       // Create mode: pre-fill from proposedFix
@@ -825,7 +858,7 @@ export function CardReviewDetailPage() {
                     )}
                   </div>
                 )}
-                {comparisonResult.cardDetails.map((field, index) => {
+                {sortCardDetails(comparisonResult.cardDetails).map(({ item: field, index }) => {
                   const needsReview = field.status !== 'match' && field.status !== 'missing_from_website';
                   return (
                     <FieldComparisonCard
@@ -860,11 +893,13 @@ export function CardReviewDetailPage() {
                 {comparisonResult.credits.length === 0 ? (
                   <div style={{ padding: '1rem', color: '#6b7280', textAlign: 'center' }}>No credits in database</div>
                 ) : (
-                  comparisonResult.credits.map((component, index) => {
+                  sortComponents(comparisonResult.credits).map(({ item: component, index }) => {
                     const needsReview = component.status !== 'match';
                     return (
                       <ComponentCard key={component.id || index} component={component}
-                        onEdit={(c) => handleEditComponent('credits', c)}
+                        onEdit={(c) => handleEditComponent('credits', c, index)}
+                        created={createdComponents.has(`credits:${index}`)}
+                        validationType="credit"
                         {...(needsReview ? { reviewed: reviewedItems.credits.includes(index), onToggleReview: () => toggleReviewedItem('credits', index) } : {})}
                       />
                     );
@@ -892,11 +927,13 @@ export function CardReviewDetailPage() {
                 {comparisonResult.perks.length === 0 ? (
                   <div style={{ padding: '1rem', color: '#6b7280', textAlign: 'center' }}>No perks in database</div>
                 ) : (
-                  comparisonResult.perks.map((component, index) => {
+                  sortComponents(comparisonResult.perks).map(({ item: component, index }) => {
                     const needsReview = component.status !== 'match';
                     return (
                       <ComponentCard key={component.id || index} component={component}
-                        onEdit={(c) => handleEditComponent('perks', c)}
+                        onEdit={(c) => handleEditComponent('perks', c, index)}
+                        created={createdComponents.has(`perks:${index}`)}
+                        validationType="perk"
                         {...(needsReview ? { reviewed: reviewedItems.perks.includes(index), onToggleReview: () => toggleReviewedItem('perks', index) } : {})}
                       />
                     );
@@ -924,11 +961,13 @@ export function CardReviewDetailPage() {
                 {comparisonResult.multipliers.length === 0 ? (
                   <div style={{ padding: '1rem', color: '#6b7280', textAlign: 'center' }}>No multipliers in database</div>
                 ) : (
-                  comparisonResult.multipliers.map((component, index) => {
+                  sortComponents(comparisonResult.multipliers).map(({ item: component, index }) => {
                     const needsReview = component.status !== 'match';
                     return (
                       <ComponentCard key={component.id || index} component={component}
-                        onEdit={(c) => handleEditComponent('multipliers', c)}
+                        onEdit={(c) => handleEditComponent('multipliers', c, index)}
+                        created={createdComponents.has(`multipliers:${index}`)}
+                        validationType="multiplier"
                         {...(needsReview ? { reviewed: reviewedItems.multipliers.includes(index), onToggleReview: () => toggleReviewedItem('multipliers', index) } : {})}
                       />
                     );
@@ -953,7 +992,7 @@ export function CardReviewDetailPage() {
                     )}
                   </div>
                 )}
-                {urlResults.map((urlResult, index) => {
+                {sortUrls(urlResults).map(({ item: urlResult, index }) => {
                   const needsReview = isUrlNeedsReview(urlResult);
                   return (
                   <div key={index} className="url-row">
@@ -1055,8 +1094,12 @@ export function CardReviewDetailPage() {
           referenceCardId={review.referenceCardId}
           credit={editingCredit}
           onSuccess={() => {
+            if (pendingEditContext?.isCreate) {
+              setCreatedComponents(prev => new Set(prev).add(`${pendingEditContext.type}:${pendingEditContext.index}`));
+            }
             setEditModalType(null);
-            toast.success('Credit saved');
+            setPendingEditContext(null);
+            toast.success(pendingEditContext?.isCreate ? 'Credit created' : 'Credit saved');
           }}
           initialJson={editInitialJson}
         />
@@ -1070,8 +1113,12 @@ export function CardReviewDetailPage() {
           referenceCardId={review.referenceCardId}
           perk={editingPerk}
           onSuccess={() => {
+            if (pendingEditContext?.isCreate) {
+              setCreatedComponents(prev => new Set(prev).add(`${pendingEditContext.type}:${pendingEditContext.index}`));
+            }
             setEditModalType(null);
-            toast.success('Perk saved');
+            setPendingEditContext(null);
+            toast.success(pendingEditContext?.isCreate ? 'Perk created' : 'Perk saved');
           }}
           initialJson={editInitialJson}
         />
@@ -1085,8 +1132,12 @@ export function CardReviewDetailPage() {
           referenceCardId={review.referenceCardId}
           multiplier={editingMultiplier}
           onSuccess={() => {
+            if (pendingEditContext?.isCreate) {
+              setCreatedComponents(prev => new Set(prev).add(`${pendingEditContext.type}:${pendingEditContext.index}`));
+            }
             setEditModalType(null);
-            toast.success('Multiplier saved');
+            setPendingEditContext(null);
+            toast.success(pendingEditContext?.isCreate ? 'Multiplier created' : 'Multiplier saved');
           }}
           initialJson={editInitialJson}
         />

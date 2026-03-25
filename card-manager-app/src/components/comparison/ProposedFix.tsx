@@ -1,26 +1,35 @@
-import { useState } from 'react';
-import { ChevronRight, Copy, Check } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ChevronRight, Copy, Check, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { toast } from 'sonner';
+import { validateResponse } from '@/utils/schema-validation';
+import type { GenerationType } from '@/services/ai.service';
 import './ProposedFix.scss';
 
 interface ProposedFixProps {
   /** The proposed fix value -- string/number for field fixes, object for component fixes */
   fix: string | number | null | Record<string, unknown>;
+  /** When provided, validates the fix object against this schema type */
+  validationType?: GenerationType;
 }
 
 /**
- * Collapsible proposed fix display with JSON formatting and copy button.
+ * Collapsible proposed fix display with JSON formatting, copy button, and optional schema validation.
  * Used by FieldComparisonCard and ComponentComparisonTabs to show
  * AI-suggested corrections that match the schema format.
  */
-export function ProposedFix({ fix }: ProposedFixProps) {
+export function ProposedFix({ fix, validationType }: ProposedFixProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [copied, setCopied] = useState(false);
 
   const jsonString = typeof fix === 'object' && fix !== null
     ? JSON.stringify(fix, null, 2)
     : JSON.stringify(fix);
+
+  const validation = useMemo(() => {
+    if (!validationType || typeof fix !== 'object' || fix === null) return null;
+    return validateResponse(validationType, fix as Record<string, unknown>);
+  }, [fix, validationType]);
 
   const handleCopy = async () => {
     try {
@@ -42,10 +51,29 @@ export function ProposedFix({ fix }: ProposedFixProps) {
       >
         <ChevronRight size={14} className={`chevron ${isOpen ? 'open' : ''}`} />
         Proposed Fix
+        {validation && (
+          <span className={`schema-status ${validation.valid ? 'valid' : 'invalid'}`}>
+            {validation.valid
+              ? <><CheckCircle size={13} /> Valid schema</>
+              : <><XCircle size={13} /> Invalid schema</>
+            }
+          </span>
+        )}
       </button>
 
       {isOpen && (
         <div className="proposed-fix-content">
+          {validation && !validation.valid && (
+            <div className="schema-errors">
+              {validation.invalidFields.map(field => (
+                <div key={field} className="schema-error-item">
+                  <XCircle size={12} />
+                  <span className="error-field">{field}</span>
+                  <span className="error-reason">{validation.fieldResults[field]?.reason}</span>
+                </div>
+              ))}
+            </div>
+          )}
           <pre className="json-block">{jsonString}</pre>
           <Button
             variant="outline"

@@ -105,9 +105,11 @@ interface ComponentCardProps {
   onEdit?: (component: ComponentComparisonResult) => void;
   reviewed?: boolean;
   onToggleReview?: () => void;
+  created?: boolean;
+  validationType?: 'credit' | 'perk' | 'multiplier';
 }
 
-export function ComponentCard({ component, onEdit, reviewed, onToggleReview }: ComponentCardProps) {
+export function ComponentCard({ component, onEdit, reviewed, onToggleReview, created, validationType }: ComponentCardProps) {
   const [expanded, setExpanded] = useState(true);
   const config = STATUS_CONFIG[component.status];
   const StatusIcon = config.icon;
@@ -132,9 +134,16 @@ export function ComponentCard({ component, onEdit, reviewed, onToggleReview }: C
               ><Pencil size={12} /> Edit</Button>
             )}
             {onEdit && component.status === 'new' && (
-              <Button variant="outline" size="sm"
-                onClick={(e) => { e.stopPropagation(); onEdit(component); }} title="Create component from proposed fix"
-              ><Plus size={12} /> Create</Button>
+              created ? (
+                <span className="item-created-badge">
+                  <CheckCircle size={14} />
+                  Created
+                </span>
+              ) : (
+                <Button variant="outline" size="sm"
+                  onClick={(e) => { e.stopPropagation(); onEdit(component); }} title="Create component from proposed fix"
+                ><Plus size={12} /> Create</Button>
+              )
             )}
           </div>
         </div>
@@ -199,7 +208,7 @@ export function ComponentCard({ component, onEdit, reviewed, onToggleReview }: C
           )}
 
           {component.proposedFix && (
-            <ProposedFix fix={component.proposedFix} />
+            <ProposedFix fix={component.proposedFix} validationType={validationType} />
           )}
         </div>
       )}
