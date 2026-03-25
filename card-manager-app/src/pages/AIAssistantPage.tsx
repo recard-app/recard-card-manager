@@ -38,7 +38,7 @@ type GenerateAllTab = 'card' | 'credits' | 'perks' | 'multipliers';
 export function AIAssistantPage() {
   // Form state
   const [rawData, setRawData] = useState('');
-  const [generationType, setGenerationType] = useState<GenerationType>('card');
+  const [generationType, setGenerationType] = useState<GenerationType>('generate-all');
   const [batchMode, setBatchMode] = useState(true);
   const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS.GEMINI_31_PRO_PREVIEW);
   const [selectedCheckerModel, setSelectedCheckerModel] = useState<AIModel>(AI_MODELS.GEMINI_3_FLASH_PREVIEW);
