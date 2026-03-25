@@ -16,6 +16,7 @@ export const CATEGORIES: Record<string, readonly string[]> = {
   shopping: ['supermarkets', 'online shopping', 'online grocery', 'drugstores', 'retail', 'department stores'],
   gas: ['gas stations', 'ev charging'],
   entertainment: ['streaming'],
+  lifestyle: ['gyms', 'wellness'],
   transportation: ['rideshare'],
   transit: [],
   general: ['entertainment'],

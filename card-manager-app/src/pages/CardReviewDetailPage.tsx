@@ -159,8 +159,8 @@ export function CardReviewDetailPage() {
     }, 500);
   }, [resultId]);
 
-  // Cleanup timer on unmount
-  useEffect(() => () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); }, []);
+  // Cleanup timer on unmount or when resultId changes (navigating between reviews)
+  useEffect(() => () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); }, [resultId]);
 
   const toggleReviewedItem = (section: keyof ReviewedItemsState, index: number) => {
     setReviewedItems(prev => {

@@ -3,14 +3,14 @@ import { toast } from 'sonner';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { extractValidFieldsFromJson, SCHEMA_FIELDS } from '@/utils/schema-validation';
-import type { GenerationType } from '@/services/ai.service';
+import type { ValidatableGenerationType } from '@/utils/schema-validation';
 import { FileJson } from 'lucide-react';
 import './JsonImportModal.scss';
 
 interface JsonImportModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  type: GenerationType;
+  type: ValidatableGenerationType;
   onImport: (fields: Record<string, unknown>) => void;
 }
 
@@ -18,7 +18,7 @@ export function JsonImportModal({ open, onOpenChange, type, onImport }: JsonImpo
   const [jsonText, setJsonText] = useState('');
   const [parseError, setParseError] = useState<string | null>(null);
 
-  const expectedFields: string[] = type === 'generate-all' ? [] : (SCHEMA_FIELDS as Record<string, string[]>)[type] || [];
+  const expectedFields = SCHEMA_FIELDS[type];
 
   const handleImport = () => {
     setParseError(null);
@@ -134,4 +134,3 @@ export function JsonImportModal({ open, onOpenChange, type, onImport }: JsonImpo
     </Dialog>
   );
 }
-

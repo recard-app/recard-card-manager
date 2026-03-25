@@ -13,6 +13,7 @@ import { CardIcon } from '@/components/icons/CardIcon';
 import { CreditModal } from '@/components/Modals/CreditModal';
 import { PerkModal } from '@/components/Modals/PerkModal';
 import { MultiplierModal } from '@/components/Modals/MultiplierModal';
+import { CardDetailsModal } from '@/components/Modals/CardDetailsModal';
 import { Combobox } from '@/components/ui/Combobox';
 import { CardService } from '@/services/card.service';
 import { ComponentService } from '@/services/component.service';
@@ -23,6 +24,14 @@ import type { TokenBreakdownEntry } from '@/services/ai.service';
 import './AIAssistantPage.scss';
 
 type DisplayMode = 'fields' | 'json';
+type ComponentTabKey = 'credits' | 'perks' | 'multipliers';
+type ComponentIdSets = Record<ComponentTabKey, Set<string>>;
+
+const createEmptyComponentIdSets = (): ComponentIdSets => ({
+  credits: new Set<string>(),
+  perks: new Set<string>(),
+  multipliers: new Set<string>(),
+});
 
 const GENERATION_TYPE_OPTIONS = [
   { value: 'generate-all', label: 'Generate All' },
@@ -74,19 +83,14 @@ export function AIAssistantPage() {
   const [combinedError, setCombinedError] = useState<string>('');
   const [cardDetailsError, setCardDetailsError] = useState<string>('');
   const [activeModalType, setActiveModalType] = useState<ComponentType | null>(null);
+  const [cardDetailsModalOpen, setCardDetailsModalOpen] = useState(false);
+  const [cardDetailsModalKey, setCardDetailsModalKey] = useState(0);
+  const [pendingCardDetailsJson, setPendingCardDetailsJson] = useState<Record<string, unknown> | null>(null);
   // Parallel map for client IDs: keyed by "type:index", value is UUID
   const [itemIdMap, setItemIdMap] = useState<Map<string, string>>(new Map());
-  const [createdComponentItems, setCreatedComponentItems] = useState<{
-    credits: Set<string>;
-    perks: Set<string>;
-    multipliers: Set<string>;
-  }>({ credits: new Set(), perks: new Set(), multipliers: new Set() });
+  const [createdComponentItems, setCreatedComponentItems] = useState<ComponentIdSets>(createEmptyComponentIdSets);
   // Bulk selection state
-  const [selectedItems, setSelectedItems] = useState<{
-    credits: Set<string>;
-    perks: Set<string>;
-    multipliers: Set<string>;
-  }>({ credits: new Set(), perks: new Set(), multipliers: new Set() });
+  const [selectedItems, setSelectedItems] = useState<ComponentIdSets>(createEmptyComponentIdSets);
   const [bulkCreating, setBulkCreating] = useState(false);
   const [tokenUsageExpanded, setTokenUsageExpanded] = useState(false);
 
@@ -133,9 +137,7 @@ export function AIAssistantPage() {
       try {
         const versionsList = await CardService.getVersionsByReferenceCardId(selectedCardId);
         if (cancelled) return; // Stale response guard
-        setVersions(versionsList);
-        const activeVersion = versionsList.find((v: VersionSummary) => v.IsActive);
-        setSelectedVersionId(activeVersion?.id || (versionsList[0]?.id ?? ''));
+        applyVersions(versionsList);
       } catch (error) {
         if (cancelled) return;
         console.error('Failed to load versions:', error);
@@ -150,6 +152,7 @@ export function AIAssistantPage() {
 
   // Check if there's unsaved data that should trigger navigation warning
   const hasUnsavedDataRef = useRef(false);
+  const generateIdRef = useRef(0);
   hasUnsavedDataRef.current = rawData.trim().length > 0 || (result !== null && result.items.length > 0);
 
   // Handle browser back/forward navigation and close/refresh
@@ -208,15 +211,42 @@ export function AIAssistantPage() {
 
   const selectedCardName = cards.find(c => c.ReferenceCardId === selectedCardId)?.CardName || '';
 
+  const getDefaultVersionId = (versionsList: VersionSummary[]): string => {
+    const activeVersion = versionsList.find((v: VersionSummary) => v.IsActive);
+    return activeVersion?.id || (versionsList[0]?.id ?? '');
+  };
+
+  const applyVersions = (versionsList: VersionSummary[]) => {
+    setVersions(versionsList);
+    setSelectedVersionId(getDefaultVersionId(versionsList));
+  };
+
+  const handleRefreshVersions = async () => {
+    if (!selectedCardId) return;
+    setLoadingVersions(true);
+    try {
+      const versionsList = await CardService.getVersionsByReferenceCardId(selectedCardId);
+      applyVersions(versionsList);
+      toast.success('Versions refreshed');
+    } catch {
+      toast.error('Failed to refresh versions');
+    } finally {
+      setLoadingVersions(false);
+    }
+  };
+
   const clearGenerateAllState = () => {
+    generateIdRef.current++;
+    setLoading(false);
     setCardDetailsResult(null);
     setCardDetailsApplied(false);
     setCombinedError('');
     setCardDetailsError('');
     setGenerateAllActiveTab('card');
-    setCreatedComponentItems({ credits: new Set(), perks: new Set(), multipliers: new Set() });
-    setSelectedItems({ credits: new Set(), perks: new Set(), multipliers: new Set() });
+    setCreatedComponentItems(createEmptyComponentIdSets());
+    setSelectedItems(createEmptyComponentIdSets());
     setItemIdMap(new Map());
+    setTokenUsageExpanded(false);
     setGenerationTypeLocked(false);
   };
 
@@ -237,6 +267,77 @@ export function AIAssistantPage() {
       }
     }
     return map;
+  };
+
+  const getItemIdentityKey = (item: Record<string, unknown>): string => {
+    const title = String(item.Title || item.Name || '').trim().toLowerCase();
+    const category = String(item.Category || '').trim().toLowerCase();
+    const subCategory = String(item.SubCategory || '').trim().toLowerCase();
+    return `${title}|${category}|${subCategory}`;
+  };
+
+  const remapItemIdsForRefinedSection = (
+    componentType: ComponentType,
+    previousItems: Record<string, unknown>[],
+    refinedItems: Record<string, unknown>[],
+    previousMap: Map<string, string>
+  ): Map<string, string> => {
+    const nextMap = new Map(previousMap);
+
+    for (const key of Array.from(nextMap.keys())) {
+      if (key.startsWith(`${componentType}:`)) {
+        nextMap.delete(key);
+      }
+    }
+
+    const signaturePools = new Map<string, string[]>();
+    for (let i = 0; i < previousItems.length; i++) {
+      const existingId = previousMap.get(`${componentType}:${i}`);
+      if (!existingId) continue;
+      const signature = getItemIdentityKey(previousItems[i]);
+      const pool = signaturePools.get(signature) || [];
+      pool.push(existingId);
+      signaturePools.set(signature, pool);
+    }
+
+    const usedIds = new Set<string>();
+    for (let i = 0; i < refinedItems.length; i++) {
+      const nextKey = `${componentType}:${i}`;
+      const signature = getItemIdentityKey(refinedItems[i]);
+      const signaturePool = signaturePools.get(signature);
+
+      let chosenId: string | undefined;
+
+      if (signaturePool && signaturePool.length > 0) {
+        chosenId = signaturePool.shift();
+      }
+
+      if (!chosenId) {
+        const indexFallback = previousMap.get(`${componentType}:${i}`);
+        if (indexFallback && !usedIds.has(indexFallback)) {
+          chosenId = indexFallback;
+        }
+      }
+
+      if (!chosenId || usedIds.has(chosenId)) {
+        chosenId = crypto.randomUUID();
+      }
+
+      usedIds.add(chosenId);
+      nextMap.set(nextKey, chosenId);
+    }
+
+    return nextMap;
+  };
+
+  const getValidIdsForComponentType = (componentType: ComponentType, map: Map<string, string>): Set<string> => {
+    const ids = new Set<string>();
+    for (const [key, value] of map.entries()) {
+      if (key.startsWith(`${componentType}:`)) {
+        ids.add(value);
+      }
+    }
+    return ids;
   };
 
   /**
@@ -291,10 +392,26 @@ export function AIAssistantPage() {
    * Gets total selected items across all tabs.
    */
   const getTotalSelectedCount = (): number => {
-    return selectedItems.credits.size + selectedItems.perks.size + selectedItems.multipliers.size;
+    const countSelectedInType = (componentType: ComponentType): number => {
+      const items = getComponentItems(componentType);
+      const tabKey = componentType === 'credit' ? 'credits' : componentType === 'perk' ? 'perks' : 'multipliers';
+      const selected = selectedItems[tabKey];
+      let count = 0;
+
+      for (let i = 0; i < items.length; i++) {
+        const id = itemIdMap.get(`${componentType}:${i}`);
+        if (id && selected.has(id)) {
+          count++;
+        }
+      }
+
+      return count;
+    };
+
+    return countSelectedInType('credit') + countSelectedInType('perk') + countSelectedInType('multiplier');
   };
 
-  const handleToggleSelection = (tabKey: 'credits' | 'perks' | 'multipliers', itemId: string) => {
+  const handleToggleSelection = (tabKey: ComponentTabKey, itemId: string) => {
     setSelectedItems(prev => {
       const next = new Set(prev[tabKey]);
       if (next.has(itemId)) {
@@ -321,12 +438,12 @@ export function AIAssistantPage() {
     if (!selectedCardId || bulkCreating) return;
 
     // Collect items to create
-    const itemsToCreate: Array<{ type: ComponentType; data: Record<string, unknown>; tabKey: 'credits' | 'perks' | 'multipliers'; itemId: string }> = [];
+    const itemsToCreate: Array<{ type: ComponentType; data: Record<string, unknown>; tabKey: ComponentTabKey; itemId: string }> = [];
 
     const types: ComponentType[] = ['credit', 'perk', 'multiplier'];
     for (const type of types) {
       const items = getComponentItems(type);
-      const tabKey = (type === 'credit' ? 'credits' : type === 'perk' ? 'perks' : 'multipliers') as 'credits' | 'perks' | 'multipliers';
+      const tabKey = (type === 'credit' ? 'credits' : type === 'perk' ? 'perks' : 'multipliers') as ComponentTabKey;
       const created = createdComponentItems[tabKey];
 
       for (let i = 0; i < items.length; i++) {
@@ -372,8 +489,8 @@ export function AIAssistantPage() {
       const response = await ComponentService.bulkCreate(selectedCardId, payload);
 
       // Process results
-      const newCreated = { ...createdComponentItems };
-      const newSelected = { ...selectedItems };
+      const newCreated: ComponentIdSets = { ...createdComponentItems };
+      const newSelected: ComponentIdSets = { ...selectedItems };
       let failedMessages: string[] = [];
 
       for (const result of response.results) {
@@ -394,8 +511,8 @@ export function AIAssistantPage() {
         }
       }
 
-      setCreatedComponentItems(newCreated as any);
-      setSelectedItems(newSelected as any);
+      setCreatedComponentItems(newCreated);
+      setSelectedItems(newSelected);
 
       if (response.summary.failed > 0) {
         toast.error(`Created ${response.summary.created} components (${response.summary.failed} failed)`);
@@ -467,6 +584,7 @@ export function AIAssistantPage() {
       setExistingComponentCounts(null);
       return;
     }
+    let cancelled = false;
     const loadCounts = async () => {
       try {
         const [credits, perks, multipliers] = await Promise.all([
@@ -474,6 +592,7 @@ export function AIAssistantPage() {
           ComponentService.getPerksByCardId(selectedCardId),
           ComponentService.getMultipliersByCardId(selectedCardId),
         ]);
+        if (cancelled) return;
         const total = credits.length + perks.length + multipliers.length;
         if (total > 0) {
           setExistingComponentCounts({
@@ -485,11 +604,13 @@ export function AIAssistantPage() {
           setExistingComponentCounts(null);
         }
       } catch {
+        if (cancelled) return;
         // Silently fail — this is informational only
         setExistingComponentCounts(null);
       }
     };
     loadCounts();
+    return () => { cancelled = true; };
   }, [selectedCardId, isGenerateAll]);
 
   const handleGenerate = async () => {
@@ -504,6 +625,10 @@ export function AIAssistantPage() {
         toast.warning('Please select a card and version first');
         return;
       }
+      if (!selectedCardName) {
+        toast.warning('Selected card is unavailable. Refresh cards and try again.');
+        return;
+      }
     }
 
     setLoading(true);
@@ -513,9 +638,12 @@ export function AIAssistantPage() {
     setShowRefinement(false);
     setRefinementPrompt('');
 
+    const currentGenerateId = ++generateIdRef.current;
+
     if (isGenerateAll) {
       // Generate-all: fire two independent promise chains for partial rendering
       clearGenerateAllState();
+      let hadSuccessfulResponse = false;
 
       const combinedPromise = AIService.generate({
         rawData,
@@ -524,10 +652,13 @@ export function AIAssistantPage() {
         checkerModel: selectedCheckerModel,
         cardName: selectedCardName,
       }).then(data => {
+        if (generateIdRef.current !== currentGenerateId) return;
         const validatedData = validateGenerationResult(data, 'generate-all');
         setResult(validatedData);
         setItemIdMap(buildItemIdMap(validatedData));
+        hadSuccessfulResponse = true;
       }).catch((err: any) => {
+        if (generateIdRef.current !== currentGenerateId) return;
         const errorMessage = err.response?.data?.error || err.message || 'Unknown error';
         toast.error('Component generation failed: ' + errorMessage);
         setCombinedError(errorMessage);
@@ -540,18 +671,22 @@ export function AIAssistantPage() {
         checkerModel: selectedCheckerModel,
         cardName: selectedCardName,
       }).then(data => {
+        if (generateIdRef.current !== currentGenerateId) return;
         const validatedData = validateGenerationResult(data, 'card');
         setCardDetailsResult(validatedData);
+        hadSuccessfulResponse = true;
       }).catch((err: any) => {
+        if (generateIdRef.current !== currentGenerateId) return;
         const errorMessage = err.response?.data?.error || err.message || 'Unknown error';
         toast.error('Card details generation failed: ' + errorMessage);
         setCardDetailsError(errorMessage);
       });
 
       Promise.allSettled([combinedPromise, cardPromise]).then(() => {
+        if (generateIdRef.current !== currentGenerateId) return;
         setLoading(false);
-        setGenerationTypeLocked(true);
-        setShowRefinement(true);
+        setGenerationTypeLocked(hadSuccessfulResponse);
+        setShowRefinement(hadSuccessfulResponse);
       });
     } else {
       // Standard generation (non-generate-all)
@@ -561,6 +696,9 @@ export function AIAssistantPage() {
           generationType,
           batchMode: canBatch && batchMode,
           model: selectedModel,
+          ...(generationType === 'card' && selectedCardName
+            ? { cardName: selectedCardName, checkerModel: selectedCheckerModel }
+            : {}),
         });
         const validatedData = validateGenerationResult(data, generationType);
         setResult(validatedData);
@@ -640,6 +778,7 @@ export function AIAssistantPage() {
 
           // Update only the refined portion of the result
           if (result) {
+            const previousItems = items;
             const updatedItems = result.items.map(group => {
               const json = group.json as Record<string, unknown>;
               if (json._componentType === componentType) {
@@ -662,22 +801,21 @@ export function AIAssistantPage() {
             };
             setResult(updatedResult);
 
-            // Rebuild itemIdMap for the refined section
-            // First remove stale keys for this component type
-            const newMap = new Map(itemIdMap);
-            for (const [key] of newMap) {
-              if (key.startsWith(`${componentType}:`)) {
-                newMap.delete(key);
-              }
-            }
-            // Add keys for refined items, preserving existing IDs by index where possible
             const refinedItems = data.items.map(i => i.json as Record<string, unknown>);
-            for (let i = 0; i < refinedItems.length; i++) {
-              const key = `${componentType}:${i}`;
-              const existingId = itemIdMap.get(key);
-              newMap.set(key, existingId || crypto.randomUUID());
-            }
+            const newMap = remapItemIdsForRefinedSection(componentType, previousItems, refinedItems, itemIdMap);
             setItemIdMap(newMap);
+
+            const tabKey = componentType === 'credit' ? 'credits' : componentType === 'perk' ? 'perks' : 'multipliers';
+            const validIds = getValidIdsForComponentType(componentType, newMap);
+
+            setCreatedComponentItems(prev => ({
+              ...prev,
+              [tabKey]: new Set([...prev[tabKey]].filter(id => validIds.has(id))),
+            }));
+            setSelectedItems(prev => ({
+              ...prev,
+              [tabKey]: new Set([...prev[tabKey]].filter(id => validIds.has(id))),
+            }));
           }
         }
       } else {
@@ -698,6 +836,9 @@ export function AIAssistantPage() {
           batchMode: result.items.length > 1,
           refinementPrompt,
           previousOutput: previousOutput as Record<string, unknown> | Record<string, unknown>[],
+          ...(generationType === 'card' && selectedCardName
+            ? { cardName: selectedCardName, checkerModel: selectedCheckerModel }
+            : {}),
         });
         const validatedData = validateGenerationResult(data, generationType);
         setResult(validatedData);
@@ -764,18 +905,11 @@ export function AIAssistantPage() {
     setModalOpen(true);
   };
 
-  const CARD_FIELDS_TO_APPLY = [
-    'CardNetwork', 'CardDetails', 'CardPrimaryColor', 'CardSecondaryColor',
-    'AnnualFee', 'ForeignExchangeFee', 'ForeignExchangeFeePercentage',
-    'RewardsCurrency', 'PointsPerDollar',
-  ];
-
   /**
-   * Apply card details JSON to a selected version.
+   * Opens the card details modal pre-filled with AI-generated JSON.
    * Works for both generate-all (cardDetailsResult) and standard card type (result).
    */
-  const handleApplyCardDetails = async (sourceJson?: Record<string, unknown>) => {
-    // Determine source: explicit param, generate-all cardDetailsResult, or standard result
+  const handleApplyCardDetails = (sourceJson?: Record<string, unknown>) => {
     const json = sourceJson
       || (cardDetailsResult?.items?.[0]?.json as Record<string, unknown> | undefined)
       || (generationType === 'card' && result?.items?.[0]?.json && !Array.isArray(result.items[0].json)
@@ -787,27 +921,9 @@ export function AIAssistantPage() {
       return;
     }
 
-    const versionName = versions.find(v => v.id === selectedVersionId)?.VersionName || selectedVersionId;
-    const confirmed = window.confirm(
-      `Apply card details to version "${versionName}" of "${selectedCardName}"?\n\nExisting field values will be overwritten.`
-    );
-    if (!confirmed) return;
-
-    try {
-      const mappedData: Record<string, unknown> = {};
-      for (const field of CARD_FIELDS_TO_APPLY) {
-        if (json[field] !== undefined) {
-          mappedData[field] = json[field];
-        }
-      }
-
-      await CardService.updateCard(selectedVersionId, mappedData as any);
-      setCardDetailsApplied(true);
-      toast.success(`Card details applied to ${versionName}`);
-    } catch (err: any) {
-      console.error('Failed to apply card details:', err);
-      toast.error('Failed to apply card details: ' + (err.message || 'Unknown error'));
-    }
+    setPendingCardDetailsJson(json);
+    setCardDetailsModalKey(k => k + 1);
+    setCardDetailsModalOpen(true);
   };
 
   const handleCreateGenerateAllComponent = (item: Record<string, unknown>, componentType: ComponentType, itemIndex: number) => {
@@ -829,6 +945,15 @@ export function AIAssistantPage() {
       case 'multiplier': return 'Multiplier';
       default: return '';
     }
+  };
+
+  /**
+   * Validates a single component item against its type schema.
+   * Used for generate-all items which aren't validated by the top-level validateGenerationResult.
+   */
+  const validateComponentItem = (item: Record<string, unknown>, componentType: ComponentType): boolean => {
+    const result = validateResponse(componentType, item);
+    return result.valid;
   };
 
   const getItemTitle = (item: GeneratedItem): string => {
@@ -949,7 +1074,7 @@ export function AIAssistantPage() {
       
       // Validate each field
       const validatedFields: GeneratedField[] = item.fields.map((field) => {
-        const fieldValidation = validateField(type, field.key, field.value);
+        const fieldValidation = validateField(type, field.key, field.value, !Array.isArray(item.json) ? item.json as Record<string, unknown> : undefined);
         return {
           ...field,
           isValid: fieldValidation.valid,
@@ -990,7 +1115,7 @@ export function AIAssistantPage() {
                     }
                   }}
                   options={GENERATION_TYPE_OPTIONS}
-                  disabled={generationTypeLocked}
+                  disabled={loading || generationTypeLocked}
                 />
                 {generationTypeLocked && (
                   <Button
@@ -1104,19 +1229,7 @@ export function AIAssistantPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        if (selectedCardId) {
-                          setLoadingVersions(true);
-                          CardService.getVersionsByReferenceCardId(selectedCardId)
-                            .then(v => {
-                              setVersions(v);
-                              const active = v.find((ver: VersionSummary) => ver.IsActive);
-                              setSelectedVersionId(active?.id || (v[0]?.id ?? ''));
-                            })
-                            .catch(() => toast.error('Failed to refresh versions'))
-                            .finally(() => setLoadingVersions(false));
-                        }
-                      }}
+                      onClick={handleRefreshVersions}
                       disabled={loadingVersions}
                       title="Refresh versions"
                       className="icon-button"
@@ -1129,7 +1242,7 @@ export function AIAssistantPage() {
             )}
             <Button
               onClick={handleGenerate}
-              disabled={loading || !rawData.trim() || (isGenerateAll && (!selectedCardId || !selectedVersionId || loadingVersions))}
+              disabled={loading || !rawData.trim() || (isGenerateAll && (!selectedCardId || !selectedVersionId || !selectedCardName || loadingVersions))}
               className="generate-button"
             >
               {loading ? (
@@ -1150,6 +1263,47 @@ export function AIAssistantPage() {
             <div className="section-header">
               <h2>Generated Output</h2>
             </div>
+
+            {(() => {
+              const rows: Array<{ label: string; entry: TokenBreakdownEntry }> = [];
+              if (result?.tokenBreakdown?.generation) {
+                rows.push({ label: `Components (${result.tokenBreakdown.generation.model.includes('flash') ? 'Flash' : 'Pro'})`, entry: result.tokenBreakdown.generation });
+              }
+              if (result?.tokenBreakdown?.validation) {
+                rows.push({ label: `Component Check (${result.tokenBreakdown.validation.model.includes('flash') ? 'Flash' : 'Pro'})`, entry: result.tokenBreakdown.validation });
+              }
+              if (cardDetailsResult?.tokenBreakdown?.generation) {
+                rows.push({ label: `Card Details (${cardDetailsResult.tokenBreakdown.generation.model.includes('flash') ? 'Flash' : 'Pro'})`, entry: cardDetailsResult.tokenBreakdown.generation });
+              }
+              if (cardDetailsResult?.tokenBreakdown?.validation) {
+                rows.push({ label: `Card Details Check (${cardDetailsResult.tokenBreakdown.validation.model.includes('flash') ? 'Flash' : 'Pro'})`, entry: cardDetailsResult.tokenBreakdown.validation });
+              }
+              if (rows.length === 0) return null;
+              const totalCost = rows.reduce((sum, r) => sum + calculateCallCost(r.entry.inputTokens, r.entry.outputTokens, r.entry.model), 0);
+              const totalInput = rows.reduce((s, r) => s + r.entry.inputTokens, 0);
+              const totalOutput = rows.reduce((s, r) => s + r.entry.outputTokens, 0);
+              return (
+                <div className="token-usage-section">
+                  <button className="token-usage-toggle" onClick={() => setTokenUsageExpanded(!tokenUsageExpanded)}>
+                    <span>{formatCost(totalCost)} · {formatTokenCount(totalInput)} in / {formatTokenCount(totalOutput)} out · {result?.modelUsed || cardDetailsResult?.modelUsed || ''}</span>
+                    <ChevronDown size={14} className={tokenUsageExpanded ? 'rotated' : ''} />
+                  </button>
+                  {tokenUsageExpanded && (
+                    <table className="token-usage-table">
+                      <thead><tr><th>Call</th><th>Input</th><th>Output</th><th>Thinking</th><th>Cost</th></tr></thead>
+                      <tbody>
+                        {rows.map((row, i) => (
+                          <tr key={i}><td>{row.label}</td><td>{formatTokenCount(row.entry.inputTokens)}</td><td>{formatTokenCount(row.entry.outputTokens)}</td><td>{row.entry.thinkingTokens ? formatTokenCount(row.entry.thinkingTokens) : '--'}</td><td>{formatCost(calculateCallCost(row.entry.inputTokens, row.entry.outputTokens, row.entry.model))}</td></tr>
+                        ))}
+                        {rows.length > 1 && (
+                          <tr className="total-row"><td>Total</td><td>{formatTokenCount(totalInput)}</td><td>{formatTokenCount(totalOutput)}</td><td>{formatTokenCount(rows.reduce((s, r) => s + (r.entry.thinkingTokens || 0), 0))}</td><td>{formatCost(totalCost)}</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="generate-all-tabs">
               <div className="generate-all-tabs-header">
@@ -1184,29 +1338,38 @@ export function AIAssistantPage() {
                     {!cardDetailsResult && !cardDetailsError && (
                       <div className="tab-loading"><Loader2 size={16} className="spinning" /> Generating card details...</div>
                     )}
-                    {cardDetailsResult?.items?.[0] && (
-                      <>
-                        <div className="card-details-context">
-                          Card: <strong>{selectedCardName}</strong> | Version: <strong>{versions.find(v => v.id === selectedVersionId)?.VersionName || selectedVersionId}</strong>
-                        </div>
-                        <div className="json-output">
-                          <pre className="json-content">
-                            {JSON.stringify(cardDetailsResult.items[0].json, null, 2)}
-                          </pre>
-                        </div>
-                        <div className="apply-card-details">
-                          {cardDetailsApplied ? (
-                            <span className="applied-badge">
-                              <CheckCircle size={14} /> Applied
-                            </span>
-                          ) : (
-                            <Button onClick={() => handleApplyCardDetails()} variant="outline" size="sm">
-                              Apply to Version
-                            </Button>
-                          )}
-                        </div>
-                      </>
-                    )}
+                    {cardDetailsResult?.items?.[0] && (() => {
+                      const cardItem = cardDetailsResult.items[0];
+                      return (
+                        <>
+                          <div className="card-details-context">
+                            Card: <strong>{selectedCardName}</strong> | Version: <strong>{versions.find(v => v.id === selectedVersionId)?.VersionName || selectedVersionId}</strong>
+                            {cardItem.isValid !== undefined && (
+                              <span className={cn('schema-status', cardItem.isValid ? 'valid' : 'invalid')}>
+                                {cardItem.isValid ? <CheckCircle size={14} /> : <XCircle size={14} />}
+                                {cardItem.isValid ? 'Valid schema' : 'Invalid schema'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="json-output">
+                            <pre className="json-content">
+                              {JSON.stringify(cardItem.json, null, 2)}
+                            </pre>
+                          </div>
+                          <div className="apply-card-details">
+                            {cardDetailsApplied ? (
+                              <span className="applied-badge">
+                                <CheckCircle size={14} /> Applied
+                              </span>
+                            ) : (
+                              <Button onClick={() => handleApplyCardDetails()} variant="outline" size="sm">
+                                Apply to Version
+                              </Button>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
 
@@ -1214,7 +1377,7 @@ export function AIAssistantPage() {
                 {generateAllActiveTab !== 'card' && (() => {
                   const typeMap: Record<string, ComponentType> = { credits: 'credit', perks: 'perk', multipliers: 'multiplier' };
                   const componentType = typeMap[generateAllActiveTab];
-                  const tabKey = generateAllActiveTab as 'credits' | 'perks' | 'multipliers';
+                  const tabKey = generateAllActiveTab as ComponentTabKey;
                   const items = getComponentItems(componentType);
 
                   if (combinedError) {
@@ -1271,7 +1434,7 @@ export function AIAssistantPage() {
                             <span>Select All</span>
                           </label>
                           <span className="selection-count">
-                            {selectedItems[tabKey].size} of {eligibleIds.length} selected
+                            {getTotalSelectedCount()} selected ({eligibleIds.length} eligible in this tab)
                           </span>
                           <div className="bulk-actions">
                             <Button
@@ -1361,6 +1524,24 @@ export function AIAssistantPage() {
                                 </div>
                               ))}
                               <div className="json-output">
+                                <div className="json-header">
+                                  <div className="json-validation-status">
+                                    {(() => {
+                                      const isValid = validateComponentItem(item, componentType);
+                                      return isValid ? (
+                                        <div className="validation-status-row">
+                                          <CheckCircle size={14} className="validation-icon valid" />
+                                          <span className="valid-text">valid schema</span>
+                                        </div>
+                                      ) : (
+                                        <div className="validation-status-row">
+                                          <XCircle size={14} className="validation-icon invalid" />
+                                          <span className="invalid-text">invalid schema</span>
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
                                 <pre className="json-content">
                                   {JSON.stringify(item, null, 2)}
                                 </pre>
@@ -1377,99 +1558,6 @@ export function AIAssistantPage() {
             </div>
           </div>
         )}
-
-        {/* Token usage & cost display — works for all generation types */}
-        {(result || cardDetailsResult) && (() => {
-          const rows: Array<{ label: string; entry: TokenBreakdownEntry }> = [];
-
-          if (isGenerateAll) {
-            // Generate-all: multiple calls
-            if (result?.tokenBreakdown?.generation) {
-              const modelLabel = result.tokenBreakdown.generation.model.includes('flash') ? 'Flash' : 'Pro';
-              rows.push({ label: `Components (${modelLabel})`, entry: result.tokenBreakdown.generation });
-            }
-            if (result?.tokenBreakdown?.validation) {
-              const modelLabel = result.tokenBreakdown.validation.model.includes('flash') ? 'Flash' : 'Pro';
-              rows.push({ label: `Component Check (${modelLabel})`, entry: result.tokenBreakdown.validation });
-            }
-            if (cardDetailsResult?.tokenBreakdown?.generation) {
-              const modelLabel = cardDetailsResult.tokenBreakdown.generation.model.includes('flash') ? 'Flash' : 'Pro';
-              rows.push({ label: `Card Details (${modelLabel})`, entry: cardDetailsResult.tokenBreakdown.generation });
-            }
-            if (cardDetailsResult?.tokenBreakdown?.validation) {
-              const modelLabel = cardDetailsResult.tokenBreakdown.validation.model.includes('flash') ? 'Flash' : 'Pro';
-              rows.push({ label: `Card Details Check (${modelLabel})`, entry: cardDetailsResult.tokenBreakdown.validation });
-            }
-          } else if (result) {
-            // Standard generation: single call, may have tokenBreakdown or just tokenUsage
-            if (result.tokenBreakdown?.generation) {
-              const modelLabel = result.tokenBreakdown.generation.model.includes('flash') ? 'Flash' : 'Pro';
-              rows.push({ label: `Generation (${modelLabel})`, entry: result.tokenBreakdown.generation });
-            } else if (result.tokenUsage) {
-              rows.push({
-                label: `Generation (${result.modelUsed.includes('flash') ? 'Flash' : 'Pro'})`,
-                entry: { inputTokens: result.tokenUsage.inputTokens, outputTokens: result.tokenUsage.outputTokens, model: result.modelUsed },
-              });
-            }
-            if (result.tokenBreakdown?.validation) {
-              const modelLabel = result.tokenBreakdown.validation.model.includes('flash') ? 'Flash' : 'Pro';
-              rows.push({ label: `Validation (${modelLabel})`, entry: result.tokenBreakdown.validation });
-            }
-          }
-
-          if (rows.length === 0) return null;
-
-          const totalCost = rows.reduce((sum, r) => sum + calculateCallCost(r.entry.inputTokens, r.entry.outputTokens, r.entry.model), 0);
-          const totalInput = rows.reduce((s, r) => s + r.entry.inputTokens, 0);
-          const totalOutput = rows.reduce((s, r) => s + r.entry.outputTokens, 0);
-
-          return (
-            <div className="token-usage-section">
-              <button
-                className="token-usage-toggle"
-                onClick={() => setTokenUsageExpanded(!tokenUsageExpanded)}
-              >
-                <span>
-                  {formatCost(totalCost)} · {formatTokenCount(totalInput)} in / {formatTokenCount(totalOutput)} out · {result?.modelUsed || cardDetailsResult?.modelUsed || ''}
-                </span>
-                <ChevronDown size={14} className={tokenUsageExpanded ? 'rotated' : ''} />
-              </button>
-              {tokenUsageExpanded && (
-                <table className="token-usage-table">
-                  <thead>
-                    <tr>
-                      <th>Call</th>
-                      <th>Input</th>
-                      <th>Output</th>
-                      <th>Thinking</th>
-                      <th>Cost</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row, i) => (
-                      <tr key={i}>
-                        <td>{row.label}</td>
-                        <td>{formatTokenCount(row.entry.inputTokens)}</td>
-                        <td>{formatTokenCount(row.entry.outputTokens)}</td>
-                        <td>{row.entry.thinkingTokens ? formatTokenCount(row.entry.thinkingTokens) : '--'}</td>
-                        <td>{formatCost(calculateCallCost(row.entry.inputTokens, row.entry.outputTokens, row.entry.model))}</td>
-                      </tr>
-                    ))}
-                    {rows.length > 1 && (
-                      <tr className="total-row">
-                        <td>Total</td>
-                        <td>{formatTokenCount(totalInput)}</td>
-                        <td>{formatTokenCount(totalOutput)}</td>
-                        <td>{formatTokenCount(rows.reduce((s, r) => s + (r.entry.thinkingTokens || 0), 0))}</td>
-                        <td>{formatCost(totalCost)}</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          );
-        })()}
 
         {!isGenerateAll && result && result.items.length === 0 && (
           <div className="output-section">
@@ -1511,6 +1599,43 @@ export function AIAssistantPage() {
                 </button>
               </div>
             </div>
+
+            {(() => {
+              const rows: Array<{ label: string; entry: TokenBreakdownEntry }> = [];
+              if (result.tokenBreakdown?.generation) {
+                rows.push({ label: `Generation (${result.tokenBreakdown.generation.model.includes('flash') ? 'Flash' : 'Pro'})`, entry: result.tokenBreakdown.generation });
+              } else if (result.tokenUsage) {
+                rows.push({ label: `Generation (${result.modelUsed.includes('flash') ? 'Flash' : 'Pro'})`, entry: { inputTokens: result.tokenUsage.inputTokens, outputTokens: result.tokenUsage.outputTokens, model: result.modelUsed } });
+              }
+              if (result.tokenBreakdown?.validation) {
+                rows.push({ label: `Validation (${result.tokenBreakdown.validation.model.includes('flash') ? 'Flash' : 'Pro'})`, entry: result.tokenBreakdown.validation });
+              }
+              if (rows.length === 0) return null;
+              const totalCost = rows.reduce((sum, r) => sum + calculateCallCost(r.entry.inputTokens, r.entry.outputTokens, r.entry.model), 0);
+              const totalInput = rows.reduce((s, r) => s + r.entry.inputTokens, 0);
+              const totalOutput = rows.reduce((s, r) => s + r.entry.outputTokens, 0);
+              return (
+                <div className="token-usage-section">
+                  <button className="token-usage-toggle" onClick={() => setTokenUsageExpanded(!tokenUsageExpanded)}>
+                    <span>{formatCost(totalCost)} · {formatTokenCount(totalInput)} in / {formatTokenCount(totalOutput)} out · {result.modelUsed}</span>
+                    <ChevronDown size={14} className={tokenUsageExpanded ? 'rotated' : ''} />
+                  </button>
+                  {tokenUsageExpanded && (
+                    <table className="token-usage-table">
+                      <thead><tr><th>Call</th><th>Input</th><th>Output</th><th>Thinking</th><th>Cost</th></tr></thead>
+                      <tbody>
+                        {rows.map((row, i) => (
+                          <tr key={i}><td>{row.label}</td><td>{formatTokenCount(row.entry.inputTokens)}</td><td>{formatTokenCount(row.entry.outputTokens)}</td><td>{row.entry.thinkingTokens ? formatTokenCount(row.entry.thinkingTokens) : '--'}</td><td>{formatCost(calculateCallCost(row.entry.inputTokens, row.entry.outputTokens, row.entry.model))}</td></tr>
+                        ))}
+                        {rows.length > 1 && (
+                          <tr className="total-row"><td>Total</td><td>{formatTokenCount(totalInput)}</td><td>{formatTokenCount(totalOutput)}</td><td>{formatTokenCount(rows.reduce((s, r) => s + (r.entry.thinkingTokens || 0), 0))}</td><td>{formatCost(totalCost)}</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="model-info-row">
               <div className="model-info-group">
@@ -1862,7 +1987,21 @@ export function AIAssistantPage() {
           initialJson={pendingJsonImport || undefined}
         />
       )}
+
+      {/* Card details modal — for applying AI-generated card details to a version */}
+      <CardDetailsModal
+        key={`card-details-${cardDetailsModalKey}`}
+        open={cardDetailsModalOpen}
+        onOpenChange={setCardDetailsModalOpen}
+        versionId={selectedVersionId}
+        versionName={versions.find(v => v.id === selectedVersionId)?.VersionName || selectedVersionId}
+        cardName={selectedCardName}
+        onSuccess={() => {
+          setCardDetailsModalOpen(false);
+          setCardDetailsApplied(true);
+        }}
+        initialJson={pendingCardDetailsJson || undefined}
+      />
     </div>
   );
 }
-

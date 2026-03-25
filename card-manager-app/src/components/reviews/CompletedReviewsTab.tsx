@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, ChevronRight, ChevronDown, RotateCcw, CheckCircle, XCircle,
   AlertTriangle, Plus, Minus, X, ClipboardCheck, Loader2,
@@ -116,12 +116,36 @@ function IssueSummary({ review }: { review: ReviewResult }) {
   );
 }
 
+const VALID_FILTER_MODES: FilterMode[] = ['all', 'attention', 'failed', 'healthy', 'successful'];
+
 export function CompletedReviewsTab() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Derive filter/search from URL params
+  const searchQuery = searchParams.get('q') || '';
+  const filterModeParam = searchParams.get('filter');
+  const filterMode: FilterMode = filterModeParam && VALID_FILTER_MODES.includes(filterModeParam as FilterMode)
+    ? filterModeParam as FilterMode : 'all';
+
+  const setSearchQuery = (value: string) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (value) { next.set('q', value); } else { next.delete('q'); }
+      return next;
+    }, { replace: true });
+  };
+
+  const setFilterMode = (value: FilterMode) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (value !== 'all') { next.set('filter', value); } else { next.delete('filter'); }
+      return next;
+    }, { replace: true });
+  };
+
   const [reviews, setReviews] = useState<ReviewResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [loadingMore, setLoadingMore] = useState(false);
   const [collapsedDays, setCollapsedDays] = useState<Set<string>>(new Set());

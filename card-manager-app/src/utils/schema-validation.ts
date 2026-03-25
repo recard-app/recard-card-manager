@@ -5,6 +5,7 @@
  */
 
 import type { GenerationType } from '@/services/ai.service';
+import { isValidAICategory, isValidAISubCategory } from '@/constants/ai-categories';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -20,6 +21,23 @@ export const VALID_CREDIT_TIME_PERIODS: CreditTimePeriod[] = [
 ];
 
 export const VALID_REWARDS_CURRENCIES = ['points', 'miles', 'cash back'];
+
+// Category/subcategory validation uses the shared AI categories constant
+// imported from @/constants/ai-categories (single source of truth, mirrors backend)
+function validateCategoryValue(category: string): FieldValidationResult {
+  if (!isValidAICategory(category)) {
+    return { valid: false, reason: `Invalid category: "${category}"` };
+  }
+  return { valid: true };
+}
+
+function validateSubCategoryValue(category: string, subCategory: string): FieldValidationResult {
+  if (subCategory === '') return { valid: true };
+  if (!isValidAISubCategory(category, subCategory)) {
+    return { valid: false, reason: `Invalid subcategory "${subCategory}" for category "${category}"` };
+  }
+  return { valid: true };
+}
 
 export type MultiplierType = 'standard' | 'rotating' | 'selectable';
 
@@ -54,6 +72,8 @@ export const SCHEMA_FIELDS: Record<ValidatableGenerationType, string[]> = {
     'Details',
     'isAnniversaryBased',
     'isNonMonetary',
+    'EffectiveFrom',
+    'EffectiveTo',
   ],
   perk: [
     'Title',
@@ -62,6 +82,8 @@ export const SCHEMA_FIELDS: Record<ValidatableGenerationType, string[]> = {
     'Description',
     'Requirements',
     'Details',
+    'EffectiveFrom',
+    'EffectiveTo',
   ],
   multiplier: [
     'Name',
@@ -74,6 +96,8 @@ export const SCHEMA_FIELDS: Record<ValidatableGenerationType, string[]> = {
     'multiplierType',
     'allowedCategories',
     'scheduleEntries',
+    'EffectiveFrom',
+    'EffectiveTo',
   ],
   'rotating-categories': [
     'category',
@@ -104,7 +128,8 @@ export interface FieldValidationResult {
 export function validateField(
   type: GenerationType,
   key: string,
-  value: unknown
+  value: unknown,
+  obj?: Record<string, unknown>
 ): FieldValidationResult {
   // generate-all uses a different structure (tabs with per-type items), skip field validation
   if (type === 'generate-all') {
@@ -117,16 +142,16 @@ export function validateField(
     return { valid: false, reason: `Unexpected field for ${type}` };
   }
 
-  // Type-specific field validation
+  // Type-specific field validation (pass obj context for cross-field checks like SubCategory)
   switch (type) {
     case 'card':
       return validateCardField(key, value);
     case 'credit':
-      return validateCreditField(key, value);
+      return validateCreditField(key, value, obj);
     case 'perk':
-      return validatePerkField(key, value);
+      return validatePerkField(key, value, obj);
     case 'multiplier':
-      return validateMultiplierField(key, value);
+      return validateMultiplierField(key, value, obj);
     case 'rotating-categories':
       return validateRotatingCategoryField(key, value);
     default:
@@ -181,10 +206,9 @@ function validateCardField(key: string, value: unknown): FieldValidationResult {
   }
 }
 
-function validateCreditField(key: string, value: unknown): FieldValidationResult {
+function validateCreditField(key: string, value: unknown, obj?: Record<string, unknown>): FieldValidationResult {
   switch (key) {
     case 'Title':
-    case 'Category':
     case 'Description':
       if (typeof value !== 'string') {
         return { valid: false, reason: 'Must be a string' };
@@ -194,7 +218,24 @@ function validateCreditField(key: string, value: unknown): FieldValidationResult
       }
       return { valid: true };
 
+    case 'Category':
+      if (typeof value !== 'string') {
+        return { valid: false, reason: 'Must be a string' };
+      }
+      if (value.trim() === '') {
+        return { valid: false, reason: 'Cannot be empty' };
+      }
+      return validateCategoryValue(value);
+
     case 'SubCategory':
+      if (typeof value !== 'string') {
+        return { valid: false, reason: 'Must be a string' };
+      }
+      if (obj && typeof obj.Category === 'string') {
+        return validateSubCategoryValue(obj.Category, value);
+      }
+      return { valid: true };
+
     case 'Requirements':
     case 'Details':
       if (typeof value !== 'string') {
@@ -245,10 +286,9 @@ function validateCreditField(key: string, value: unknown): FieldValidationResult
   }
 }
 
-function validatePerkField(key: string, value: unknown): FieldValidationResult {
+function validatePerkField(key: string, value: unknown, obj?: Record<string, unknown>): FieldValidationResult {
   switch (key) {
     case 'Title':
-    case 'Category':
     case 'Description':
       if (typeof value !== 'string') {
         return { valid: false, reason: 'Must be a string' };
@@ -258,7 +298,24 @@ function validatePerkField(key: string, value: unknown): FieldValidationResult {
       }
       return { valid: true };
 
+    case 'Category':
+      if (typeof value !== 'string') {
+        return { valid: false, reason: 'Must be a string' };
+      }
+      if (value.trim() === '') {
+        return { valid: false, reason: 'Cannot be empty' };
+      }
+      return validateCategoryValue(value);
+
     case 'SubCategory':
+      if (typeof value !== 'string') {
+        return { valid: false, reason: 'Must be a string' };
+      }
+      if (obj && typeof obj.Category === 'string') {
+        return validateSubCategoryValue(obj.Category, value);
+      }
+      return { valid: true };
+
     case 'Requirements':
     case 'Details':
       if (typeof value !== 'string') {
@@ -306,7 +363,7 @@ function isValidScheduleEntry(entry: unknown): boolean {
   );
 }
 
-function validateMultiplierField(key: string, value: unknown): FieldValidationResult {
+function validateMultiplierField(key: string, value: unknown, obj?: Record<string, unknown>): FieldValidationResult {
   switch (key) {
     case 'Name':
       if (typeof value !== 'string') {
@@ -326,6 +383,17 @@ function validateMultiplierField(key: string, value: unknown): FieldValidationRe
       if (typeof value !== 'string') {
         return { valid: false, reason: 'Must be a string' };
       }
+      if (value === '') return { valid: true }; // Empty is valid for rotating/selectable
+      return validateCategoryValue(value);
+
+    case 'SubCategory':
+      if (typeof value !== 'string') {
+        return { valid: false, reason: 'Must be a string' };
+      }
+      if (value === '') return { valid: true };
+      if (obj && typeof obj.Category === 'string' && obj.Category !== '') {
+        return validateSubCategoryValue(obj.Category, value);
+      }
       return { valid: true };
 
     case 'Description':
@@ -337,7 +405,6 @@ function validateMultiplierField(key: string, value: unknown): FieldValidationRe
       }
       return { valid: true };
 
-    case 'SubCategory':
     case 'Requirements':
     case 'Details':
       if (typeof value !== 'string') {
@@ -498,7 +565,7 @@ export function validateResponse(
   // Check each expected field
   for (const field of expectedFields) {
     const value = (obj as Record<string, unknown>)[field];
-    const result = validateField(type, field, value);
+    const result = validateField(type, field, value, obj as Record<string, unknown>);
     fieldResults[field] = result;
 
     if (!result.valid) {
@@ -636,7 +703,7 @@ export function extractValidFieldsFromJson(
     }
 
     const value = obj[field];
-    const validationResult = validateField(type, field, value);
+    const validationResult = validateField(type, field, value, obj);
 
     if (validationResult.valid) {
       validFields[field] = value;
@@ -655,4 +722,3 @@ export function extractValidFieldsFromJson(
     skippedCount: skippedFields.length,
   };
 }
-

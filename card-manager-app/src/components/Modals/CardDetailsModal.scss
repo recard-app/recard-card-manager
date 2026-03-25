@@ -1,0 +1,43 @@
+@use '@/styling/variables' as *;
+
+.card-details-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.card-details-modal-preview {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm;
+  background: $neutral-gray-50;
+  border-radius: $border-radius-sm;
+
+  .preview-label {
+    font-size: $font-size-xs;
+    color: $neutral-gray-600;
+  }
+}
+
+.card-details-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $spacing-sm $spacing-md;
+
+  // Full-width items
+  .color-row {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: $spacing-md;
+
+    > * {
+      flex: 1;
+    }
+  }
+
+  // Textarea spans full width
+  > *:last-child {
+    grid-column: 1 / -1;
+  }
+}

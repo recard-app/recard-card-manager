@@ -21,6 +21,10 @@
     height: 32px;
     border-radius: $border-radius-sm;
     color: $neutral-gray-600;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
