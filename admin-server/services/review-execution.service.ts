@@ -426,7 +426,7 @@ export async function executeCardReview(
         thinkingTokens: comparisonResponse.tokenUsage?.thinkingTokens,
         model: comparisonResponse.modelUsed,
       },
-      cost: calculateReviewCost(geminiInputTokens, geminiOutputTokens),
+      cost: calculateReviewCost(geminiInputTokens, geminiOutputTokens, 0, comparisonResponse.modelUsed),
     };
 
     // Step 8: Check if review was cancelled while processing

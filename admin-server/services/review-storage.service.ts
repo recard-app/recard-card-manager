@@ -343,6 +343,7 @@ export async function getLastReviewedDates(): Promise<Record<string, string>> {
   // which is more than enough to find the latest review per card.
   const snapshot = await db.collection(RESULTS_COLLECTION)
     .where('status', '==', 'success')
+    .where('reviewStatus', '==', 'reviewed')
     .orderBy('reviewedAt', 'desc')
     .limit(500)
     .get();

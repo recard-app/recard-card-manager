@@ -93,24 +93,24 @@
         font-weight: 500;
 
         &.match {
-          color: $success-green;
+          color: #16a34a;
         }
 
         &.mismatch,
         &.outdated {
-          color: $error-red;
+          color: #dc2626;
         }
 
         &.questionable {
-          color: $warning-yellow;
+          color: #ca8a04;
         }
 
         &.new {
-          color: #1e88e5;
+          color: #2563eb;
         }
 
         &.missing {
-          color: $neutral-gray-600;
+          color: #dc2626;
         }
 
         &.none {

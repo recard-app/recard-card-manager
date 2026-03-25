@@ -9,11 +9,30 @@ import {
 } from 'lucide-react';
 import { FieldComparisonCard } from './FieldComparisonCard';
 import { ComponentComparisonTabs } from './ComponentComparisonTabs';
-import type { ComparisonResponse } from '@/types/comparison-types';
+import type { ComparisonResponse, ComponentComparisonResult } from '@/types/comparison-types';
+import { sortCardDetails } from '@/utils/comparison-sort';
 import './ComparisonResults.scss';
 
 interface ComparisonResultsProps {
   result: ComparisonResponse;
+  onEditComponent?: (type: 'credits' | 'perks' | 'multipliers', component: ComponentComparisonResult) => void;
+}
+
+// Gemini pricing per 1M tokens (USD)
+// Source: https://ai.google.dev/gemini-api/docs/pricing
+const MODEL_PRICING: Record<string, { input: number; inputLarge: number; output: number; outputLarge: number }> = {
+  'gemini-3.1-pro-preview': { input: 2.00, inputLarge: 4.00, output: 12.00, outputLarge: 18.00 },
+  'gemini-2.5-pro':         { input: 1.25, inputLarge: 2.50, output: 10.00, outputLarge: 15.00 },
+  'gemini-3-flash-preview': { input: 0.50, inputLarge: 0.50, output: 3.00, outputLarge: 3.00 },
+};
+const DEFAULT_PRICING = MODEL_PRICING['gemini-3.1-pro-preview'];
+
+function estimateCost(model: string, inputTokens: number, outputTokens: number): string {
+  const pricing = MODEL_PRICING[model] ?? DEFAULT_PRICING;
+  const inputRate = inputTokens > 200_000 ? pricing.inputLarge : pricing.input;
+  const outputRate = inputTokens > 200_000 ? pricing.outputLarge : pricing.output;
+  const total = (inputTokens / 1_000_000) * inputRate + (outputTokens / 1_000_000) * outputRate;
+  return `$${total.toFixed(3)}`;
 }
 
 // Helper to format token counts
@@ -48,7 +67,7 @@ function countComponentStatuses(
   return counts;
 }
 
-export function ComparisonResults({ result }: ComparisonResultsProps) {
+export function ComparisonResults({ result, onEditComponent }: ComparisonResultsProps) {
   // Count card detail statuses
   const cardCounts = {
     match: result.cardDetails.filter((f) => f.status === 'match').length,
@@ -82,6 +101,14 @@ export function ComparisonResults({ result }: ComparisonResultsProps) {
                 </Badge>
                 <Badge variant="secondary" className="model-badge">
                   Output: {formatTokenCount(result.tokenUsage.outputTokens)}
+                </Badge>
+                {result.tokenUsage.thinkingTokens != null && result.tokenUsage.thinkingTokens > 0 && (
+                  <Badge variant="secondary" className="model-badge">
+                    Thinking: {formatTokenCount(result.tokenUsage.thinkingTokens)}
+                  </Badge>
+                )}
+                <Badge variant="secondary" className="model-badge">
+                  Cost: {estimateCost(result.modelUsed, result.tokenUsage.inputTokens, result.tokenUsage.outputTokens)}
                 </Badge>
               </>
             )}
@@ -259,7 +286,7 @@ export function ComparisonResults({ result }: ComparisonResultsProps) {
           </div>
         </div>
         <div className="fields-grid">
-          {result.cardDetails.map((field, index) => (
+          {sortCardDetails(result.cardDetails).map(({ item: field, index }) => (
             <FieldComparisonCard key={field.fieldName || index} field={field} />
           ))}
         </div>
@@ -274,6 +301,7 @@ export function ComparisonResults({ result }: ComparisonResultsProps) {
           perks={result.perks}
           credits={result.credits}
           multipliers={result.multipliers}
+          onEditComponent={onEditComponent}
         />
       </div>
     </div>

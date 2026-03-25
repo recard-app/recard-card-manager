@@ -32,9 +32,10 @@ import { PerkModal } from '@/components/Modals/PerkModal';
 import { MultiplierModal } from '@/components/Modals/MultiplierModal';
 import { UrlManagementModal } from '@/components/Modals/UrlManagementModal';
 import type { ReviewResult } from '@/types/review-types';
-import type { ComponentComparisonResult, FieldComparisonResult } from '@/types/comparison-types';
+import type { ComponentComparisonResult } from '@/types/comparison-types';
 import type { CardCredit, CardPerk, CardMultiplier } from '@/types';
 import type { CreditCardName } from '@/types/ui-types';
+import { sortCardDetails, sortComponents } from '@/utils/comparison-sort';
 import './CardReviewDetailPage.scss';
 
 type ComparisonTab = 'cardDetails' | 'credits' | 'perks' | 'multipliers' | 'urls';
@@ -48,20 +49,6 @@ function isUrlNeedsReview(urlResult: ReviewUrlResult): boolean {
   return urlResult.status === 'broken' || urlResult.status === 'stale' || urlResult.truncated;
 }
 
-const CARD_DETAIL_SEVERITY: Record<string, number> = { mismatch: 0, questionable: 1, missing_from_website: 2, match: 3 };
-const COMPONENT_SEVERITY: Record<string, number> = { outdated: 0, new: 1, missing: 2, questionable: 3, match: 4 };
-
-function sortCardDetails(items: FieldComparisonResult[]) {
-  return items
-    .map((item, index) => ({ item, index }))
-    .sort((a, b) => (CARD_DETAIL_SEVERITY[a.item.status] ?? 99) - (CARD_DETAIL_SEVERITY[b.item.status] ?? 99));
-}
-
-function sortComponents(items: ComponentComparisonResult[]) {
-  return items
-    .map((item, index) => ({ item, index }))
-    .sort((a, b) => (COMPONENT_SEVERITY[a.item.status] ?? 99) - (COMPONENT_SEVERITY[b.item.status] ?? 99));
-}
 
 function sortUrls(items: ReviewUrlResult[]) {
   const getOrder = (u: ReviewUrlResult) => {

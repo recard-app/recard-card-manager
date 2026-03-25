@@ -28,6 +28,8 @@ export function ReviewsPage() {
       if (!window.confirm('You have unsaved comparison results. Switch tabs anyway?')) {
         return;
       }
+      // User confirmed -- clear the flag since ManualCompareTab is about to unmount
+      setHasUnsavedManualData(false);
     }
     setSearchParams({ tab }, { replace: true });
   };

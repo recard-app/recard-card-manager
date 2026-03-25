@@ -13,12 +13,17 @@ import { Combobox } from '@/components/ui/Combobox';
 import { Select } from '@/components/ui/Select';
 import { toast } from 'sonner';
 import { CardService } from '@/services/card.service';
+import { ComponentService } from '@/services/component.service';
 import { ComparisonService } from '@/services/comparison.service';
 import { ComparisonResults } from '@/components/comparison/ComparisonResults';
+import { CreditModal } from '@/components/Modals/CreditModal';
+import { PerkModal } from '@/components/Modals/PerkModal';
+import { MultiplierModal } from '@/components/Modals/MultiplierModal';
 import { AI_MODELS, AI_MODEL_OPTIONS } from '@/services/ai.service';
 import type { AIModel } from '@/services/ai.service';
 import type { CardWithStatus, VersionSummary } from '@/types/ui-types';
-import type { ComparisonResponse } from '@/types/comparison-types';
+import type { ComparisonResponse, ComponentComparisonResult } from '@/types/comparison-types';
+import type { CardCredit, CardPerk, CardMultiplier } from '@/types';
 import './ManualCompareTab.scss';
 
 interface ManualCompareTabProps {
@@ -40,6 +45,50 @@ export function ManualCompareTab({ onUnsavedDataChange }: ManualCompareTabProps)
   const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS.GEMINI_31_PRO_PREVIEW);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ComparisonResponse | null>(null);
+
+  // Inline edit modal state
+  const [editModalType, setEditModalType] = useState<'credits' | 'perks' | 'multipliers' | null>(null);
+  const [editingComponent, setEditingComponent] = useState<CardCredit | CardPerk | CardMultiplier | null>(null);
+  const [editInitialJson, setEditInitialJson] = useState<Record<string, unknown> | undefined>(undefined);
+  const [editModalKey, setEditModalKey] = useState(0);
+
+  const handleEditComponent = async (
+    componentType: 'credits' | 'perks' | 'multipliers',
+    component: ComponentComparisonResult
+  ) => {
+    if (!selectedCardId) return;
+
+    if (component.status === 'new') {
+      setEditingComponent(null);
+      setEditInitialJson(component.proposedFix ?? undefined);
+    } else if (component.id) {
+      try {
+        let existing: CardCredit | CardPerk | CardMultiplier | undefined;
+        if (componentType === 'credits') {
+          const items = await ComponentService.getCreditsByCardId(selectedCardId);
+          existing = items.find(c => c.id === component.id);
+        } else if (componentType === 'perks') {
+          const items = await ComponentService.getPerksByCardId(selectedCardId);
+          existing = items.find(p => p.id === component.id);
+        } else if (componentType === 'multipliers') {
+          const items = await ComponentService.getMultipliersByCardId(selectedCardId);
+          existing = items.find(m => m.id === component.id);
+        }
+        if (!existing) {
+          toast.error('Component not found -- it may have been deleted');
+          return;
+        }
+        setEditingComponent(existing);
+        setEditInitialJson(undefined);
+      } catch {
+        toast.error('Failed to load component data');
+        return;
+      }
+    }
+
+    setEditModalType(componentType);
+    setEditModalKey(k => k + 1);
+  };
 
   // Track unsaved data for navigation warning
   const hasUnsavedData = websiteText.trim().length > 0 || result !== null;
@@ -82,10 +131,14 @@ export function ManualCompareTab({ onUnsavedDataChange }: ManualCompareTabProps)
       return;
     }
 
+    let stale = false;
+
     async function loadVersions() {
       setLoadingVersions(true);
       try {
         const versionsList = await CardService.getVersionsByReferenceCardId(selectedCardId);
+
+        if (stale) return;
 
         versionsList.sort((a, b) => {
           const aDate = a.effectiveTo || '';
@@ -104,13 +157,16 @@ export function ManualCompareTab({ onUnsavedDataChange }: ManualCompareTabProps)
           setSelectedVersionId('');
         }
       } catch (error) {
+        if (stale) return;
         console.error('Failed to load versions:', error);
         toast.error('Failed to load versions');
       } finally {
-        setLoadingVersions(false);
+        if (!stale) setLoadingVersions(false);
       }
     }
     loadVersions();
+
+    return () => { stale = true; };
   }, [selectedCardId]);
 
   const handleCompare = async () => {
@@ -261,7 +317,47 @@ Copy all relevant text from the card's official page including:
       )}
 
       {/* Results */}
-      {result && !loading && <ComparisonResults result={result} />}
+      {result && !loading && (
+        <ComparisonResults
+          result={result}
+          onEditComponent={handleEditComponent}
+        />
+      )}
+
+      {/* Inline Edit Modals */}
+      {selectedCardId && editModalType === 'credits' && (
+        <CreditModal
+          key={`credit-modal-${editModalKey}`}
+          open={true}
+          onOpenChange={(open) => { if (!open) setEditModalType(null); }}
+          referenceCardId={selectedCardId}
+          credit={editingComponent as CardCredit | null}
+          onSuccess={() => { setEditModalType(null); toast.success('Credit saved'); }}
+          initialJson={editInitialJson}
+        />
+      )}
+      {selectedCardId && editModalType === 'perks' && (
+        <PerkModal
+          key={`perk-modal-${editModalKey}`}
+          open={true}
+          onOpenChange={(open) => { if (!open) setEditModalType(null); }}
+          referenceCardId={selectedCardId}
+          perk={editingComponent as CardPerk | null}
+          onSuccess={() => { setEditModalType(null); toast.success('Perk saved'); }}
+          initialJson={editInitialJson}
+        />
+      )}
+      {selectedCardId && editModalType === 'multipliers' && (
+        <MultiplierModal
+          key={`multiplier-modal-${editModalKey}`}
+          open={true}
+          onOpenChange={(open) => { if (!open) setEditModalType(null); }}
+          referenceCardId={selectedCardId}
+          multiplier={editingComponent as CardMultiplier | null}
+          onSuccess={() => { setEditModalType(null); toast.success('Multiplier saved'); }}
+          initialJson={editInitialJson}
+        />
+      )}
     </div>
   );
 }

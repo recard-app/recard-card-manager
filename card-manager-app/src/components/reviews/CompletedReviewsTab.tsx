@@ -359,6 +359,7 @@ export function CompletedReviewsTab() {
                       <span className="col-review-status">Status</span>
                       <span className="col-health">Health</span>
                       <span className="col-issues">Issues</span>
+                      <span className="col-cost">Cost</span>
                       <span className="col-actions"></span>
                     </div>
                     <div className="table-body">
@@ -405,6 +406,11 @@ export function CompletedReviewsTab() {
                                   Retry
                                 </Button>
                               )}
+                            </span>
+                            <span className="col-cost">
+                              {review.usage?.cost?.total != null
+                                ? `$${review.usage.cost.total.toFixed(2)}`
+                                : '--'}
                             </span>
                             <span className="col-actions">
                               <button

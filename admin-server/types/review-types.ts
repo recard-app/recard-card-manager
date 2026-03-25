@@ -101,15 +101,24 @@ export interface ReviewHealth {
  * Gemini API pricing constants (per 1M tokens, in USD)
  *
  * Source: https://ai.google.dev/gemini-api/docs/pricing
- * Model: gemini-3.1-pro-preview
  */
-export const GEMINI_PRICING = {
-  inputPerMToken: 2.00,                  // Prompts <= 200K tokens
-  inputLargePerMToken: 4.00,             // Prompts > 200K tokens
-  outputPerMToken: 12.00,                // Includes thinking tokens, prompts <= 200K
-  outputLargePerMToken: 18.00,           // Includes thinking tokens, prompts > 200K
-  searchGroundingFreeQueries: 5000,      // Free queries per month
-  searchGroundingPerKQueries: 14.00,     // $14 per 1,000 queries after free tier
+export const GEMINI_MODEL_PRICING: Record<string, {
+  inputPerMToken: number;
+  inputLargePerMToken: number;
+  outputPerMToken: number;
+  outputLargePerMToken: number;
+}> = {
+  'gemini-3.1-pro-preview': { inputPerMToken: 2.00, inputLargePerMToken: 4.00, outputPerMToken: 12.00, outputLargePerMToken: 18.00 },
+  'gemini-2.5-pro':         { inputPerMToken: 1.25, inputLargePerMToken: 2.50, outputPerMToken: 10.00, outputLargePerMToken: 15.00 },
+  'gemini-3-flash-preview': { inputPerMToken: 0.50, inputLargePerMToken: 0.50, outputPerMToken: 3.00,  outputLargePerMToken: 3.00  },
+};
+
+/** Default pricing (gemini-3.1-pro-preview) for backwards compatibility */
+export const GEMINI_PRICING = GEMINI_MODEL_PRICING['gemini-3.1-pro-preview'];
+
+export const SEARCH_GROUNDING_PRICING = {
+  freeQueries: 5000,
+  perKQueries: 14.00,
 } as const;
 
 /**
@@ -159,26 +168,27 @@ export interface ReviewUsage {
 export function calculateReviewCost(
   geminiInputTokens: number,
   geminiOutputTokens: number,
-  searchGroundingQueries: number = 0
+  searchGroundingQueries: number = 0,
+  model?: string
 ): ReviewUsage['cost'] {
+  const pricing = (model && GEMINI_MODEL_PRICING[model]) || GEMINI_PRICING;
+
   // Determine pricing tier based on input size
   const inputRate = geminiInputTokens > 200_000
-    ? GEMINI_PRICING.inputLargePerMToken
-    : GEMINI_PRICING.inputPerMToken;
+    ? pricing.inputLargePerMToken
+    : pricing.inputPerMToken;
   const outputRate = geminiInputTokens > 200_000
-    ? GEMINI_PRICING.outputLargePerMToken
-    : GEMINI_PRICING.outputPerMToken;
+    ? pricing.outputLargePerMToken
+    : pricing.outputPerMToken;
 
   const geminiInput = (geminiInputTokens / 1_000_000) * inputRate;
   const geminiOutput = (geminiOutputTokens / 1_000_000) * outputRate;
 
   // Search grounding: $0.014 per query ($14/1K queries)
-  // We charge per query regardless of free tier -- the free tier is a billing concern,
-  // not a per-review cost visibility concern. This gives accurate per-review cost.
-  const searchGrounding = searchGroundingQueries * 0.014;
+  const searchGrounding = searchGroundingQueries * (SEARCH_GROUNDING_PRICING.perKQueries / 1000);
 
   return {
-    geminiInput: Math.round(geminiInput * 1000) / 1000,     // Round to 3 decimal places
+    geminiInput: Math.round(geminiInput * 1000) / 1000,
     geminiOutput: Math.round(geminiOutput * 1000) / 1000,
     searchGrounding,
     total: Math.round((geminiInput + geminiOutput + searchGrounding) * 1000) / 1000,

@@ -46,6 +46,8 @@ export type {
 
 export {
   GEMINI_PRICING,
+  GEMINI_MODEL_PRICING,
+  SEARCH_GROUNDING_PRICING,
   calculateReviewCost,
 } from './review-types';
 

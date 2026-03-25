@@ -16,6 +16,7 @@ import type {
   ComponentComparisonStatus,
 } from '@/types/comparison-types';
 import { ProposedFix } from './ProposedFix';
+import { sortComponents } from '@/utils/comparison-sort';
 import './ComponentComparisonTabs.scss';
 
 interface ComponentComparisonTabsProps {
@@ -234,18 +235,12 @@ export function ComponentComparisonTabs({
     resolveDefaultTab(defaultTab, credits.length, perks.length, multipliers.length)
   );
 
-  // Keep active tab aligned with parent intent and available data.
+  // Reset tab when defaultTab prop changes (parent navigates to a specific tab).
   useEffect(() => {
-    const nextDefault = resolveDefaultTab(
-      defaultTab,
-      credits.length,
-      perks.length,
-      multipliers.length
-    );
-    if (nextDefault !== activeTab) {
-      setActiveTab(nextDefault);
+    if (defaultTab) {
+      setActiveTab(defaultTab);
     }
-  }, [defaultTab, credits.length, perks.length, multipliers.length, activeTab]);
+  }, [defaultTab]);
 
   const tabs: { key: TabType; items: ComponentComparisonResult[] }[] = [
     { key: 'credits', items: credits },
@@ -259,15 +254,27 @@ export function ComponentComparisonTabs({
   return (
     <div className="component-comparison-tabs">
       <div className="tabs-header">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            className={cn('tab-button', activeTab === tab.key && 'active')}
-            onClick={() => setActiveTab(tab.key)}
-          >
-            {getTabLabel(tab.key, tab.items.length)}
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const counts = countByStatus(tab.items);
+          const hasIssues = counts.outdated + counts.new + counts.missing + counts.questionable > 0;
+          return (
+            <button
+              key={tab.key}
+              className={cn('tab-button', activeTab === tab.key && 'active')}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {getTabLabel(tab.key, tab.items.length)}
+              {hasIssues && (
+                <span className="tab-badges">
+                  {counts.outdated > 0 && <span className="tab-icon mismatch"><XCircle size={10} />{counts.outdated}</span>}
+                  {counts.new > 0 && <span className="tab-icon new"><Plus size={10} />{counts.new}</span>}
+                  {counts.missing > 0 && <span className="tab-icon missing"><Minus size={10} />{counts.missing}</span>}
+                  {counts.questionable > 0 && <span className="tab-icon questionable"><AlertTriangle size={10} />{counts.questionable}</span>}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <div className="status-summary">
@@ -303,13 +310,17 @@ export function ComponentComparisonTabs({
           <div className="empty-state">No {activeTab} found in database</div>
         ) : (
           <div className="components-list">
-            {activeItems.map((component, index) => (
-              <ComponentCard
-                key={component.id || index}
-                component={component}
-                onEdit={onEditComponent ? (c) => onEditComponent(activeTab as 'credits' | 'perks' | 'multipliers', c) : undefined}
-              />
-            ))}
+            {sortComponents(activeItems).map(({ item: component, index }) => {
+              const validationType = activeTab === 'credits' ? 'credit' as const : activeTab === 'perks' ? 'perk' as const : 'multiplier' as const;
+              return (
+                <ComponentCard
+                  key={component.id || index}
+                  component={component}
+                  validationType={validationType}
+                  onEdit={onEditComponent ? (c) => onEditComponent(activeTab as 'credits' | 'perks' | 'multipliers', c) : undefined}
+                />
+              );
+            })}
           </div>
         )}
       </div>
