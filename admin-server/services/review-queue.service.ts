@@ -76,7 +76,7 @@ export async function queueReviews(
 ): Promise<QueueReviewsResponse> {
   // Resolve the strategy (mutual exclusion enforced by API validation)
   const resolvedPreset: ScrapePreset = scrapePreset ?? (scrapeStrategy ? 'custom' : DEFAULT_SCRAPE_PRESET);
-  const resolvedStrategy = scrapeStrategy ?? SCRAPE_PRESETS[scrapePreset ?? DEFAULT_SCRAPE_PRESET];
+  const resolvedStrategy = scrapeStrategy ?? SCRAPE_PRESETS[(scrapePreset ?? DEFAULT_SCRAPE_PRESET) as Exclude<ScrapePreset, 'custom'>];
   const reviewIds: string[] = [];
   const skipped: { cardId: string; reason: string }[] = [];
 
