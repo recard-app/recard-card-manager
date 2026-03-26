@@ -177,7 +177,7 @@
 
       .table-header {
         display: grid;
-        grid-template-columns: 72px 1fr 96px 64px 120px 72px 56px 36px;
+        grid-template-columns: 72px 1fr 96px 64px 120px 100px 56px 36px;
         min-width: 700px;
         gap: 0.75rem;
         padding: 0.375rem 1rem;
@@ -200,7 +200,7 @@
 
     .review-row {
       display: grid;
-      grid-template-columns: 72px 1fr 96px 64px 120px 72px 56px 36px;
+      grid-template-columns: 72px 1fr 96px 64px 120px 100px 56px 36px;
       min-width: 700px;
       align-items: center;
       gap: 0.75rem;
