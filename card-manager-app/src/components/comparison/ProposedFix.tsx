@@ -22,9 +22,11 @@ export function ProposedFix({ fix, validationType }: ProposedFixProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  const jsonString = typeof fix === 'object' && fix !== null
+  const isObject = typeof fix === 'object' && fix !== null;
+  const displayString = isObject
     ? JSON.stringify(fix, null, 2)
-    : JSON.stringify(fix);
+    : String(fix ?? 'null');
+  const copyString = displayString;
 
   const validation = useMemo(() => {
     if (!validationType || typeof fix !== 'object' || fix === null) return null;
@@ -33,7 +35,7 @@ export function ProposedFix({ fix, validationType }: ProposedFixProps) {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(jsonString);
+      await navigator.clipboard.writeText(copyString);
       setCopied(true);
       toast.success('Copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
@@ -74,7 +76,7 @@ export function ProposedFix({ fix, validationType }: ProposedFixProps) {
               ))}
             </div>
           )}
-          <pre className="json-block">{jsonString}</pre>
+          <pre className="json-block">{displayString}</pre>
           <Button
             variant="outline"
             size="sm"

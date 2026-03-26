@@ -31,6 +31,7 @@ import { CreditModal } from '@/components/Modals/CreditModal';
 import { PerkModal } from '@/components/Modals/PerkModal';
 import { MultiplierModal } from '@/components/Modals/MultiplierModal';
 import { UrlManagementModal } from '@/components/Modals/UrlManagementModal';
+import { CardDetailsModal } from '@/components/Modals/CardDetailsModal';
 import type { ReviewResult } from '@/types/review-types';
 import type { ComponentComparisonResult } from '@/types/comparison-types';
 import type { CardCredit, CardPerk, CardMultiplier } from '@/types';
@@ -238,6 +239,12 @@ export function CardReviewDetailPage() {
   const [urlModalOpen, setUrlModalOpen] = useState(false);
   const [urlModalCardName, setUrlModalCardName] = useState<CreditCardName | null>(null);
   const [updatingUrlIndex, setUpdatingUrlIndex] = useState<number | null>(null);
+
+  // Card details edit modal state
+  const [cardDetailsModalOpen, setCardDetailsModalOpen] = useState(false);
+  const [cardDetailsModalKey, setCardDetailsModalKey] = useState(0);
+  const [cardDetailsInitialJson, setCardDetailsInitialJson] = useState<Record<string, unknown> | undefined>(undefined);
+  const [cardDetailsVersionName, setCardDetailsVersionName] = useState('');
 
   // Human review tracking
   type ReviewedItemsState = {
@@ -469,6 +476,35 @@ export function CardReviewDetailPage() {
     const cardName = await loadCardNameForUrlModal();
     if (!cardName) return;
     setUrlModalOpen(true);
+  };
+
+  const handleEditCardDetails = async () => {
+    if (!review) return;
+    try {
+      const card = await CardService.getCardById(review.versionId);
+      if (!card) {
+        toast.error('Active version not found');
+        return;
+      }
+      setCardDetailsInitialJson({
+        CardName: card.CardName,
+        CardIssuer: card.CardIssuer,
+        CardNetwork: card.CardNetwork,
+        CardDetails: card.CardDetails,
+        CardPrimaryColor: card.CardPrimaryColor ?? '',
+        CardSecondaryColor: card.CardSecondaryColor ?? '',
+        AnnualFee: card.AnnualFee,
+        ForeignExchangeFee: card.ForeignExchangeFee,
+        ForeignExchangeFeePercentage: card.ForeignExchangeFeePercentage,
+        RewardsCurrency: card.RewardsCurrency,
+        PointsPerDollar: card.PointsPerDollar,
+      });
+      setCardDetailsVersionName(card.VersionName);
+      setCardDetailsModalKey(k => k + 1);
+      setCardDetailsModalOpen(true);
+    } catch {
+      toast.error('Failed to load card details');
+    }
   };
 
   const markSuggestedUrlDismissedLocally = (urlIndex: number) => {
@@ -990,6 +1026,7 @@ export function CardReviewDetailPage() {
                       {...(needsReview ? {
                         reviewed: reviewedItems.cardDetails.includes(index),
                         onToggleReview: () => toggleReviewedItem('cardDetails', index),
+                        onEditCardDetails: handleEditCardDetails,
                       } : {})}
                     />
                   );
@@ -1328,6 +1365,22 @@ export function CardReviewDetailPage() {
           onSuccess={(updatedCardName) => {
             setUrlModalCardName(updatedCardName);
           }}
+        />
+      )}
+
+      {review && (
+        <CardDetailsModal
+          key={`card-details-${cardDetailsModalKey}`}
+          open={cardDetailsModalOpen}
+          onOpenChange={setCardDetailsModalOpen}
+          versionId={review.versionId}
+          versionName={cardDetailsVersionName}
+          cardName={review.cardName}
+          onSuccess={() => {
+            setCardDetailsModalOpen(false);
+            toast.success('Card details updated');
+          }}
+          initialJson={cardDetailsInitialJson}
         />
       )}
     </div>

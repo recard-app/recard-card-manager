@@ -1,5 +1,6 @@
-import { CheckCircle, XCircle, AlertTriangle, HelpCircle } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, HelpCircle, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/Button';
 import type { FieldComparisonResult, FieldComparisonStatus } from '@/types/comparison-types';
 import { ProposedFix } from './ProposedFix';
 import './FieldComparisonCard.scss';
@@ -8,6 +9,7 @@ interface FieldComparisonCardProps {
   field: FieldComparisonResult;
   reviewed?: boolean;
   onToggleReview?: () => void;
+  onEditCardDetails?: () => void;
 }
 
 const STATUS_CONFIG: Record<
@@ -43,7 +45,7 @@ function formatValue(value: string | number | null): string {
   return value;
 }
 
-export function FieldComparisonCard({ field, reviewed, onToggleReview }: FieldComparisonCardProps) {
+export function FieldComparisonCard({ field, reviewed, onToggleReview, onEditCardDetails }: FieldComparisonCardProps) {
   const config = STATUS_CONFIG[field.status];
   const StatusIcon = config.icon;
 
@@ -53,6 +55,11 @@ export function FieldComparisonCard({ field, reviewed, onToggleReview }: FieldCo
         <StatusIcon className="status-icon" size={18} />
         <span className="field-label">{field.fieldLabel}</span>
         <span className="status-badge">{config.label}</span>
+        {onEditCardDetails && (
+          <Button size="sm" variant="outline" onClick={onEditCardDetails}>
+            <Pencil size={14} /> Edit Card Details
+          </Button>
+        )}
       </div>
 
       <div className="field-values">

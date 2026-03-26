@@ -129,7 +129,7 @@ export function ComponentCard({ component, onEdit, reviewed, onToggleReview, cre
             <span className="component-title">{component.title}</span>
           </div>
           <div className="header-right">
-            {onEdit && (component.status === 'outdated' || component.status === 'questionable') && (
+            {onEdit && (component.status === 'outdated' || component.status === 'questionable' || component.status === 'missing') && (
               <Button variant="outline" size="sm"
                 onClick={(e) => { e.stopPropagation(); onEdit(component); }} title="Edit component"
               ><Pencil size={12} /> Edit</Button>
