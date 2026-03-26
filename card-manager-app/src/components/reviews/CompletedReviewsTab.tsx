@@ -296,12 +296,12 @@ export function CompletedReviewsTab() {
   useEffect(() => {
     setCollapsedDays(prev => {
       // Don't override user's manual expand/collapse choices
-      if (prev.size > 0 || dayGroups.length <= 2) {
+      if (prev.size > 0 || dayGroups.length <= 3) {
         return prev;
       }
 
       const next = new Set<string>();
-      dayGroups.slice(2).forEach(group => next.add(group.date));
+      dayGroups.slice(3).forEach(group => next.add(group.date));
       return next;
     });
   }, [dayGroups]);
