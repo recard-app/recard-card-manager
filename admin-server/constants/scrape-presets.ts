@@ -8,7 +8,7 @@
 
 import type { ScrapePreset, ScrapeStrategy } from '../types/review-types';
 
-export const SCRAPE_PRESETS: Record<ScrapePreset, ScrapeStrategy> = {
+export const SCRAPE_PRESETS: Record<Exclude<ScrapePreset, 'custom'>, ScrapeStrategy> = {
   default: {
     primary: ['firecrawl'],
     fallback: ['cloudflare-markdown', 'cloudflare-content', 'jina'],

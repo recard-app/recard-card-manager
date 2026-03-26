@@ -228,10 +228,10 @@ export function CompletedReviewsTab() {
     fetchReviews();
   }, [fetchReviews]);
 
-  const handleRetry = async (cardId: string, e: React.MouseEvent) => {
+  const handleRetry = async (cardId: string, scrapePreset: string | undefined, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const result = await ReviewService.queueReviews([cardId]);
+      const result = await ReviewService.queueReviews([cardId], scrapePreset as import('@/types/review-types').ScrapePreset | undefined);
       if (result.reviewIds.length > 0) {
         toast.success('Review queued');
       } else {
@@ -410,6 +410,7 @@ export function CompletedReviewsTab() {
                       <span className="col-review-status">Status</span>
                       <span className="col-health">Health</span>
                       <span className="col-issues">Issues</span>
+                      <span className="col-strategy">Strategy</span>
                       <span className="col-cost">Cost</span>
                       <span className="col-actions"></span>
                     </div>
@@ -434,10 +435,6 @@ export function CompletedReviewsTab() {
                                 }}
                               />
                               <span className="card-name-text">{review.cardName}</span>
-                              <span className="card-issuer-text">{review.cardIssuer}</span>
-                              {review.scrapePreset && review.scrapePreset !== 'default' && (
-                                <span className="scrape-preset-badge">{review.scrapePreset}</span>
-                              )}
                             </span>
                             <span className="col-review-status">
                               <span className={`review-status-badge ${review.reviewStatus === 'reviewed' ? 'reviewed' : 'not-reviewed'}`}>
@@ -453,13 +450,16 @@ export function CompletedReviewsTab() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={(e) => handleRetry(review.referenceCardId, e)}
+                                  onClick={(e) => handleRetry(review.referenceCardId, review.scrapePreset, e)}
                                   title="Retry review"
                                 >
                                   <RotateCcw size={14} />
                                   Retry
                                 </Button>
                               )}
+                            </span>
+                            <span className="col-strategy">
+                              <span className="scrape-preset-badge">{review.scrapePreset ?? 'default'}</span>
                             </span>
                             <span className="col-cost">
                               {review.usage?.cost?.total != null

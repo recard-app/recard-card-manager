@@ -142,6 +142,9 @@ export function QueueReviewsTab() {
                         }}
                       />
                       <span className="review-card-name">{review.cardName}</span>
+                      {review.scrapePreset && review.scrapePreset !== 'default' && (
+                        <span className="scrape-preset-badge">{review.scrapePreset}</span>
+                      )}
                     </div>
                     <div className="review-item-right">
                       {review.currentStep && (
@@ -195,6 +198,9 @@ export function QueueReviewsTab() {
                         }}
                       />
                       <span className="review-card-name">{review.cardName}</span>
+                      {review.scrapePreset && review.scrapePreset !== 'default' && (
+                        <span className="scrape-preset-badge">{review.scrapePreset}</span>
+                      )}
                     </div>
                     <div className="review-item-right">
                       <button

@@ -407,7 +407,7 @@ export function CardReviewDetailPage() {
   const handleRerun = async () => {
     if (!review) return;
     try {
-      const result = await ReviewService.queueReviews([review.referenceCardId]);
+      const result = await ReviewService.queueReviews([review.referenceCardId], review.scrapePreset);
       if (result.reviewIds.length > 0) {
         toast.success('Review queued');
       } else {
