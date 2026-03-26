@@ -713,7 +713,10 @@ export function CardReviewDetailPage() {
               <ExternalLink size={14} />
             </Button>
           </div>
-          <span className="review-card-timestamp">{formatTimestamp(review.reviewedAt || review.queuedAt)}</span>
+          <div className="review-card-timestamp-row">
+            <span className="review-card-timestamp">{formatTimestamp(review.reviewedAt || review.queuedAt)}</span>
+            <span className="review-scrape-preset-badge">{review.scrapePreset ?? 'default'}</span>
+          </div>
           <div className="review-status-select">
             <Select
               value={reviewStatus}
@@ -1133,7 +1136,15 @@ export function CardReviewDetailPage() {
                     <div className="url-details">
                       <div className="url-text">{urlResult.url}</div>
                       <div className="url-meta">
-                        {formatScrapeSource(urlResult.source)} - {formatTokenCount(urlResult.contentTokens)} tokens
+                        {urlResult.sources && urlResult.sources.length > 1
+                          ? urlResult.sources.map((s, i) => (
+                              <span key={s.source}>
+                                {i > 0 && ' + '}
+                                {formatScrapeSource(s.source)} ({formatTokenCount(s.contentTokens)})
+                              </span>
+                            ))
+                          : <>{formatScrapeSource(urlResult.source)} - {formatTokenCount(urlResult.contentTokens)} tokens</>
+                        }
                         {urlResult.status !== 'ok' && ` - ${urlResult.status.toUpperCase()}`}
                       </div>
                       {urlResult.truncated && urlResult.contentTokensOriginal && (

@@ -4,6 +4,7 @@ import type {
   ReviewResult,
   QueueReviewsResponse,
   ReviewResultsResponse,
+  ScrapePreset,
 } from '@/types/review-types';
 
 /**
@@ -14,10 +15,12 @@ export class ReviewService {
   /**
    * Queue reviews for specific cards.
    */
-  static async queueReviews(cardIds: string[]): Promise<QueueReviewsResponse> {
+  static async queueReviews(cardIds: string[], scrapePreset?: ScrapePreset): Promise<QueueReviewsResponse> {
+    const body: Record<string, unknown> = { cardIds };
+    if (scrapePreset) body.scrapePreset = scrapePreset;
     const response = await apiClient.post<QueueReviewsResponse>(
       API_ROUTES.REVIEWS.QUEUE,
-      { cardIds }
+      body
     );
     return response.data;
   }

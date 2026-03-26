@@ -15,7 +15,7 @@ import TurndownService from 'turndown';
 import dns from 'node:dns';
 import net from 'node:net';
 import { GoogleGenAI } from '@google/genai';
-import type { UrlResult, ScrapeSource, UrlStatus } from '../types/review-types';
+import type { UrlResult, ScrapeSource, ScrapeStrategy, ScrapeStrategySource, UrlStatus } from '../types/review-types';
 import Firecrawl, { SdkError } from '@mendable/firecrawl-js';
 
 // ============================================
@@ -135,6 +135,11 @@ export interface ScrapeResult {
   success: boolean;
   redirectedTo?: string;  // Final URL if redirect was detected
   blocked?: boolean;      // True if blocked by SSRF/DNS validation (source field is not meaningful)
+  sources?: {             // Multi-source: per-source breakdown (set when multiple primaries succeed)
+    source: ScrapeSource;
+    contentTokens: number;
+    browserTimeMs?: number;
+  }[];
 }
 
 /**
@@ -145,6 +150,7 @@ export interface CardScrapeResult {
   urlResults: UrlResult[];
   totalContentLength: number;
   totalContentTokens: number;
+  effectiveTokenCap: number;
 }
 
 /**
@@ -528,14 +534,9 @@ async function scrapeWithFirecrawl(url: string): Promise<ScrapeResult> {
   try {
     const result = await client.scrape(url, {
       formats: ['markdown'],
-      onlyMainContent: true,
+      onlyMainContent: false,           // Capture full page -- main content detection strips benefits on Amex/financial sites
       maxAge: 0,                        // Always fresh for reviews
       timeout: SCRAPE_FETCH_TIMEOUT,    // Reuse existing 30s constant
-      actions: [
-        { type: 'wait', milliseconds: 2000 },
-        { type: 'click', selector: ACCORDION_SELECTORS, all: true },
-        { type: 'wait', milliseconds: 1000 },
-      ],
     });
 
     if (!result.markdown) {
@@ -580,20 +581,184 @@ async function scrapeWithFirecrawl(url: string): Promise<ScrapeResult> {
 }
 
 // ============================================
+// STRATEGY-BASED SCRAPING
+// ============================================
+
+/**
+ * Attempts to scrape a URL with a single source and validates the content.
+ * For 'cloudflare' bundled source, uses markdown-first with content escalation.
+ * Returns the atomic ScrapeSource that actually succeeded (not 'cloudflare').
+ */
+async function scrapeUrlWithSource(
+  url: string,
+  cardName: string,
+  source: ScrapeStrategySource
+): Promise<ScrapeResult> {
+  if (source === 'cloudflare') {
+    // Bundled: markdown-first, escalate to /content if < 500 chars
+    const markdownResult = await scrapeWithCloudflareMarkdown(url);
+    if (markdownResult.success) {
+      const validation = validateContent(markdownResult.content, cardName);
+      if (validation.isValid && markdownResult.content.length >= MARKDOWN_FALLBACK_THRESHOLD) {
+        return markdownResult; // source is already 'cloudflare-markdown'
+      }
+      // Insufficient content or invalid -- try /content
+      console.log(`[scrapeUrlWithSource] Cloudflare /markdown insufficient (${markdownResult.content.length} chars), escalating to /content`);
+    }
+    const contentResult = await scrapeWithCloudflareContent(url);
+    if (contentResult.success) {
+      const validation = validateContent(contentResult.content, cardName);
+      if (validation.isValid) {
+        return contentResult; // source is already 'cloudflare-content'
+      }
+      return { ...contentResult, success: false, error: `Cloudflare /content validation failed: ${validation.reason ?? 'Invalid content'}` };
+    }
+    // Both failed -- return the content result error (more informative than markdown)
+    return contentResult;
+  }
+
+  // Atomic source dispatch
+  let result: ScrapeResult;
+  switch (source) {
+    case 'firecrawl':
+      result = await scrapeWithFirecrawl(url);
+      break;
+    case 'cloudflare-markdown':
+      result = await scrapeWithCloudflareMarkdown(url);
+      break;
+    case 'cloudflare-content':
+      result = await scrapeWithCloudflareContent(url);
+      break;
+    case 'jina':
+      result = await scrapeWithJina(url);
+      break;
+    default:
+      return { content: '', source: 'jina', success: false, error: `Unknown scrape source: ${source as string}` };
+  }
+
+  if (!result.success) {
+    return result;
+  }
+
+  // Validate content
+  const validation = validateContent(result.content, cardName);
+  if (!validation.isValid) {
+    return { ...result, success: false, error: `${source} validation failed: ${validation.reason ?? 'Invalid content'}` };
+  }
+
+  return result;
+}
+
+/**
+ * Scrapes a URL using the provided strategy.
+ *
+ * Phase 1 (Primary): Run all primary sources in parallel via Promise.allSettled().
+ *   - Collect all successful + valid results.
+ *   - If at least one succeeds, merge their content (labeled sections).
+ *   - If ALL fail, proceed to Phase 2.
+ *
+ * Phase 2 (Fallback): Run fallback sources sequentially.
+ *   - First successful + valid result is returned (no merging).
+ *   - If all fail, return combined error info.
+ */
+async function scrapeUrlWithStrategy(
+  url: string,
+  cardName: string,
+  strategy: ScrapeStrategy
+): Promise<ScrapeResult> {
+  const allErrors: string[] = [];
+
+  // Phase 1: Run primaries in parallel
+  const primaryPromises = strategy.primary.map(source =>
+    scrapeUrlWithSource(url, cardName, source).then(result => ({ source, result }))
+  );
+  const primaryResults = await Promise.allSettled(primaryPromises);
+
+  // Collect successful results in strategy order (deterministic)
+  const successfulPrimaries: { source: ScrapeStrategySource; result: ScrapeResult }[] = [];
+  for (const settled of primaryResults) {
+    if (settled.status === 'fulfilled' && settled.value.result.success) {
+      successfulPrimaries.push(settled.value);
+    } else if (settled.status === 'fulfilled') {
+      const error = settled.value.result.error;
+      if (error && error !== FIRECRAWL_MISSING_KEY_ERROR) {
+        allErrors.push(error);
+      }
+    } else {
+      allErrors.push(settled.reason instanceof Error ? settled.reason.message : String(settled.reason));
+    }
+  }
+
+  if (successfulPrimaries.length > 0) {
+    if (successfulPrimaries.length === 1) {
+      // Single successful primary -- no merging needed
+      return successfulPrimaries[0].result;
+    }
+
+    // Multiple successful primaries -- merge content with scraper labels
+    const sourcesMetadata: ScrapeResult['sources'] = [];
+    const contentParts: string[] = [];
+
+    for (const { result } of successfulPrimaries) {
+      const tokens = estimateTokens(result.content);
+      sourcesMetadata.push({
+        source: result.source,
+        contentTokens: tokens,
+        browserTimeMs: result.browserTimeMs,
+      });
+      contentParts.push(`--- Scraper: ${result.source} ---\n\n${result.content}`);
+    }
+
+    const mergedContent = contentParts.join('\n\n');
+    const firstResult = successfulPrimaries[0].result;
+
+    return {
+      content: mergedContent,
+      source: firstResult.source,           // Backwards-compat: first successful primary
+      browserTimeMs: firstResult.browserTimeMs,
+      success: true,
+      sources: sourcesMetadata,
+    };
+  }
+
+  // Phase 2: All primaries failed -- try fallback chain sequentially
+  for (const source of strategy.fallback) {
+    console.log(`[scrapeUrlWithStrategy] Fallback: trying ${source} for ${url}`);
+    const result = await scrapeUrlWithSource(url, cardName, source);
+    if (result.success) {
+      return result;
+    }
+    if (result.error && result.error !== FIRECRAWL_MISSING_KEY_ERROR) {
+      allErrors.push(result.error);
+    }
+  }
+
+  // All tiers failed
+  const uniqueErrors = Array.from(new Set(allErrors));
+  // Map bundled 'cloudflare' to its atomic equivalent for the source field
+  const firstSource = strategy.primary[0] ?? 'firecrawl';
+  const atomicSource: ScrapeSource = firstSource === 'cloudflare' ? 'cloudflare-markdown' : firstSource;
+  return {
+    content: '',
+    source: atomicSource,
+    success: false,
+    error: uniqueErrors[0] || 'All scraping methods failed',
+    attemptErrors: uniqueErrors,
+  };
+}
+
+// ============================================
 // MAIN SCRAPING PIPELINE
 // ============================================
 
 /**
- * Scrapes a single URL using the multi-tier fallback pipeline:
- * 1. Firecrawl with accordion-expanding actions (primary)
- * 2. Cloudflare /markdown
- * 3. Cloudflare /content (if /markdown returns too little)
- * 4. Jina Reader (last resort)
+ * Scrapes a single URL using either a provided strategy or the legacy
+ * hardcoded multi-tier fallback pipeline.
  *
  * Validates the URL for SSRF before scraping.
  * Validates the content quality after scraping.
  */
-export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeResult> {
+export async function scrapeUrl(url: string, cardName: string, strategy?: ScrapeStrategy): Promise<ScrapeResult> {
   // SSRF validation
   const urlValidation = validateUrlForScraping(url);
   if (!urlValidation.isValid) {
@@ -645,6 +810,17 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
   } catch {
     // HEAD request failed -- proceed without redirect info
   }
+
+  // Strategy-based scraping: delegate to scrapeUrlWithStrategy
+  if (strategy) {
+    const strategyResult = await scrapeUrlWithStrategy(url, cardName, strategy);
+    if (strategyResult.redirectedTo === undefined && redirectedTo) {
+      strategyResult.redirectedTo = redirectedTo;
+    }
+    return strategyResult;
+  }
+
+  // Legacy hardcoded fallback (when no strategy is provided)
 
   // Tier 1: Firecrawl (primary -- handles accordions)
   console.log(`[scrapeUrl] Trying Firecrawl for: ${url}`);
@@ -760,13 +936,21 @@ export async function scrapeUrl(url: string, cardName: string): Promise<ScrapeRe
  */
 export async function scrapeCardUrls(
   urls: string[],
-  cardName: string
+  cardName: string,
+  strategy?: ScrapeStrategy
 ): Promise<CardScrapeResult> {
+  // Scale token cap based on number of primary sources.
+  // Capped at 2x (60K) -- diminishing returns past that.
+  // The bundled 'cloudflare' source counts as 1 since only one mode's content is returned.
+  const primaryCount = strategy?.primary.length ?? 1;
+  const effectiveMaxTokens = MAX_TOTAL_TOKENS * Math.min(primaryCount, 2);
+  const effectiveMaxChars = effectiveMaxTokens * CHARS_PER_TOKEN;
+
   const urlResults: UrlResult[] = [];
-  const contentParts: { url: string; content: string; source: ScrapeSource; browserTimeMs?: number }[] = [];
+  const contentParts: { url: string; content: string; source: ScrapeSource; browserTimeMs?: number; sources?: ScrapeResult['sources'] }[] = [];
 
   for (const url of urls) {
-    const result = await scrapeUrl(url, cardName);
+    const result = await scrapeUrl(url, cardName, strategy);
 
     if (result.success) {
       const tokens = estimateTokens(result.content);
@@ -775,6 +959,7 @@ export async function scrapeCardUrls(
         url,
         status: result.redirectedTo ? 'redirected' as UrlStatus : 'ok' as UrlStatus,
         source: result.source,
+        ...(result.sources && { sources: result.sources }),
         contentTokens: tokens,
         truncated: false,
         browserTimeMs: result.browserTimeMs,
@@ -787,6 +972,7 @@ export async function scrapeCardUrls(
         content: result.content,
         source: result.source,
         browserTimeMs: result.browserTimeMs,
+        sources: result.sources,
       });
     } else {
       // Determine URL status from the error
@@ -817,7 +1003,7 @@ export async function scrapeCardUrls(
     const separatorLength = combinedContent.length > 0
       ? `\n\n--- Source: ${part.url} ---\n\n`.length
       : 0;
-    const remainingChars = MAX_TOTAL_CHARS - totalChars - separatorLength;
+    const remainingChars = effectiveMaxChars - totalChars - separatorLength;
 
     if (remainingChars <= 0) {
       // No room left -- mark this and all remaining parts as truncated
@@ -830,6 +1016,12 @@ export async function scrapeCardUrls(
           urlResult.contentTokensOriginal = urlResult.contentTokens;
           urlResult.contentTokens = 0;
           urlResult.truncated = true;
+          // Zero out per-source tokens to keep usage accounting consistent
+          if (urlResult.sources) {
+            for (const s of urlResult.sources) {
+              s.contentTokens = 0;
+            }
+          }
         }
       }
       console.warn(`[scrapeCardUrls] Content cap reached. Truncated content from ${contentParts.length - i} remaining URL(s).`);
@@ -849,6 +1041,13 @@ export async function scrapeCardUrls(
         urlResult.contentTokensOriginal = originalTokens;
         urlResult.contentTokens = truncatedTokens;
         urlResult.truncated = true;
+        // Scale per-source tokens proportionally to keep usage accounting consistent
+        if (urlResult.sources && originalTokens > 0) {
+          const ratio = truncatedTokens / originalTokens;
+          for (const s of urlResult.sources) {
+            s.contentTokens = Math.round(s.contentTokens * ratio);
+          }
+        }
       }
 
       console.warn(`[scrapeCardUrls] Truncated content from ${part.url}: ${originalTokens} -> ${truncatedTokens} tokens`);
@@ -870,6 +1069,7 @@ export async function scrapeCardUrls(
     urlResults,
     totalContentLength: combinedContent.length,
     totalContentTokens: totalTokens,
+    effectiveTokenCap: effectiveMaxTokens,
   };
 }
 

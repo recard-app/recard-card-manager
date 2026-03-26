@@ -24,6 +24,15 @@ export type UrlStatus = 'ok' | 'redirected' | 'broken' | 'stale';
 
 export type ScrapeSource = 'firecrawl' | 'cloudflare-markdown' | 'cloudflare-content' | 'jina';
 
+export type ScrapeStrategySource = 'firecrawl' | 'cloudflare-markdown' | 'cloudflare-content' | 'jina' | 'cloudflare';
+
+export type ScrapePreset = 'default' | 'max' | 'thorough' | 'cheap-thorough' | 'cheap' | 'custom';
+
+export interface ScrapeStrategy {
+  primary: ScrapeStrategySource[];
+  fallback: ScrapeStrategySource[];
+}
+
 // ============================================
 // URL SCRAPING RESULTS
 // ============================================
@@ -31,7 +40,12 @@ export type ScrapeSource = 'firecrawl' | 'cloudflare-markdown' | 'cloudflare-con
 export interface UrlResult {
   url: string;
   status: UrlStatus;
-  source: ScrapeSource;
+  source: ScrapeSource;                  // Primary/best source (backwards compatible)
+  sources?: {                            // All sources that contributed content (multi-source only)
+    source: ScrapeSource;
+    contentTokens: number;
+    browserTimeMs?: number;
+  }[];
   contentTokens: number;
   contentTokensOriginal?: number;        // Only set if truncated
   truncated: boolean;
@@ -74,6 +88,7 @@ export interface ScrapeUsageEntry {
 export interface ReviewUsage {
   scraping: {
     totalContentTokens: number;
+    effectiveTokenCap?: number;          // The token cap used (30K base, scaled for multi-source)
     urlBreakdown: ScrapeUsageEntry[];
   };
   gemini: {
@@ -136,6 +151,8 @@ export interface ReviewResult {
 
   health?: ReviewHealth;
   usage?: ReviewUsage;
+
+  scrapePreset?: ScrapePreset;           // Which scrape preset was used
 
   reviewStatus?: 'not_reviewed' | 'reviewed';
   reviewedItems?: {

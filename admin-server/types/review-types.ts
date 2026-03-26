@@ -44,9 +44,34 @@ export type ReviewTrigger = 'scheduled' | 'manual';
 export type UrlStatus = 'ok' | 'redirected' | 'broken' | 'stale';
 
 /**
- * Which scraping source was used for a URL
+ * Which scraping source was used for a URL (atomic, result-level)
  */
 export type ScrapeSource = 'firecrawl' | 'cloudflare-markdown' | 'cloudflare-content' | 'jina';
+
+/**
+ * Scrape sources selectable in a strategy configuration.
+ * Atomic sources map 1:1 to ScrapeSource.
+ * 'cloudflare' is a bundled source that uses markdown-first with
+ * automatic escalation to /content if markdown returns < 500 chars.
+ */
+export type ScrapeAtomicSource = 'firecrawl' | 'cloudflare-markdown' | 'cloudflare-content' | 'jina';
+export type ScrapeBundledSource = 'cloudflare';
+export type ScrapeStrategySource = ScrapeAtomicSource | ScrapeBundledSource;
+
+/**
+ * Available scrape strategy presets.
+ */
+export type ScrapePreset = 'default' | 'max' | 'thorough' | 'cheap-thorough' | 'cheap' | 'custom';
+
+/**
+ * Scrape strategy configuration.
+ * - primary: Sources run in parallel, results merged for maximum content coverage.
+ * - fallback: Sources tried sequentially if ALL primaries fail to produce valid content.
+ */
+export interface ScrapeStrategy {
+  primary: ScrapeStrategySource[];
+  fallback: ScrapeStrategySource[];
+}
 
 // ============================================
 // URL SCRAPING RESULTS
@@ -58,10 +83,15 @@ export type ScrapeSource = 'firecrawl' | 'cloudflare-markdown' | 'cloudflare-con
 export interface UrlResult {
   url: string;
   status: UrlStatus;
-  source: ScrapeSource;                  // Which scraper succeeded
-  contentTokens: number;                 // Estimated token count of scraped content
+  source: ScrapeSource;                  // Primary/best source (backwards compatible)
+  sources?: {                            // All sources that contributed content (multi-source only)
+    source: ScrapeSource;
+    contentTokens: number;
+    browserTimeMs?: number;
+  }[];
+  contentTokens: number;                 // Total tokens across all sources for this URL
   contentTokensOriginal?: number;        // Original token count before truncation (only set if truncated)
-  truncated: boolean;                    // True if content was truncated to fit the 30K total budget
+  truncated: boolean;                    // True if content was truncated to fit the token budget
   browserTimeMs?: number;               // Cloudflare X-Browser-Ms-Used header value (Cloudflare sources only)
   redirectedTo?: string;                 // Final URL after redirect (if status is "redirected")
   suggestedUrl?: string;                 // Auto-discovered replacement URL (if status is "broken" or "stale")
@@ -139,6 +169,7 @@ export interface ReviewUsage {
   // Scraping
   scraping: {
     totalContentTokens: number;
+    effectiveTokenCap: number;           // The token cap used (30K base, scaled for multi-source)
     urlBreakdown: ScrapeUsageEntry[];
   };
   // Gemini comparison
@@ -248,6 +279,9 @@ export interface ReviewResult {
   // Usage and cost tracking
   usage?: ReviewUsage;
 
+  // Scrape strategy
+  scrapePreset?: ScrapePreset;           // Which scrape preset was used (inherited from batch)
+
   // Human review tracking
   reviewStatus?: 'not_reviewed' | 'reviewed';
   reviewedItems?: {
@@ -281,6 +315,8 @@ export interface ReviewBatch {
   completedCards: number;
   failedCards: number;
   skippedCards: number;
+  scrapePreset?: ScrapePreset;           // Which preset was used (undefined = 'default' for backwards compat)
+  scrapeStrategy?: ScrapeStrategy;       // Resolved strategy (stored for historical reference)
 }
 
 // ============================================
@@ -293,6 +329,8 @@ export interface ReviewBatch {
 export interface QueueReviewsRequest {
   cardIds?: string[];                    // Specific card IDs to review
   scope?: 'all';                         // Review all active cards with URLs
+  scrapePreset?: ScrapePreset;           // Optional, defaults to 'default'
+  scrapeStrategy?: ScrapeStrategy;       // Optional, for custom strategies (mutually exclusive with scrapePreset)
 }
 
 /**

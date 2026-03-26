@@ -435,6 +435,9 @@ export function CompletedReviewsTab() {
                               />
                               <span className="card-name-text">{review.cardName}</span>
                               <span className="card-issuer-text">{review.cardIssuer}</span>
+                              {review.scrapePreset && review.scrapePreset !== 'default' && (
+                                <span className="scrape-preset-badge">{review.scrapePreset}</span>
+                              )}
                             </span>
                             <span className="col-review-status">
                               <span className={`review-status-badge ${review.reviewStatus === 'reviewed' ? 'reviewed' : 'not-reviewed'}`}>

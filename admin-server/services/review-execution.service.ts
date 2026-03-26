@@ -24,6 +24,7 @@ import type {
   ReviewHealth,
   ReviewUsage,
   ScrapeUsageEntry,
+  ScrapeStrategy,
   UrlResult,
 } from '../types/review-types';
 import { calculateReviewCost } from '../types/review-types';
@@ -238,7 +239,8 @@ export function computeHealthScore(comparisonResult: {
  */
 export async function executeCardReview(
   referenceCardId: string,
-  resultId: string
+  resultId: string,
+  strategy?: ScrapeStrategy
 ): Promise<void> {
   const reviewStartedAtMs = Date.now();
 
@@ -325,7 +327,7 @@ export async function executeCardReview(
     let scrapeResult;
     try {
       scrapeResult = await withRemainingTimeout(
-        () => scrapeCardUrls(urls, aggregatedData.cardDetails.CardName),
+        () => scrapeCardUrls(urls, aggregatedData.cardDetails.CardName, strategy),
         'URL scraping'
       );
     } catch (error) {
@@ -405,12 +407,24 @@ export async function executeCardReview(
     // Step 7: Build usage tracking
     const scrapeUsageBreakdown: ScrapeUsageEntry[] = scrapeResult.urlResults
       .filter(r => r.status === 'ok' || r.status === 'redirected')
-      .map(r => ({
-        url: r.url,
-        source: r.source,
-        contentTokens: r.contentTokens,
-        browserTimeMs: r.browserTimeMs,
-      }));
+      .flatMap(r => {
+        // Multi-source: one entry per contributing source
+        if (r.sources && r.sources.length > 0) {
+          return r.sources.map(s => ({
+            url: r.url,
+            source: s.source,
+            contentTokens: s.contentTokens,
+            browserTimeMs: s.browserTimeMs,
+          }));
+        }
+        // Single-source: backwards compatible
+        return [{
+          url: r.url,
+          source: r.source,
+          contentTokens: r.contentTokens,
+          browserTimeMs: r.browserTimeMs,
+        }];
+      });
 
     const geminiInputTokens = comparisonResponse.tokenUsage?.inputTokens ?? 0;
     const geminiOutputTokens = comparisonResponse.tokenUsage?.outputTokens ?? 0;
@@ -418,6 +432,7 @@ export async function executeCardReview(
     const usage: ReviewUsage = {
       scraping: {
         totalContentTokens: scrapeResult.totalContentTokens,
+        effectiveTokenCap: scrapeResult.effectiveTokenCap,
         urlBreakdown: scrapeUsageBreakdown,
       },
       gemini: {

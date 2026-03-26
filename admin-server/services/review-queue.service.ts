@@ -28,7 +28,10 @@ import type {
   ReviewBatch,
   ReviewTrigger,
   QueueReviewsResponse,
+  ScrapePreset,
+  ScrapeStrategy,
 } from '../types/review-types';
+import { SCRAPE_PRESETS, DEFAULT_SCRAPE_PRESET } from '../constants/scrape-presets';
 import { normalizeWebsiteUrls } from './url-utils';
 
 // ============================================
@@ -67,8 +70,13 @@ const pendingBatchIds: string[] = [];
 export async function queueReviews(
   cardIds: string[],
   triggeredBy: ReviewTrigger,
-  triggeredByUser?: string
+  triggeredByUser?: string,
+  scrapePreset?: ScrapePreset,
+  scrapeStrategy?: ScrapeStrategy
 ): Promise<QueueReviewsResponse> {
+  // Resolve the strategy (mutual exclusion enforced by API validation)
+  const resolvedPreset: ScrapePreset = scrapePreset ?? (scrapeStrategy ? 'custom' : DEFAULT_SCRAPE_PRESET);
+  const resolvedStrategy = scrapeStrategy ?? SCRAPE_PRESETS[scrapePreset ?? DEFAULT_SCRAPE_PRESET];
   const reviewIds: string[] = [];
   const skipped: { cardId: string; reason: string }[] = [];
 
@@ -164,6 +172,8 @@ export async function queueReviews(
       completedCards: 0,
       failedCards: 0,
       skippedCards: skipped.length,
+      ...(resolvedPreset && { scrapePreset: resolvedPreset }),
+      scrapeStrategy: resolvedStrategy,
     });
 
     return { batchId, reviewIds: [], skipped };
@@ -181,6 +191,8 @@ export async function queueReviews(
     completedCards: 0,
     failedCards: 0,
     skippedCards: skipped.length,
+    ...(resolvedPreset && { scrapePreset: resolvedPreset }),
+    scrapeStrategy: resolvedStrategy,
   });
 
   // Create individual review result documents
@@ -198,6 +210,7 @@ export async function queueReviews(
       queuedAt: now,
       websiteUrls: card.websiteUrls,
       contentLength: 0,
+      ...(resolvedPreset && { scrapePreset: resolvedPreset }),
     });
     reviewIds.push(resultId);
   }
@@ -283,6 +296,7 @@ async function processBatch(batchId: string): Promise<void> {
   const results = await getResultsByBatchId(batchId);
   const pendingResults = results.filter(r => r.status === 'queued');
   const existingBatch = await getBatch(batchId);
+  const batchStrategy = existingBatch?.scrapeStrategy;
   const initialSkippedCards = existingBatch?.skippedCards ?? 0;
   const missingResultsCount = existingBatch
     ? Math.max(0, existingBatch.totalCards - results.length)
@@ -326,7 +340,7 @@ async function processBatch(batchId: string): Promise<void> {
     console.log(`[Queue] Processing card ${i + 1}/${pendingResults.length}: ${result.cardName} (${result.referenceCardId})`);
 
     try {
-      await executeCardReview(result.referenceCardId, result.id);
+      await executeCardReview(result.referenceCardId, result.id, batchStrategy);
 
       // Re-read the result to check final status
       const updatedResult = await getReviewResult(result.id);

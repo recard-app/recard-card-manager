@@ -50,12 +50,44 @@ router.use(verifyAuth);
 // VALIDATION SCHEMAS
 // ============================================
 
+const SCRAPE_SOURCE_VALUES = ['firecrawl', 'cloudflare-markdown', 'cloudflare-content', 'jina', 'cloudflare'] as const;
+
+const ScrapeStrategySchema = z.object({
+  primary: z.array(z.enum(SCRAPE_SOURCE_VALUES)).min(1),
+  fallback: z.array(z.enum(SCRAPE_SOURCE_VALUES)),
+}).refine(
+  data => {
+    const allSources = [...data.primary, ...data.fallback];
+    return new Set(allSources).size === allSources.length;
+  },
+  { message: 'Duplicate sources are not allowed in a strategy' }
+);
+
+/**
+ * Validates that bundled 'cloudflare' is not used alongside its atomic
+ * variants 'cloudflare-markdown' or 'cloudflare-content' in the same strategy.
+ */
+function hasOverlappingCloudflareSources(strategy: { primary: string[]; fallback: string[] }): boolean {
+  const allSources = [...strategy.primary, ...strategy.fallback];
+  const hasBundled = allSources.includes('cloudflare');
+  const hasAtomic = allSources.includes('cloudflare-markdown') || allSources.includes('cloudflare-content');
+  return hasBundled && hasAtomic;
+}
+
 const QueueReviewsSchema = z.object({
   cardIds: z.array(z.string().min(1)).optional(),
   scope: z.enum(['all']).optional(),
+  scrapePreset: z.enum(['default', 'max', 'thorough', 'cheap-thorough', 'cheap']).optional(),
+  scrapeStrategy: ScrapeStrategySchema.optional(),
 }).refine(
   data => data.cardIds || data.scope,
   { message: 'Either cardIds or scope must be provided' }
+).refine(
+  data => !(data.scrapePreset && data.scrapeStrategy),
+  { message: 'Cannot specify both scrapePreset and scrapeStrategy' }
+).refine(
+  data => !data.scrapeStrategy || !hasOverlappingCloudflareSources(data.scrapeStrategy),
+  { message: 'Cannot use bundled "cloudflare" with "cloudflare-markdown" or "cloudflare-content" in the same strategy' }
 );
 
 const DismissUrlSchema = z.object({
@@ -101,7 +133,7 @@ router.post('/queue', async (req: AuthenticatedRequest, res: Response) => {
       });
     }
 
-    const { cardIds, scope } = parsed.data;
+    const { cardIds, scope, scrapePreset, scrapeStrategy } = parsed.data;
     const user = req.user;
 
     let resolvedCardIds: string[];
@@ -121,7 +153,9 @@ router.post('/queue', async (req: AuthenticatedRequest, res: Response) => {
     const result = await queueReviews(
       resolvedCardIds,
       'manual',
-      user?.email
+      user?.email,
+      scrapePreset,
+      scrapeStrategy
     );
 
     res.json(result);

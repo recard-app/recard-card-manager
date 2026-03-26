@@ -4,9 +4,11 @@ import { Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { MultiSelectFilter } from '@/components/ui/MultiSelectFilter';
+import { Select } from '@/components/ui/Select';
 import { CardService } from '@/services/card.service';
 import { ReviewService } from '@/services/review.service';
 import { CardStatus } from '@/types/ui-types';
+import type { ScrapePreset } from '@/types/review-types';
 import type { CardWithStatus } from '@/types/ui-types';
 import {
   formatDateShort,
@@ -25,12 +27,21 @@ interface QueueReviewsModalProps {
 type SortField = 'name' | 'lastReviewed' | 'lastRun';
 type SortDir = 'asc' | 'desc';
 
+const SCRAPE_PRESET_OPTIONS: Array<{ value: ScrapePreset; label: string }> = [
+  { value: 'default', label: 'Default (Firecrawl + fallback)' },
+  { value: 'max', label: 'Max (all scrapers, merged)' },
+  { value: 'thorough', label: 'Thorough (CF + Jina, merged)' },
+  { value: 'cheap-thorough', label: 'Cheap Thorough (CF bundled + Jina)' },
+  { value: 'cheap', label: 'Cheap (CF + fallback, no Firecrawl)' },
+];
+
 export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReviewsModalProps) {
   const [cards, setCards] = useState<CardWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  const [scrapePreset, setScrapePreset] = useState<ScrapePreset>('default');
 
   // Date maps
   const [lastReviewedDates, setLastReviewedDates] = useState<Record<string, string>>({});
@@ -53,6 +64,7 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
       setLastRunFilter([]);
       setSortField('name');
       setSortDir('asc');
+      setScrapePreset('default');
     }
   }, [open]);
 
@@ -171,7 +183,7 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
     if (selectedIds.size === 0) return;
     setSubmitting(true);
     try {
-      const result = await ReviewService.queueReviews(Array.from(selectedIds));
+      const result = await ReviewService.queueReviews(Array.from(selectedIds), scrapePreset);
       const queued = result.reviewIds.length;
       const skippedCount = result.skipped.length;
 
@@ -247,7 +259,7 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
       onOpenChange={onOpenChange}
       title="Queue Reviews"
       description="Select cards to review"
-      contentClassName="max-w-5xl"
+      contentClassName="max-w-5xl [&>div.py-4]:pb-1"
       preventEscClose
       preventOutsideClose
     >
@@ -292,7 +304,6 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
           gap: '0.5rem',
           padding: '0.375rem 0',
           borderBottom: '1px solid #e5e7eb',
-          marginBottom: '0.25rem',
           fontSize: '0.75rem',
           fontWeight: 600,
           color: '#6b7280',
@@ -326,8 +337,8 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
           </div>
         </div>
 
-        {/* Card list */}
-        <div style={{ maxHeight: '650px', overflowY: 'auto' }}>
+        {/* Card list (scrollable) */}
+        <div style={{ maxHeight: 'calc(90vh - 340px)', overflowY: 'auto' }}>
           {loading ? (
             <div style={{ padding: '1rem', textAlign: 'center', color: '#666' }}>Loading cards...</div>
           ) : filteredAndSortedCards.length === 0 ? (
@@ -397,7 +408,7 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
         </div>
 
         {/* Count */}
-        <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e5e7eb', fontSize: '0.8125rem', color: '#666' }}>
+        <div style={{ paddingTop: '0.25rem', borderTop: '1px solid #e5e7eb', fontSize: '0.8125rem', color: '#666' }}>
           {selectedIds.size} of {cards.length} cards selected
           {(lastReviewedFilter.length > 0 || lastRunFilter.length > 0 || searchQuery) && (
             <span> ({filteredAndSortedCards.length} shown)</span>
@@ -405,13 +416,22 @@ export function QueueReviewsModal({ open, onOpenChange, onSuccess }: QueueReview
         </div>
       </div>
 
-      <DialogFooter>
-        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-          Cancel
-        </Button>
-        <Button onClick={handleSubmit} disabled={selectedIds.size === 0 || submitting}>
-          {submitting ? 'Queueing...' : `Queue ${selectedIds.size} Review${selectedIds.size !== 1 ? 's' : ''}`}
-        </Button>
+      <DialogFooter style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ minWidth: '220px' }}>
+          <Select
+            value={scrapePreset}
+            onChange={(value) => setScrapePreset(value as ScrapePreset)}
+            options={SCRAPE_PRESET_OPTIONS}
+          />
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={selectedIds.size === 0 || submitting}>
+            {submitting ? 'Queueing...' : `Queue ${selectedIds.size} Review${selectedIds.size !== 1 ? 's' : ''}`}
+          </Button>
+        </div>
       </DialogFooter>
     </Dialog>
   );
